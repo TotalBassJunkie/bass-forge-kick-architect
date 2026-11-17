@@ -443,6 +443,68 @@ TEST_CASE ("KICK-Seite: Demo-Kick landet im Zustand und in den Karten", "[ui][ki
     renderOnce (page, 1100, 620, "kickpage-demo");
 }
 
+TEST_CASE ("KICK-Seite: geladenes Preset spielt seine Samples", "[ui][kickpage]")
+{
+    JuceGuiScope gui;
+
+    const auto file = writeTestSample ("kick-preset.wav", 0.3, 120.0);
+    REQUIRE (file.existsAsFile ());
+
+    const auto presetFile = testDirectory().getChildFile ("kickpage-preset.bfkapreset");
+    presetFile.deleteFile ();
+
+    {
+        PluginProcessor source;
+        source.prepareToPlay (48000.0, 128);
+
+        juce::String error;
+        REQUIRE (source.setSlotSample (4, file, error));
+
+        // Ein Slot-Pegel gehoert mit ins Preset und muss zurueckkommen.
+        const auto* volume = ParameterRegistry::get().find ("l4_vol");
+        REQUIRE (volume != nullptr);
+
+        if (auto* parameter = source.parameters().getParameter (volume->id))
+            parameter->setValueNotifyingHost (volume->toNormalised (-9.0f));
+
+        source.applySlotSettings (4);
+
+        PresetInfo info;
+        info.name = "Testpreset";
+        REQUIRE (source.savePreset (presetFile, info, error));
+    }
+
+    REQUIRE (presetFile.existsAsFile ());
+
+    PluginProcessor target;
+    target.prepareToPlay (48000.0, 128);
+    REQUIRE_FALSE (target.isSlotFilled (4));
+
+    juce::String error;
+    REQUIRE (target.loadPreset (presetFile, error));
+
+    // Der Zustand traegt die Referenz ...
+    const auto state = target.captureState ();
+    REQUIRE (state.getSample (4).has_value ());
+    CHECK (state.getSample (4)->fileName == "kick-preset.wav");
+
+    const auto* volume = ParameterRegistry::get().find ("l4_vol");
+    REQUIRE (volume != nullptr);
+    CHECK_THAT (state.getParam (volume->id),
+                WithinAbs (volume->toNormalised (-9.0f), 1.0e-4));
+
+    // ... und der Renderer hat sie geladen (applyState -> loadFromState).
+    CHECK (target.isSlotFilled (4));
+    CHECK (target.getSlotEnvelope (4).valid);
+    CHECK (target.getNumFilledSlots () == 1);
+
+    KickPage page (target);
+    page.syncFromProcessor ();
+    CHECK (page.getSlotCard (4)->hasSample ());
+
+    presetFile.deleteFile ();
+}
+
 TEST_CASE ("KICK-Seite: Editor baut beide Seiten", "[ui][kickpage]")
 {
     JuceGuiScope gui;

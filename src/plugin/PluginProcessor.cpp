@@ -564,9 +564,10 @@ bool PluginProcessor::startDemoKick()
         return false;
     }
 
+    // `applyState()` laedt die Sample-Referenzen selbst in den Renderer (B-154).
     applyState (state);
 
-    const auto loaded = assembler.loadFromState (captureState(), contentRoot, renderer, warnings);
+    const auto loaded = getNumFilledSlots();
 
     // Ein neuer Kick bringt ein neues Tempo - die Shaper-Huellkurve laeuft
     // ueber die Kick-Laenge (B-147).
@@ -625,6 +626,16 @@ void PluginProcessor::applyState (const KickState& state)
 
     // Der komplette Zustand inklusive `<FxChain>`; danach die Engine bauen.
     extraState = state.toValueTree();
+
+    // Samples des Zustands in den Renderer (B-154). Ohne diesen Schritt blieben
+    // die Slots eines geladenen Presets stumm, obwohl die Karten sie zeigen.
+    {
+        juce::StringArray warnings;
+        assembler.loadFromState (state, contentRoot, renderer, warnings);
+
+        for (const auto& warning : warnings)
+            log::d ("applyState: " + warning);
+    }
 
     // Tempo aus dem Zustand an den Renderer: daraus ergibt sich die Kick-Laenge
     // fuer die Shaper-Huellkurve (B-147).
