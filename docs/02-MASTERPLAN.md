@@ -455,3 +455,31 @@ Handbüchern (Details in `docs/03-RE-FINDINGS.md` §7).
 
 **Nicht enthalten (bewusst):** Factory-IR-Library, externe Sidechain-Kanäle,
 Preset-Browser/Automation-Table der Vorbilder, UI-Nachbau der Vorbilder.
+---
+
+## 21. Nachtrag 2026-11-17 — Tickets der Wellen 7 und 8
+
+Nach dem Masterplan sind inzwischen weitere Tickets entstanden und **erledigt**.
+Sie sind hier nachgetragen, damit die Nummernfolge vollständig bleibt;
+Einzelheiten in docs/PROGRESS.md und im jeweiligen Handoff.
+
+| Ticket | Inhalt | Status |
+|---|---|---|
+| B-143 | FX-Kette aus dem Zustand bauen, extraState reparieren, PDC melden | erledigt (Welle 7) |
+| B-144 | Modul-API für die UI (setModuleParam, writeBackModuleStates, …) | erledigt (Welle 7) |
+| B-145 | Demo-Kette, Hörprüfung, Statuszeile | erledigt (Welle 7) |
+| B-146 | Externer Sidechain für dynEq (zwei optionale Busse, Detektor-Latenzausgleich) | erledigt (Welle 8) |
+| B-93/B-94 | .bfkapreset-IO, Modul-Presets, A/B, Ketten-Header (Lock/Clear/Default) | erledigt (Welle 8) |
+| B-92b | Graph-Editoren mseq, shaper, inal | erledigt (Welle 8) |
+| B-147 | shaper bekommt die Kick-Länge; Finalizer-Latenz im Host verifiziert | erledigt (Welle 8) |
+| B-148 | Rampen für Ketten-mix/outGain (O4) und Convolver-wet/width | erledigt (Welle 8) |
+| B-149 | CPU-Profil je Modul, Budgets dokumentiert | erledigt (Welle 8) |
+| B-95 | Eingebettete Samples im Preset (<Samples>) | offen |
+| B-150 | getTailLengthSeconds() aus Kette/Kick-Länge ableiten | offen |
+| B-151 | Karten-Layout für Module mit vielen Parametern (dynEq, 64) gruppieren | offen |
+| B-152 | IR-Browser mit User-Directories | offen |
+| B-153 | Release-CPU-Messung und Sidechain-Hosttest in einer DAW | offen |
+
+**Getestete Eigenschaften:** siehe docs/specs/fx-chain-engine.md (Abschnitt 8
+und 9.1). **375 zusätzliche Assertions** seit Welle 6; aktueller Stand
+**305 Testfälle / 539.977 Assertions**.
