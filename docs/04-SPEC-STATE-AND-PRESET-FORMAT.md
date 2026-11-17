@@ -29,10 +29,10 @@ Bereiche, Defaults und Kurven. Reihenfolge der Einträge = Reihenfolge in
 
 | Block | Anzahl | IDs |
 |---|---|---|
-| Slots 0…11 | 12 × 19 = 228 | `l<N>_<suffix>` |
+| Slots 0…11 | 12 × 20 = 240 | `l<N>_<suffix>` |
 | Globals | 12 | `sat_amount`, `reverb_size`, `reverb_damp`, `reverb_mix`, `hollow_amt`, `max_amount`, `master_vol`, `midi_mode`, `root_note`, `gspare1`, `gspare2`, `gspare3` |
 | FX-Proxy | 8 × 14 = 112 | `fx<N>_p<M>` |
-| **Summe** | **352** | |
+| **Summe** | **364** | |
 
 ### 2.1 Slot-Suffixe (in dieser Reihenfolge)
 
@@ -47,7 +47,7 @@ Bereiche, Defaults und Kurven. Reihenfolge der Einträge = Reihenfolge in
 | 6 | `trimend` | Trim End | Prozent | 0 … 100 % |
 | 7 | `fadein` | Fade In | Prozent | 0 … 100 % |
 | 8 | `fadeout` | Fade Out | Prozent | 0 … 100 % |
-| 9 | `stretch` | Stretch | logarithmisch | 0,25× … 8× |
+| 9 | `stretch` | Stretch | **Potenzkurve** (Exponent 0,42) | 0,25× … 8× |
 | 10 | `filter` | Filter | logarithmisch | 20 … 20 000 Hz |
 | 11 | `filterq` | Filter Q | linear | 0,1 … 10 |
 | 12 | `dlytime` | Delay Time | Prozent | 0 … 100 % |
@@ -57,6 +57,16 @@ Bereiche, Defaults und Kurven. Reihenfolge der Einträge = Reihenfolge in
 | 16 | `ficurve` | Fade-In-Kurve | Prozent | 0 … 100 % |
 | 17 | `fishape` | Fade-In-Form | linear | −1 … +1 |
 | 18 | `foshape` | Fade-Out-Form | linear | −1 … +1 |
+| 19 | `fistart` | Fade-In-Start | Prozent | 0 … 100 % |
+
+> **`stretch` ist gemessen, nicht geschätzt.** Die Werk-Presets speichern für 1,0× den
+> Wert `0.374989420`. Eine Logarithmus-Kurve über 0,25…8 würde 0,4 liefern und ist
+> damit widerlegt. Eine **Potenzkurve mit Exponent 0,42** trifft den Messwert exakt:
+> `0,25 + 7,75 · n^(1/0,42)`. Entspricht JUCE-Skew ≈ 2,381.
+>
+> **`fistart`** taucht erst in der neuesten Preset-Generation auf (im Feld
+> `appVersion="4.0.3"`, z. B. im Zaag-Werkpreset) und steht dort hinter `foshape`.
+> Vermutete Bedeutung: Startpunkt des Fade-In-Ankers. In B-11 zu bestätigen.
 
 > **Arbeitsannahmen.** Die Bereiche und Kurven sind aus dem Referenzformat abgeleitet
 > und in `docs/specs/parameter-normalisation.md` zu verifizieren (Ticket B-11/F1).
@@ -65,11 +75,18 @@ Bereiche, Defaults und Kurven. Reihenfolge der Einträge = Reihenfolge in
 ### 2.2 FX-Proxy-Parameter
 
 `fx<N>_p<M>` sind die 14 host-sichtbaren Stellvertreter des N-ten Moduls der Kette.
-Arbeitshypothese (Zuordnung in `docs/specs/fx-param-bridge.md` zu belegen):
+**Gemessen** an 44 Werk-Presets (Details in `docs/specs/fx-param-bridge.md`):
 
-* `p0 … p11` = die ersten zwölf Modulparameter in fester Reihenfolge
-* `p12` = `mix`
-* `p13` = Reserve
+* `p0 … p11` = die ersten zwölf **modulspezifischen** Attribute in der Reihenfolge,
+  in der sie im Referenz-XML stehen (21 exakte Zuordnungen, durchweg glatte Bereiche).
+* `p12` = **MIX** (Identität, an 88 Beobachtungen mit 16 verschiedenen Werten bestätigt).
+* `p13` = **outGain / 2** (Bereich 0…2, aus vier Modultypen unabhängig bestätigt).
+* **Bänder, Kurven und Hüllkurven stecken NICHT in `fxN_pM`** — sie liegen nur im
+  `<FxChain>`-Snapshot in realen Einheiten. `p8…p11` sind in allen 44 Presets 0.
+  → Für die UI und für den Import ist der Snapshot maßgeblich, nicht die Proxy-Parameter.
+* Werte sind auf **4 Nachkommastellen** quantisiert.
+* Sonderfall: beim Modultyp `shaper` liegt `amount` auf `p1` statt auf `p4`; die
+  Attribute `sPost`, `sLine`, `shape` werden gar nicht gebrückt. Beim Import berücksichtigen.
 
 ---
 

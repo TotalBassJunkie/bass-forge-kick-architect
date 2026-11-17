@@ -11,6 +11,16 @@ namespace
     constexpr float kStretchMin = 0.25f;
     constexpr float kStretchMax = 8.0f;
 
+    /**
+     * Exponent der Stretch-Kurve.
+
+     * Aus den Werk-Presets gemessen: 1,0x (also unveraenderte Laenge) wird als
+     * 0.374989420 gespeichert. Eine Logarithmus-Kurve ueber [0.25, 8] wuerde
+     * 0.4 ergeben — das ist messbar falsch. Eine Potenzkurve ueber denselben
+     * Bereich trifft den Wert mit exponent = 0.42 auf 6 Stellen genau.
+     */
+    constexpr float kStretchExponent = 0.42f;
+
     /** Logarithmische Abbildung mit sicherer Untergrenze. */
     float logMap (float normalised, float lo, float hi) noexcept
     {
@@ -26,6 +36,23 @@ namespace
         const auto b = std::log (juce::jmax (hi, lo * 1.0001f));
         const auto v = juce::jlimit (a, b, std::log (juce::jmax (value, 1.0e-6f)));
         return (v - a) / (b - a);
+    }
+
+    /** Potenzkurve: norm 0..1 -> eng lo..hi, mit fester Biegeexponent. */
+    float powerMap (float normalised, float lo, float hi, float exponent) noexcept
+    {
+        const auto n = juce::jlimit (0.0f, 1.0f, normalised);
+        return lo + (hi - lo) * std::pow (n, 1.0f / juce::jmax (0.01f, exponent));
+    }
+
+    float powerUnmap (float value, float lo, float hi, float exponent) noexcept
+    {
+        const auto span = hi - lo;
+        if (std::abs (span) < 1.0e-9f)
+            return 0.0f;
+
+        const auto t = juce::jlimit (0.0f, 1.0f, (value - lo) / span);
+        return std::pow (t, exponent);
     }
 }
 
@@ -45,7 +72,7 @@ float ParamDesc::toEngineering (float normalised) const noexcept
             return logMap (n, engMin, engMax);
 
         case ParamCurve::stretch:
-            return logMap (n, engMin, engMax);
+            return powerMap (n, engMin, engMax, kStretchExponent);
 
         case ParamCurve::boolean:
             return n >= 0.5f ? engMax : engMin;
@@ -65,8 +92,11 @@ float ParamDesc::toNormalised (float engineering) const noexcept
             break;
 
         case ParamCurve::frequency:
-        case ParamCurve::stretch:
             return juce::jlimit (0.0f, 1.0f, logUnmap (engineering, engMin, engMax));
+
+        case ParamCurve::stretch:
+            return juce::jlimit (0.0f, 1.0f,
+                                 powerUnmap (engineering, engMin, engMax, kStretchExponent));
 
         case ParamCurve::boolean:
             return engineering >= (engMin + engMax) * 0.5f ? 1.0f : 0.0f;
@@ -118,7 +148,7 @@ ParameterRegistry::ParameterRegistry()
         const char* unit;
     };
 
-    static const std::array<SlotParamDef, 19> slotDefs {{
+    static const std::array<SlotParamDef, 20> slotDefs {{
         { "vol",       "Volume",      ParamCurve::decibel,   -60.0f,  10.0f,   0.0f, 2, "dB" },
         { "pitch",     "Pitch",       ParamCurve::semitones, -24.0f,  24.0f,   0.0f, 2, "st" },
         { "mute",      "Mute",        ParamCurve::boolean,     0.0f,   1.0f,   0.0f, 0, nullptr },
@@ -138,6 +168,10 @@ ParameterRegistry::ParameterRegistry()
         { "ficurve",   "Fade In Curve",  ParamCurve::percent,  0.0f, 100.0f,  50.0f, 1, "%" },
         { "fishape",   "Fade In Shape",  ParamCurve::linear,  -1.0f,   1.0f,   0.0f, 3, nullptr },
         { "foshape",   "Fade Out Shape", ParamCurve::linear,  -1.0f,   1.0f,   0.0f, 3, nullptr },
+        // Erst in der neuesten Preset-Generation vorhanden; steht dort hinter
+        // foshape. Bedeutung: Startpunkt des Fade-In-Ankers (siehe Handbuch,
+        // "Fade anchors"). Hypothese, in B-11 zu verifizieren.
+        { "fistart",   "Fade In Start",  ParamCurve::percent,   0.0f, 100.0f,   0.0f, 1, "%" },
     }};
 
     for (int slot = 0; slot < numSlots(); ++slot)

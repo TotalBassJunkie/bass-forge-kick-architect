@@ -45,6 +45,10 @@ nichts fehlt. Die FX-Indizes `fx0_p0 … fx7_p13` sind **vollständig** belegt
 
 ### 2.1 Slot-Parameter `lN_*` (N = 0…11, je 528 Werte)
 
+> Spalte „distinct (max)" = **höchste Zahl verschiedener Werte innerhalb eines
+> einzelnen Slot-Index N**. Über alle Slots zusammen können es mehr sein (z. B.
+> `stretch`: 4 verschiedene Werte insgesamt, aber je Slot höchstens 2).
+
 | ID-Schema | min | max | Median | distinct (max) | Werksdefault | Einordnung |
 |---|---|---|---|---|---|---|
 | `lN_vol` | 0.000000 | 0.804556 | 0.699840 | 11 | **0.699840486** | dB-verdächtig `[O]` |
@@ -85,9 +89,12 @@ nichts fehlt. Die FX-Indizes `fx0_p0 … fx7_p13` sind **vollständig** belegt
 | `gspare2` | 0.500000 | 0.500000 | 1 | 0.5 | 100 % |
 | `gspare3` | 0.000000 | 0.500000 | 2 | 0.5 | 97.7 % |
 
-**Wichtige Konsequenz:** 15 von 32 Parameterarten stehen in **allen** 44 Presets auf
-demselben Wert. Für diese ist aus Presets **prinzipiell keine** Kurve ableitbar —
-hier hilft nur Messung am Original.
+**Wichtige Konsequenz:** **20 von 32 Parameterarten** stehen in **allen** 44 Presets
+auf demselben Wert (10 Slot-Arten: `mute`, `solo`, `filter`, `filterq`, `dlytime`,
+`dlymix`, `fishape`, `foshape`, `fistart`, `spare2`; 10 globale: `sat_amount`,
+`reverb_size`, `reverb_damp`, `reverb_mix`, `hollow_amt`, `max_amount`,
+`midi_mode`, `root_note`, `gspare1`, `gspare2`). Für diese ist aus Presets
+**prinzipiell keine** Kurve ableitbar — hier hilft nur Messung am Original.
 
 ---
 

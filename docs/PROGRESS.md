@@ -5,6 +5,35 @@ Laufendes Protokoll. Neueste Einträge oben. Format:
 
 ---
 
+## 2026-11-17 — Welle 2: Parameter-Modell korrigiert, Library integriert
+
+**Erledigt**
+
+* **Preset-Datenauswertung abgeschlossen** (44 Kicks, 76 FX-Chains, 639 Modulinstanzen).
+  Acht Befunde mit Zahlen, drei davon ändern das Datenmodell:
+  * **Parameterzahl 352 → 364.** Es gibt einen bisher unbekannten 20. Slot-Parameter
+    `lN_fistart` (Fade-In-Anker), nachweisbar im neuesten Werkpreset.
+  * **Stretch-Kurve korrigiert.** Logarithmus ist widerlegt: 1,0× wird als
+    `0.374989420` gespeichert, Log ergäbe 0,4. Eine **Potenzkurve mit Exponent 0,42**
+    trifft den Messwert exakt. Test dafür ist drin.
+  * **FX-Parameterbrücke geklärt:** `p12 = MIX`, `p13 = outGain / 2`,
+    `p0…p11` = Modulattribute in XML-Reihenfolge; Bänder/Kurven liegen **nicht** in den
+    Proxy-Parametern, sondern nur im `<FxChain>`-Snapshot. Werte sind 4-stellig quantisiert.
+  * Ebenfalls belegt: `root_note = MIDI-Note / 127`.
+* **Sample-Library-Index integriert** (`src/library/SampleLibrary.*`): Ordner→Rollen
+  inklusive der beiden Sonderfälle (`Main - Crunches/Industrial Heavy` ist eine Rumble,
+  `Enhancers (Tops)` ist TOP), BPM- und Tonart-Erkennung aus Dateinamen.
+  Verifiziert gegen die echte Library: **2.443 Dateien in 1,43 s**, BPM-Verteilung
+  2.246× 150 / 60× 155 / 137× 160, 363 Dateien mit Tonart.
+* **Tests: 38 Testfälle, 3.571 Assertions, alle grün.** Build grün.
+
+**Gates:** lokaler Build grün · Tests grün · CI beim Push ausgelöst.
+
+**Läuft parallel:** Engine-Core (Sample-Voice, Fades, Summe, Auto-Gain) und
+WSOLA-Stretcher; StyleModel/Randomizer.
+
+---
+
 ## 2026-11-17 — Welle 1: FX-Gerüst integriert, Repo live
 
 **Erledigt**

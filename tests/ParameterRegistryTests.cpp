@@ -12,11 +12,12 @@ TEST_CASE ("Registry deckt alle Original-IDs ab", "[registry]")
 
     REQUIRE (registry.numSlots() == 12);
     REQUIRE (registry.numFxSlots() == 8);
-    REQUIRE (registry.size() == 12 * 19 + 12 + 8 * 14);
+    REQUIRE (registry.size() == 12 * 20 + 12 + 8 * 14);
 
     // Stichproben aus dem Referenzformat
     for (const char* id : { "l0_vol", "l0_pitch", "l0_stretch", "l0_ficurve",
-                            "l11_foshape", "master_vol", "root_note",
+                            "l11_foshape", "l0_fistart", "l11_fistart",
+                            "master_vol", "root_note",
                             "fx0_p0", "fx7_p13" })
     {
         INFO ("fehlende ID: " << id);
@@ -73,16 +74,18 @@ TEST_CASE ("Defaults liegen im gueltigen Bereich", "[registry]")
     }
 }
 
-TEST_CASE ("Stretch bildet 1.0x nicht auf 0.5 ab", "[registry]")
+TEST_CASE ("Stretch folgt der gemessenen Potenzkurve", "[registry]")
 {
     const auto& registry = ParameterRegistry::get();
     const auto* stretch = registry.find ("l0_stretch");
     REQUIRE (stretch != nullptr);
 
-    // Arbeitsannahme: logarithmische Abbildung 0.25x .. 8x
-    REQUIRE (stretch->toEngineering (0.0f) == 0.25f);
+    // Bereich aus dem Handbuch: 0.25x .. 8x
+    REQUIRE_THAT (stretch->toEngineering (0.0f), WithinAbs (0.25f, 1.0e-6));
     REQUIRE_THAT (stretch->toEngineering (1.0f), WithinAbs (8.0f, 1.0e-3));
 
-    // 1.0x liegt bei ln(1/0.25) / ln(8/0.25) = ln(4) / ln(32) = 0.4
-    REQUIRE_THAT (stretch->toNormalised (1.0f), WithinAbs (0.4f, 1.0e-4));
+    // Gemessen an den Werk-Presets: 1.0x wird als 0.374989420 gespeichert.
+    // Eine Logarithmus-Kurve wuerde 0.4 liefern und ist damit widerlegt.
+    REQUIRE_THAT (stretch->toNormalised (1.0f), WithinAbs (0.374989f, 5.0e-5));
+    REQUIRE_THAT (stretch->toEngineering (0.374989f), WithinAbs (1.0f, 1.0e-3));
 }

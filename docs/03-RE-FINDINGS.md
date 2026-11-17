@@ -156,7 +156,44 @@ Pol-/Nullstellen-Fit → Topologie bestimmen.
 
 ---
 
-## 5. Offene Punkte (Stand jetzt)
+## 6. Belegte Befunde (Datengestützt widerlegt oder bestätigt)
+
+Diese Runde hat mehrere Arbeitsannahmen aus `04-SPEC` **mit Zahlen** entschieden.
+Quelle jeweils: die 44 Werk-Presets und 76 FX-Chain-Presets (nur lesend, anonymisiert
+ausgewertet; Werkzeug `tools/mine_presets.py`, Details in
+`docs/specs/parameter-normalisation.md` und `docs/specs/fx-param-bridge.md`).
+
+| # | Frage | Ergebnis | Beleg |
+|---|---|---|---|
+| E1 | Ist `root_note` die MIDI-Note / 127? | **Ja.** `0.283464581` = `float32(36/127)`. Konkurrenten (36/128, 36/100) weichen ab. | 44/44 Presets |
+| E2 | Was ist `fx p12`? | **MIX**, exakte Identität (Steigung 1,000000, Achsenabschnitt 3·10⁻¹⁰). | 88 Beobachtungen, 16 Werte |
+| E3 | Was ist `fx p13`? | **outGain / 2** (Bereich 0…2). | 4 Modultypen unabhängig |
+| E4 | Wie sind `fx p0…p11` belegt? | **i-tes Modulattribut in XML-Reihenfolge**, 21 exakte Fits mit glatten Bereichen; Gegenprobe ohne Reihenfolgeannahme bestätigt 19/20. | 639 Modulinstanzen |
+| E5 | Enthalten `fxN_pM` Bänder/Kurven? | **Nein.** Nur der `<FxChain>`-Snapshot trägt sie. `p8…p11` in allen 44 Presets = 0. | 44 Presets |
+| E6 | Quantisierung der `fx`-Werte | **4 Nachkommastellen** (Raster 10⁻⁴, max. Abweichung 4,5·10⁻⁸). | 3.116 Werte |
+| E7 | Gibt es einen 20. Slot-Parameter? | **Ja: `lN_fistart`**, bisher undokumentiert; nur in der neuesten Preset-Generation (`appVersion="4.0.3"`), steht hinter `foshape`. | 1 von 44 Presets |
+| E8 | Ist `stretch` logarithmisch? | **Nein.** Log über 0,25…8 ergäbe 0,4 für 1,0×, gemessen ist `0.374989420`. Eine **Potenzkurve mit Exponent 0,42** trifft exakt (JUCE-Skew ≈ 2,381). | alle Presets |
+| E9 | Liegt `pitch` auf ganzen Halbtönen? | **Nein.** Bei ±12 HT fällt nur 1 von 6 Werten exakt aufs Raster; die Mitte 0,5 ist dagegen belegt (1 float-ULP über 0,5). | 6 Werte |
+| E10 | Ist `master_vol` eine dB-Skala? | **Nicht entscheidbar.** `0.833333313` = `float32(5/6)`; unter „Default = 0 dB" erfüllt jedes ganzzahlige obere Ende die Messung. Braucht Messung am Original. | 44 Presets |
+| E11 | Gilt die Positionsregel überall? | **Nein, eine Ausnahme:** `shaper.amount` liegt auf `p1`, nicht `p4`; `sPost/sLine/shape` sind nicht gebrückt. | Gegenprobe 20/20 |
+
+**Damit geändert:** Parameterzahl 352 → **364** (20 Slot-Parameter), Stretch-Kurve,
+FX-Brücke. Umgesetzt in `src/core/ParameterRegistry.cpp` und `docs/04-SPEC…`.
+
+**Nächste Messungen am Original (Priorität):**
+
+1. STRETCH auf 1,00× stellen, Preset speichern, `l0_stretch` ablesen — ein Wert
+   entscheidet Kurve und Bereich endgültig (erwartet: 0,374989).
+2. VOL auf 0/+3/+10 dB und Master auf 0 dB/Maximum stellen **plus Ausgangspegel messen**
+   (Drag-Master-Export mit Ein-Slot-Kick). Die XML-Ablesung allein kann dB-linear nicht
+   von linearer Amplitude trennen.
+3. EQ-Skalare (LOWFREQ, MIDFREQ, HIGHFREQ, MIDQ) je auf Min und Max — die drei
+   Frequenzen sind bei `p = 0,529 / 0,477 / 0,709` **nicht monoton**, also hat jedes Band
+   einen eigenen Bereich.
+
+---
+
+## 7. Offene Punkte (Stand jetzt)
 
 | ID | Frage | Status |
 |---|---|---|

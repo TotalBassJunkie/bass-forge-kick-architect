@@ -51,13 +51,14 @@ ihre `<Band>`-Kinder). Für ihre Skalare gibt es daher nur **einen** Stützpunkt
 
 ## 2. Quantisierung: die `fx`-Werte haben 4 Nachkommastellen
 
-Alle 14 × 8 Werte aller 44 Presets liegen auf einem Raster von **0.0001**:
+Alle **3 116** belegten `fx`-Werte der 44 Presets liegen auf einem Raster von
+**0.0001**:
 
-| Raster | max. Abweichung in Rasterschritten |
+| Raster | max. Abweichung |
 |---|---|
-| **1 × 10⁻⁴** | **4,5 × 10⁻⁸** (d. h. praktisch exakt) |
-| 1 × 10⁻³ | 4,5 × 10⁻⁵ |
-| 1 × 10⁻⁵ | 4,5 × 10⁻³ |
+| **1 × 10⁻⁴** | **4,5 × 10⁻⁸ absolut** (= 0,00045 Rasterschritte) |
+| 1 × 10⁻³ | 4,5 × 10⁻⁵ absolut |
+| 1 × 10⁻⁵ | 4,5 × 10⁻³ absolut (4500 Rasterschritte) |
 
 Gegenprobe an einem Einzelwert: `drive = 18.83049964904785` → `drive/100 =
 0.188304996…` → geschrieben wird `0.188299999`, also **0.1883**. Die Werte sind
@@ -183,6 +184,14 @@ p     = round(p_raw, 4)             // 4 Nachkommastellen (§2)
 x     = lo + p * (hi - lo)
 ```
 
+**Roundtrip-Gegenprobe.** Rechnet man den gespeicherten `p`-Wert mit diesen
+Umkehrfunktionen zurück in die reale Einheit, weicht das Ergebnis in **allen**
+bestätigten Fällen um höchstens **7 × 10⁻³ Anzeigeeinheiten** vom Originalwert ab
+(`dist` 4/4, `final` 4/4, `trans` 4/4, `reverb` 4/4, `ott` 4/4, `mseq` 1/1
+Attribute verifiziert). Die verbleibende Abweichung ist genau die
+4-Stellen-Quantisierung aus §2, hochgerechnet über die Spanne — nicht ein
+Modellfehler.
+
 ---
 
 ## 5. Unabhängige Gegenprobe
@@ -285,7 +294,7 @@ Q 0.3…2.21 — reale Werte, keine 0…1-Normierung.
 
 ---
 
-## 8. Vollständige Attributlisten je Modultyp (aus 158 + 341 Modulinstanzen)
+## 8. Vollständige Attributlisten je Modultyp (aus 201 + 438 Modulinstanzen)
 
 Attributreihenfolge wie in der XML; „→ p" ist die abgeleitete Bridge-Position.
 Fettdruck = numerisch bestätigt (siehe §4.3 / §5).

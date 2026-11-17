@@ -386,6 +386,12 @@ abgebrochen wurde — Warnungen sind kein Fehler.
 | melodische Crunch-Pools ohne Noten-Token | 3 (`Crunch Rawstyle 33/34/35`) |
 | Impulsantworten (`Impulses/**`) | 75 |
 | Ordner ohne Pool-Zuordnung | **0** |
+| Kalter Scan (Debug-Build, sequenziell) | **1,43 s** für alle 2.443 Dateien |
+| WAV-Header nicht lesbar | **0** |
+
+Der komplette Scan inklusive Öffnen aller 2.443 Dateiköpfe dauert gemessen **1,43 s**
+(Debug-Build, ein Thread, ohne Cache). Das Abnahmekriterium „< 60 s kalt" aus dem
+Masterplan ist damit schon ohne Parallelisierung erfüllt (vgl. O-5).
 
 Rollenverteilung über die 2.443 Dateien (Summe = 2.443):
 
@@ -401,10 +407,27 @@ Rollenverteilung über die 2.443 Dateien (Summe = 2.443):
 | `rumbleEnhancer` | 80 |
 | `none` | 75 (nur `Impulses/**`) |
 
-Die Regeln aus §3 und §4 wurden als 1:1-Portierung über **alle 2.443 Dateinamen**
-gefahren: BPM-Verteilung wie oben, kein einziger unzugeordneter Ordner, keine
-Ausnahmen. Der Testkatalog aus `tests/SampleLibraryFileNameTests.cpp` (52 Zusicherungen)
-läuft in dieser Portierung fehlerfrei durch.
+### 10.1 Verifikation
+
+Der Code wurde mit dem Projekt-Toolchain (MSVC 14.51, `/std:c++20 /W4 /permissive-`)
+gegen die echten JUCE-8.0.7-Header übersetzt — `SampleLibrary.cpp`, der Header als
+eigene Übersetzungseinheit und die Catch2-Tests, alle **ohne Warnung**.
+
+Zusätzlich wurde ein Wegwerf-Prüfprogramm gegen die echte Library gefahren (identische
+Zusicherungen wie der Testkatalog plus Scan-Prüfungen): **64 Prüfungen, 0 Fehler**.
+Gemessene Ergebnisse des Laufs:
+
+```
+Scan: ok=1  Dateien=2443  Warnungen=0  Dauer=1.43 s
+BPM: 150=2246 155=60 160=137 andere=0 | mit Tonart=363 | ohne Header=0
+byPool("Main - Punches/Zaag") = 73
+byRole(click) = 216
+erster Eintrag: Enhancers (Punch Reverbs)/Reverbs (Industrial)/Reverb Industrial 1 150.wav
+                | Rolle=6 (punchEnhancer) | 150.00 BPM | Key=-1 | 0.800 s | 2 ch | 44100 Hz
+```
+
+Damit sind BPM-Verteilung, Rollen-Zuordnung, Sortierung, Header-Auswertung und die
+Warnungsfreiheit gegen den echten Content belegt — nicht nur gegen die Regeln.
 
 Namensmuster, die der Parser abdecken muss:
 
@@ -455,9 +478,9 @@ bereits in beiden Targets hängt — keine zusätzliche `target_link_libraries`-
 | O-2 | Oktavkonvention C4 = 60 vs. 48 | KEY TRACK OCTAVE klingt sonst eine Oktave falsch | Original mit bekanntem Preset vergleichen (P8) |
 | O-3 | Tonart nur aus dem Dateinamen | Dateien ohne Token (3 Stück) und Nutzer-Samples brauchen die Analyse | B-24, Abgleich ≥ 95 % |
 | O-4 | Kein Tempofeld für Impulses/User-Samples | Convolver-IRs haben kein Tempo | BPM dort ignorieren, `role == none` |
-| O-5 | Paralleles Scannen / Fortschritt | 2.443 Köpfe sequenziell; Abnahme „< 60 s kalt" | B-27 (Thread + `shouldAbort` ist schon da) |
+| O-5 | Paralleles Scannen / Fortschritt | gemessen 1,43 s kalt — Budget (< 60 s) ist erfüllt; Fortschritt braucht nur eine UI-Anzeige bei sehr langsamen Datenträgern | optional: B-27 (Thread + `shouldAbort` ist schon da) |
 | O-6 | Cache noch nicht implementiert | Startzeit | B-26, Format in §7 |
 | O-7 | Expansion-/OPS-Library | `BOTH LIBRARIES` im Referenzprodukt | Tabelle um Präfixe erweitern, sobald Content bekannt |
 | O-8 | Melodisch-Flag nur heuristisch gepflegt | Randomizer-Regel „melodisch × atonal" (B-9) | `PoolDefinition::melodic` ist gesetzt; verbindliche Registry kommt mit dem StyleModel |
-| O-9 | Kein Test gegen echte Dateien | Tests prüfen nur Parser + Tabelle | optionaler Integrationstest mit synthetischer Library (B-28) |
+| O-9 | Repo-Tests laufen ohne Dateisystem | CI bleibt unabhängig von der installierten Library | Der Testkatalog prüft Parser + Tabelle; der Lauf gegen die echte Library wurde einmalig manuell verifiziert (§10.1). Optionaler Integrationstest mit synthetischer Library: B-28 |
 | O-10 | Symlinks werden nicht verfolgt | `RangedDirectoryIterator` folgt standardmäßig nicht | bewusst so lassen (Endlosschleifen), bei Bedarf Opt-in |

@@ -20,7 +20,7 @@ enum class ParamCurve
     decibel,      ///< dB-Werte, geradlinig ueber den dB-Bereich
     frequency,    ///< Hz, logarithmisch
     semitones,    ///< Halbtoene, geradlinig
-    stretch,      ///< Streckfaktor 0.25 .. 8, logarithmisch
+    stretch,      ///< Streckfaktor 0.25 .. 8 als Potenzkurve (Exponent 1/kStretchExponent)
     percent,      ///< 0..100 %
     boolean       ///< 0/1, keine Interpolation
 };
@@ -83,7 +83,7 @@ public:
     std::vector<const ParamDesc*> forSlot (int slotIndex) const;
 
     /** Anzahl Parameter je Domain. */
-    int numSlotParams()   const noexcept { return 19; }
+    int numSlotParams()   const noexcept { return 20; }
     int numGlobalParams() const noexcept { return 12; }
     int numFxParams()     const noexcept { return 14; }
     int numSlots()        const noexcept { return 12; }
