@@ -13,6 +13,7 @@ target_sources(BFKA_Tests PRIVATE
     ParameterRegistryTests.cpp
     KickStateTests.cpp
     FxChainTests.cpp
+    SampleLibraryFileNameTests.cpp
     TestMain.cpp
     ../src/core/Version.cpp
     ../src/core/Log.cpp
@@ -20,6 +21,7 @@ target_sources(BFKA_Tests PRIVATE
     ../src/core/KickState.cpp
     ../src/fx/FxFactory.cpp
     ../src/fx/FxChainProcessor.cpp
+    ../src/library/SampleLibrary.cpp
     )
 
 target_include_directories(BFKA_Tests PRIVATE ../src)

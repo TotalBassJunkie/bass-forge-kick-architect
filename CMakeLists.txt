@@ -64,6 +64,7 @@ set(BFKA_FX_SOURCES
     )
 
 set(BFKA_LIBRARY_SOURCES
+    src/library/SampleLibrary.cpp
     )
 
 set(BFKA_UI_SOURCES
@@ -83,6 +84,7 @@ set(BFKA_HEADERS
     src/fx/FxFactory.h
     src/fx/PassThroughModule.h
     src/fx/FxChainProcessor.h
+    src/library/SampleLibrary.h
     src/plugin/PluginProcessor.h
     src/plugin/PluginEditor.h
     )

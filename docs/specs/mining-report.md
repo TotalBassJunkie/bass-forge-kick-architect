@@ -438,7 +438,8 @@ Modulanzahl je Preset: 0 Module: 1×, 2 Module: 2×, 3 Module: 10×, 4 Module: 1
 | `final` | `monoF` | 4 | 12 | 4 | 0.002272633 | -0.136362591 | 60.0020 … 500.0203 | hoch |
 | `mseq` | `outGain` | 13 | 34 | 2 | 0.500138329 | -0.000138329 | 0.0000 … 1.9994 | niedrig (2 Stuetzwert) |
 | `ott` | `depth` | 0 | 5 | 3 | 0.009998811 | 0.000036326 | 0.0000 … 100.0119 | mittel |
-| `ott` | `x1` | 2 | 5 | 2 | 0.002044798 | 0.226024193 | -110.5362 … 378.5096 | niedrig (2 Stuetzwert) |
+| `ott` | `gl` | 4 | 5 | 3 | 0.041667990 | 0.500002214 | -11.9997 … 11.9996 | mittel |
+| `ott` | `gm` | 5 | 5 | 3 | 0.041663777 | 0.500009075 | -12.0011 … 12.0006 | mittel |
 | `ott` | `outGain` | 13 | 5 | 2 | 0.499928254 | 0.000071746 | 0.0000 … 2.0003 | niedrig (2 Stuetzwert) |
 | `reverb` | `wet` | 0 | 29 | 4 | 0.009999951 | 0.000006065 | 0.0000 … 100.0005 | hoch |
 | `reverb` | `stereo` | 1 | 29 | 6 | 0.010000005 | -0.000006472 | 0.0000 … 100.0000 | hoch |
@@ -463,7 +464,8 @@ Modulanzahl je Preset: 0 Module: 1×, 2 Module: 2×, 3 Module: 10×, 4 Module: 1
 | `final` | `monoF` | `x = (p - -0.136362591) / 0.002272633` |
 | `mseq` | `outGain` | `x = (p - -0.000138329) / 0.500138329` |
 | `ott` | `depth` | `x = (p - 0.000036326) / 0.009998811` |
-| `ott` | `x1` | `x = (p - 0.226024193) / 0.002044798` |
+| `ott` | `gl` | `x = (p - 0.500002214) / 0.041667990` |
+| `ott` | `gm` | `x = (p - 0.500009075) / 0.041663777` |
 | `ott` | `outGain` | `x = (p - 0.000071746) / 0.499928254` |
 | `reverb` | `wet` | `x = (p - 0.000006065) / 0.009999951` |
 | `reverb` | `stereo` | `x = (p - -0.000006472) / 0.010000005` |
@@ -671,8 +673,6 @@ Der haeufigste `fx`-Vektor eines Typs, gegenueber den Modulattributen an dieser 
 | `mseq` | `mix` | 12 | 34 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
 | `ott` | `time` | 1 | 5 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
 | `ott` | `x2` | 3 | 5 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
-| `ott` | `gl` | 4 | 5 | 3 | Fit unplausibel (negativer unterer Rand) |
-| `ott` | `gm` | 5 | 5 | 3 | Fit unplausibel (negativer unterer Rand) |
 | `ott` | `gh` | 6 | 5 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
 | `ott` | `linear` | 7 | 5 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
 | `ott` | `mix` | 12 | 5 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
@@ -696,12 +696,39 @@ Der haeufigste `fx`-Vektor eines Typs, gegenueber den Modulattributen an dieser 
 | `eq` | 0 / 0 | 0.00e+00 |
 | `final` | 4 / 4 | 6.38e-03 |
 | `mseq` | 1 / 1 | 2.22e-16 |
-| `ott` | 5 / 5 | 1.98e-03 |
+| `ott` | 4 / 4 | 1.98e-03 |
 | `reverb` | 4 / 4 | 4.67e-03 |
 | `shaper` | 0 / 0 | 0.00e+00 |
 | `trans` | 4 / 4 | 6.77e-03 |
 
-### 7.8 Parameterschema je Modultyp (XML-Reihenfolge)
+### 7.8 Gegenprobe: unabhaengige Suche nach dem richtigen p-Index
+
+Fuer jedes Attribut wird ohne Annahme ueber die Reihenfolge geprueft, welcher `p`-Index es unter `p = x/k` (k ∈ {1, 2, 10, 12, 100}) oder `p = (x+A)/2A` erklaert. Stimmt das Ergebnis mit dem Positionsbefund ueberein, ist die Reihenfolge **doppelt** belegt; weicht es ab, ist sie fuer diesen Typ fraglich.
+
+| Modultyp | Attribut | n | Stuetzwerte | Positionsindex | gefunden | ueberein? |
+|---|---|---|---|---|---|---|
+| `dist` | `agc` | 59 | 1 | 3 | p3: `x/1` | ja |
+| `dist` | `drive` | 59 | 34 | 0 | p0: `x/100` | ja |
+| `dist` | `folds` | 59 | 1 | 2 | p2: `x/10`, p3: `x/2` | ja |
+| `dist` | `mode` | 59 | 4 | 1 | p1: `x/12` | ja |
+| `final` | `boost` | 12 | 7 | 0 | p0: `x/12` | ja |
+| `final` | `clip` | 12 | 4 | 2 | p2: `x/100` | ja |
+| `final` | `clipOn` | 12 | 1 | 7 | p5: `x/1`, p6: `x/1`, p7: `x/1` | ja |
+| `final` | `monoOn` | 12 | 1 | 6 | p5: `x/1`, p6: `x/1`, p7: `x/1` | ja |
+| `final` | `shelfOn` | 12 | 1 | 5 | p5: `x/1`, p6: `x/1`, p7: `x/1` | ja |
+| `final` | `upward` | 12 | 1 | 3 | p3: `x/100` | ja |
+| `ott` | `depth` | 5 | 3 | 0 | p0: `x/100` | ja |
+| `ott` | `gl` | 5 | 3 | 4 | p4: `(x+12)/24` | ja |
+| `ott` | `gm` | 5 | 3 | 5 | p5: `(x+12)/24` | ja |
+| `reverb` | `stereo` | 29 | 6 | 1 | p1: `x/100` | ja |
+| `reverb` | `tone` | 29 | 13 | 2 | p2: `x/100` | ja |
+| `reverb` | `wet` | 29 | 4 | 0 | p0: `x/100` | ja |
+| `shaper` | `amount` | 1 | 1 | 4 | p1: `x/100` | **nein** |
+| `trans` | `amount` | 20 | 1 | 0 | p0: `x/100` | ja |
+| `trans` | `attack` | 20 | 11 | 1 | p1: `x/100` | ja |
+| `trans` | `duck` | 20 | 8 | 2 | p2: `x/100` | ja |
+
+### 7.9 Parameterschema je Modultyp (XML-Reihenfolge)
 
 * `dist`: `p0…p5` = `drive`, `mode`, `folds`, `agc`, `eqmode`, `flip` → `p12` = MIX, `p13` = OUTGAIN
 * `eq`: `p0…p7` = `lowgain`, `lowfreq`, `midgain`, `midfreq`, `midq`, `highgain`, `highfreq`, `middyn` → `p12` = MIX, `p13` = OUTGAIN
@@ -745,18 +772,13 @@ Default: `0.500000060` — Abstand zu 0.5 beträgt **1.0 float32-ULP**.
 
 | Reichweite | Semitöne der beobachteten Werte | max. Abweichung vom 1-HT-Raster |
 |---|---|---|
-| pm1 | -0.044, 0.000, 0.009, 0.021, 0.083, 0.088 | 0.0878 |
-| pm2 | -0.088, 0.000, 0.019, 0.041, 0.167, 0.176 | 0.1756 |
 | pm3 | -0.132, 0.000, 0.028, 0.062, 0.250, 0.263 | 0.2634 |
 | pm6 | -0.265, 0.000, 0.056, 0.123, 0.500, 0.527 | 0.5000 |
 | pm12 | -0.529, 0.000, 0.112, 0.247, 1.000, 1.054 | 0.4710 |
 | pm24 | -1.058, 0.000, 0.224, 0.494, 2.000, 2.107 | 0.4940 |
-| pm5 | -0.220, 0.000, 0.047, 0.103, 0.417, 0.439 | 0.4390 |
-| pm7 | -0.309, 0.000, 0.065, 0.144, 0.583, 0.615 | 0.4167 |
-| pm10 | -0.441, 0.000, 0.093, 0.206, 0.833, 0.878 | 0.4408 |
 | pm36 | -1.587, 0.000, 0.336, 0.741, 3.000, 3.160 | 0.4130 |
 
-Bestes Raster: **pm1**
+**Keine** der geprueften Reichweiten bildet alle beobachteten Werte auf ganze Halbtoene ab (kleinste Restabweichung 0.2634 HT bei `pm3`). Entweder ist die Skala nicht halbtonlinear, oder die Presets enthalten bewusst krumme Pitch-Werte.
 
 ### 8.3 `root_note`
 
@@ -816,6 +838,8 @@ Bruch-Kandidat: 4/39
 | -20 | 4.0000 |
 
 * Lineare Verstaerkung mit 1.0 beim Default ⇒ `gain = v / 0.833333313`, Maximalwert 1.200000 (1.58 dB).
+
+> **Wichtig:** 5/6 ist ein einfacher Bruch. Bei der Annahme "Default = 0 dB" gilt `lo = −5·hi`, d. h. **jedes** ganzzahlige `hi` erfuellt die Messung exakt. Die Tabelle unten belegt daher nur, dass eine dB-Deutung mit 0 dB beim Default *moeglich* ist — sie unterscheidet die Kandidaten **nicht**.
 
 | dB-Bereich | Default in dB | Abstand zur Ganzzahl |
 |---|---|---|

@@ -252,7 +252,7 @@ TEST_CASE ("MIX blendet trocken und nass", "[fx]")
     constexpr float input = 0.25f;
 
     auto state = makeModule ("filt", 1.0f, 1.0f);
-    setAttribute (state, "amount", 50.0);       // nass = halber Eingang
+    setAttribute (state, "amount", 200.0);      // nass = 2x Eingang
 
     FxChain chain;
     chain.modules.push_back (state);
@@ -271,7 +271,7 @@ TEST_CASE ("MIX blendet trocken und nass", "[fx]")
         return buffer.getSample (0, 0);
     };
 
-    const auto wet = input * 0.5f;
+    const auto wet = input * 2.0f;
 
     // mix = 0 -> reines Trockensignal.
     REQUIRE_THAT (render (0.0f), WithinAbs (input, 1.0e-6f));
@@ -346,6 +346,23 @@ TEST_CASE ("Modulattribute aus dem Zustand landen im Modul", "[fx]")
     chainProcessor.process (buffer);
 
     REQUIRE_THAT (buffer.getSample (0, 0), WithinAbs (0.25f, 1.0e-6f));
+}
+
+TEST_CASE ("Modulattribute werden auf den deklarierten Bereich geklemmt", "[fx]")
+{
+    auto state = makeModule ("dist", 1.0f, 1.0f);
+    setAttribute (state, "amount", 500.0);    // ueber dem Maximum (400)
+
+    FxChain chain;
+    chain.modules.push_back (state);
+
+    FxChainProcessor chainProcessor;
+    chainProcessor.prepare (kSampleRate, kBlockSize);
+    chainProcessor.setChain (chain);
+
+    REQUIRE (chainProcessor.modules().size() == 1);
+    REQUIRE (chainProcessor.modules()[0] != nullptr);
+    REQUIRE_THAT (chainProcessor.modules()[0]->getParam (0), WithinAbs (400.0f, 1.0e-4f));
 }
 
 // ---------------------------------------------------------------------------

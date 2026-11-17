@@ -64,6 +64,7 @@ GLOBAL_IDS = [
 ]
 FX_SLOTS = 8
 FX_PARAMS = 14
+FX_SLOTS_PARAMS_MAX = FX_PARAMS
 
 # Attribute, die NICHT in fxN_pM stehen:
 #   type  -> Kettenmetadaten
@@ -545,16 +546,24 @@ def analyse_crosstab(presets):
 # A4: Positionshypothese  (Kern von F2)
 # ==========================================================================
 
-def analyse_positional_crosscheck(crosstab):
+def analyse_positional_crosscheck(crosstab, fx_inv):
     """Gegenprobe zur Positionshypothese.
 
-    Wo die Positionshypothese scheitert, wird geprueft, ob ein *anderer*
-    p-Index das Attribut erklaert. Suchraum: einfache Teilungen
-    `p = x/k` (k = 1, 2, 5, 10, 12, 24, 100, 200, 1000) und die bipolare
-    Form `p = (x + a)/(2a)`. Damit finden wir z. B. faelschlich verschobene
-    Parameterreihenfolgen.
+    Unabhaengig von der angenommenen Reihenfolge wird fuer jedes Attribut
+    geprueft, welcher p-Index es unter einer einfachen Abbildung erklaert
+    (`p = x/k` mit k aus {1,2,10,12,100}, bipolare Form `(x+A)/(2A)`).
+    Danach wird das Ergebnis mit dem Positionsbefund verglichen:
+      * uebereinstimmend -> Reihenfolge unabhaengig bestaetigt
+      * abweichend       -> Reihenfolge fuer diesen Typ in Frage gestellt
     """
-    samples = defaultdict(list)   # (type, attr) -> [(p_vec)]
+    expected = {}
+    for t, rec in fx_inv.items():
+        for i, a in enumerate(rec["params_order_common"]):
+            expected[(t, a)] = i
+        expected[(t, "mix")] = INDEX_OF_MIX
+        expected[(t, "outGain")] = INDEX_OF_OUTGAIN
+
+    samples = defaultdict(list)
     for r in crosstab["rows"]:
         for s in r["slots"]:
             t, attrs, p = s["module_type"], s["module_attrs"], s["p"]
@@ -565,44 +574,50 @@ def analyse_positional_crosscheck(crosstab):
                     continue
                 samples[(t, attr)].append((v, p))
 
-    divisors = [1.0, 2.0, 5.0, 10.0, 12.0, 24.0, 100.0, 200.0, 1000.0]
+    divisors = [1.0, 2.0, 10.0, 12.0, 100.0]
     out = {}
     for (t, attr), rows in sorted(samples.items()):
         n = len(rows)
         if n == 0:
             continue
+        xs = [r[0] for r in rows]
+        # konstant 0 -> jede Teilung ergibt 0, also keine Information
+        if all(abs(x) < 1e-12 for x in xs):
+            continue
         cands = []
-        for m in range(FX_PARAMS):
+        # p12/p13 sind als mix/outGain belegt -> hier ausnehmen, sonst
+        # entstehen Zufallstreffer (z. B. sLine=1 ~ p12=1).
+        for m in range(FX_SLOTS_PARAMS_MAX):
+            if m in (INDEX_OF_MIX, INDEX_OF_OUTGAIN):
+                continue
             pv = [r[1][m] for r in rows]
             if any(v is None for v in pv):
                 continue
-            xs = [r[0] for r in rows]
-            # (a) Teilung p = x/k
             for k in divisors:
                 if all(abs(pv[i] - xs[i] / k) <= TOL for i in range(n)):
                     cands.append({"p": m, "model": "x/%g" % k})
-            # (b) bipolar p = (x + A)/(2A)
-            for A in (3.0, 6.0, 12.0, 24.0, 18.0, 50.0):
-                if all(abs(pv[i] - (xs[i] + A) / (2 * A)) <= TOL for i in range(n)):
-                    cands.append({"p": m, "model": "(x+%g)/%g" % (A, 2 * A)})
-            # (c) Affin mit glatten Grenzen
-            for lo in (-24, -12, 0, 16, 20, 60):
-                for span in (12, 24, 48, 100, 180, 184, 440, 489):
-                    if all(abs(pv[i] - (xs[i] - lo) / span) <= TOL for i in range(n)):
-                        cands.append({"p": m, "model": "(x%+g)/%g" % (-lo, span)})
-        # Duplikate entfernen
+            if len(set(round(x, 12) for x in xs)) >= 2:
+                for A in (3.0, 6.0, 12.0, 24.0):
+                    if all(abs(pv[i] - (xs[i] + A) / (2 * A)) <= TOL for i in range(n)):
+                        cands.append({"p": m, "model": "(x+%g)/%g" % (A, 2 * A)})
         uniq, seen = [], set()
         for c in cands:
             key = (c["p"], c["model"])
             if key not in seen:
                 seen.add(key)
                 uniq.append(c)
+        if not uniq:
+            continue
+        exp = expected.get((t, attr))
         out["%s:%s" % (t, attr)] = {
             "type": t, "attr": attr, "n": n,
-            "real_distinct": len(set(round(r[0], 12) for r in rows)),
-            "candidates": uniq[:8],
+            "real_distinct": len(set(round(x, 12) for x in xs)),
+            "positional_index": exp,
+            "candidates": uniq[:6],
+            "agrees": bool(exp is not None and any(c["p"] == exp for c in uniq)),
         }
     return out
+
 
 
 def analyse_fx_defaults(crosstab, fx_inv):
@@ -866,7 +881,7 @@ GRID_STEPS_DB = [0.1, 0.25, 0.5, 1.0, 2.0]
 STRETCH_RANGES = [(0.25, 8.0), (0.25, 4.0), (0.5, 2.0), (0.125, 8.0),
                   (0.25, 10.0), (0.25, 16.0), (0.5, 8.0), (0.25, 6.0)]
 
-PITCH_RANGES = [1.0, 2.0, 3.0, 6.0, 12.0, 24.0, 5.0, 7.0, 10.0, 36.0]
+PITCH_RANGES = [3.0, 6.0, 12.0, 24.0, 36.0]
 
 
 def scale_candidates(param_stats, key_params):
@@ -988,8 +1003,11 @@ def stretch_pitch_analysis(param_stats):
                 "max_dev_from_integer_HT": round(err, 4),
             }
         # beste Reichweite = kleinster Rasterfehler
-        best = min(entry["range_tests"].items(), key=lambda kv: kv[1]["max_dev_from_integer_HT"])
+        best = min(entry["range_tests"].items(),
+                   key=lambda kv: kv[1]["max_dev_from_integer_HT"])
         entry["best_integer_semitone_range"] = best[0]
+        entry["any_range_on_semitone_grid"] = (
+            best[1]["max_dev_from_integer_HT"] < 0.02)
         out["pitch"] = entry
 
     # ---- root_note
@@ -1405,7 +1423,24 @@ def write_markdown(rep):
         A("| `%s` | %d / %d | %s |" % (t, r["attrs_verified"], r["attrs_tested"],
                                        "%.2e" % r["max_reconstruction_error"]))
     A("")
-    A("### 7.8 Parameterschema je Modultyp (XML-Reihenfolge)")
+    A("### 7.8 Gegenprobe: unabhaengige Suche nach dem richtigen p-Index")
+    A("")
+    A("Fuer jedes Attribut wird ohne Annahme ueber die Reihenfolge geprueft, welcher "
+      "`p`-Index es unter `p = x/k` (k ∈ {1, 2, 10, 12, 100}) oder `p = (x+A)/2A` "
+      "erklaert. Stimmt das Ergebnis mit dem Positionsbefund ueberein, ist die "
+      "Reihenfolge **doppelt** belegt; weicht es ab, ist sie fuer diesen Typ fraglich.")
+    A("")
+    A("| Modultyp | Attribut | n | Stuetzwerte | Positionsindex | gefunden | ueberein? |")
+    A("|---|---|---|---|---|---|---|")
+    for k, cc in sorted(rep["crosscheck"].items()):
+        cands = ", ".join("p%d: `%s`" % (c["p"], c["model"])
+                          for c in cc["candidates"][:3])
+        A("| `%s` | `%s` | %d | %d | %s | %s | %s |" % (
+            cc["type"], cc["attr"], cc["n"], cc["real_distinct"],
+            cc["positional_index"] if cc["positional_index"] is not None else "–",
+            cands, "ja" if cc["agrees"] else "**nein**"))
+    A("")
+    A("### 7.9 Parameterschema je Modultyp (XML-Reihenfolge)")
     A("")
     for t, rec in sorted(rep["fx_attr_inventory"].items()):
         A("* `%s`: `p0…p%d` = %s → `p12` = MIX, `p13` = OUTGAIN" % (
@@ -1449,7 +1484,17 @@ def write_markdown(rep):
             A("| %s | %s | %s |" % (r, ", ".join(fmt(s, 3) for s in v["semitones"]),
                                     fmt(v["max_dev_from_integer_HT"], 4)))
         A("")
-        A("Bestes Raster: **%s**" % pt.get("best_integer_semitone_range"))
+        if pt.get("any_range_on_semitone_grid"):
+            A("Beste Reichweite: **%s** — die beobachteten Werte liegen alle auf "
+              "einem Halbton-Raster." % pt.get("best_integer_semitone_range"))
+        else:
+            A("**Keine** der geprueften Reichweiten bildet alle beobachteten Werte "
+              "auf ganze Halbtoene ab (kleinste Restabweichung %s HT bei `%s`). "
+              "Entweder ist die Skala nicht halbtonlinear, oder die Presets "
+              "enthalten bewusst krumme Pitch-Werte." % (
+                  fmt(pt["range_tests"][pt["best_integer_semitone_range"]]
+                      ["max_dev_from_integer_HT"], 4),
+                  pt.get("best_integer_semitone_range")))
         A("")
     A("### 8.3 `root_note`")
     A("")
@@ -1529,6 +1574,11 @@ def write_markdown(rep):
         A("* Lineare Verstaerkung mit 1.0 beim Default ⇒ `%s`, Maximalwert %s "
           "(%.2f dB)." % (lg["form"], fmt(lg["gain_at_p1"], 6), lg["db_at_p1"]))
         A("")
+        A("> **Wichtig:** 5/6 ist ein einfacher Bruch. Bei der Annahme \"Default = 0 dB\" "
+          "gilt `lo = −5·hi`, d. h. **jedes** ganzzahlige `hi` erfuellt die Messung "
+          "exakt. Die Tabelle unten belegt daher nur, dass eine dB-Deutung mit 0 dB "
+          "beim Default *moeglich* ist — sie unterscheidet die Kandidaten **nicht**.")
+        A("")
         A("| dB-Bereich | Default in dB | Abstand zur Ganzzahl |")
         A("|---|---|---|")
         for c in mv["interpretations"]["db_smooth_default"]:
@@ -1604,6 +1654,7 @@ def main(argv=None):
     positional = analyse_positional(crosstab)
     fx_quant = analyse_fx_quantisation(crosstab)
     fx_defaults = analyse_fx_defaults(crosstab, fx_inv)
+    crosscheck = analyse_positional_crosscheck(crosstab, fx_inv)
     slots = analyse_slots(presets)
 
     key_params = ["l0_vol", "l0_pitch", "l0_stretch", "master_vol", "root_note",
@@ -1641,6 +1692,7 @@ def main(argv=None):
         "positional": positional,
         "fx_quantisation": fx_quant,
         "fx_defaults": fx_defaults,
+        "crosscheck": crosscheck,
         "curve_analysis": curve,
     }
 
