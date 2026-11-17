@@ -5,6 +5,39 @@ Laufendes Protokoll. Neueste Einträge oben. Format:
 
 ---
 
+## 2026-11-17 — Welle 5: Der erste hörbare Kick
+
+**Erledigt**
+
+* **Engine und FX-Kette sind im Plugin verdrahtet.** `PluginProcessor::processBlock`
+  rendert jetzt: Kick-Summe → FX-Kette → Master. Jede MIDI-Note-On startet den Kick neu.
+* **`src/engine/KickAssembler.*`**: übersetzt die normalisierten Slot-Parameter in
+  `VoiceSettings` (dB→linear, Prozent→Sekunden, `ficurve`→Kurvenform), löst Sample-Pfade
+  relativ zur Library auf und hält die Audiodaten am Leben. Zusätzlich baut
+  `buildDemoKick()` einen Test-Kick aus Punch, Rumble und Click der Library.
+* **Editor**: Buttons „Demo-Kick laden" und „Play" plus Statuszeile — damit ist der
+  erste Kick im Standalone hörbar.
+* **Filters-Modul selbst geschrieben** (`src/fx/modules/FiltersModule.*`): LP/HP mit
+  echter Butterworth-Kaskade (1–5 Pole = 6/12/18/24/30 dB/Oktave), BAND 12/24,
+  NOTCH (Kerbe > 100 dB), PHASER mit 1–6 gestaffelten Allpass-Kerben, COMB,
+  DRIVE-Sättigung vor dem Filter. Messwerte: LP 12 dB/Okt dämpft eine Oktave über
+  CUTOFF um 12 dB, 24 dB/Okt um 24 dB; Durchlass −0,001 dB.
+* **Build-Verzeichnis aus Dropbox verlegt** (`C:\bfka-build`). Ursache der sporadischen
+  `LNK1104`/`LNK1201`-Fehler war der Dropbox-Sync, der Dateien mitten im Linken sperrte.
+  `tools/dev-env.ps1` setzt `BFKA_BUILD_ROOT` automatisch.
+* **Tests: 180 Testfälle, 480.817 Assertions, alle grün.** Neu: 11 Filter-Tests und
+  4 Integrations-Tests, die einen Kick durch die Engine rendern und prüfen, dass Ton
+  herauskommt (Spitzenwert ≈ 0,82) und nach dem Beat Stille folgt.
+
+**Gates:** Build grün (VST3 + Standalone) · Suite grün · Artefakte vorhanden.
+
+**Nächste Schritte**
+
+1. Die übrigen fünf Module: Convolver, Finalizer, Multiband, Mid/Side-EQ, Kick Shaper.
+2. Danach KICK-UI (P8) mit Visualiser und Slot-Karten.
+
+---
+
 ## 2026-11-17 — Welle 4: erste echte FX-Module im Build
 
 **Erledigt**

@@ -79,8 +79,14 @@ Version fest auf `8.0.7` gepinnt.
 .\tools\test.ps1
 ```
 
-Artefakte landen in `build\<Config>\`:
-`BassForgeKickArchitect_artefacts\<Config>\VST3\` und `...\Standalone\`.
+Das Build-Verzeichnis liegt standardmäßig **außerhalb** des Projektordners
+(`C:\bfka-build\<Config>`) — liegen Projekt und Build in einem synchronisierten Ordner
+(Dropbox/OneDrive), sperrt der Sync regelmäßig Dateien mitten im Linken und erzeugt
+`LNK1104`/`LNK1201`. Über die Umgebungsvariable `BFKA_BUILD_ROOT` lässt sich der Pfad
+ändern.
+
+Artefakte landen in `<BuildRoot>\<Config>\BassForgeKickArchitect_artefacts\<Config>\`:
+`VST3\` und `Standalone\`.
 
 ### Manuell
 
