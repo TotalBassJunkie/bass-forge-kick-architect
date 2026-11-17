@@ -12,11 +12,14 @@ target_sources(BFKA_Tests PRIVATE
     SmokeTest.cpp
     ParameterRegistryTests.cpp
     KickStateTests.cpp
+    FxChainTests.cpp
     TestMain.cpp
     ../src/core/Version.cpp
     ../src/core/Log.cpp
     ../src/core/ParameterRegistry.cpp
     ../src/core/KickState.cpp
+    ../src/fx/FxFactory.cpp
+    ../src/fx/FxChainProcessor.cpp
     )
 
 target_include_directories(BFKA_Tests PRIVATE ../src)

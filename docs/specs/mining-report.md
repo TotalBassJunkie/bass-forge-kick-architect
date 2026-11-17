@@ -1,276 +1,327 @@
 # Mining-Report: Referenz-Presets (Rohauswertung)
 
-**Erzeugt von:** `tools/mine_presets.py` (Stand 2026-11-17)
-**Datenbasis (nur lesend erfasst):**
+Automatisch erzeugt von [`tools/mine_presets.py`](../../tools/mine_presets.py). Stand: 2026-11-17.
 
-| Quelle | Anzahl |
+| Datenquelle (nur lesend) | Anzahl |
 |---|---|
 | Kick-Presets `.itkbpreset` | 44 |
 | FX-Chain-Presets `.xml` | 76 |
 | Presets mit eingebettetem FX-Snapshot | 43 |
 
-Alle Werte sind aus den Klartext-XML-Dateien abgeleitet. Es werden **keine** Presetnamen, Sample-Pfade oder Handbuchtexte wiedergegeben.
+> Alle Werte sind aus den Klartext-XML-Dateien abgeleitet. Es werden **keine** Presetnamen, Sample-Pfade oder Handbuchtexte wiedergegeben; die Presets sind als `preset_01…preset_44` anonymisiert. Rohdaten: `_private/mining/report.json`.
 
 ---
 
-## 1. Kennzahlen der Kick-Presets
+## 1. Slot-Belegung
 
-| Kennzahl | Wert |
+| Rollenname | Vorkommen |
 |---|---|
-| Parameter-IDs insgesamt | 364 |
-| davon `lN_*` (Slot) | 240 |
-| davon global | 12 |
-| davon `fxN_pM` | 112 |
-| Presets | 44 |
+| `PUNCH` | 44 |
+| `CLICK` | 33 |
+| `RUMBLE` | 26 |
+| `TOP` | 18 |
+| `CRUNCH` | 18 |
+| `CLICK 2` | 6 |
+| `SCHRANZ ENHANCER` | 6 |
+| `SCHRANZ ENHANCER 2` | 6 |
+| `PUNCH ENHANCER` | 4 |
 
-Slot-Belegung: siehe JSON (`slots_per_preset`). Kettenformen: Abschnitt 4.
+| Slot-Index | Vorkommen |
+|---|---|
+| 0 | 44 |
+| 1 | 10 |
+| 3 | 33 |
+| 4 | 44 |
+| 6 | 6 |
+| 7 | 6 |
+| 8 | 18 |
 
-### 1.1 Rollup: Slots ueber alle N
+Haeufigste Rollenkombinationen:
 
-Fuer jede Slot-Parameterart der beobachtete Wertebereich ueber alle 12 Slots und alle 44 Presets:
+* `CLICK,PUNCH,RUMBLE,TOP` — 9 Presets
+* `CLICK,CRUNCH,PUNCH` — 9 Presets
+* `PUNCH,RUMBLE` — 7 Presets
+* `CLICK,PUNCH,RUMBLE,SCHRANZ ENHANCER,SCHRANZ ENHANCER 2,TOP` — 6 Presets
+* `CLICK,CLICK 2,CRUNCH,PUNCH` — 4 Presets
+* `CLICK,CRUNCH,PUNCH,TOP` — 2 Presets
+* `CRUNCH,PUNCH,PUNCH ENHANCER` — 2 Presets
+* `CLICK,CLICK 2,PUNCH,RUMBLE` — 2 Presets
+* `PUNCH,PUNCH ENHANCER,RUMBLE` — 1 Presets
+* `CLICK,PUNCH,PUNCH ENHANCER,RUMBLE,TOP` — 1 Presets
 
-| Parameterart | n | min | max | Median-Bereich |
-|---|---|---|---|---|
-| `dlymix` | 528 | 0.000000 | 0.000000 | 0.000000 … 0.000000 |
-| `dlytime` | 528 | 0.300000 | 0.300000 | 0.300000 … 0.300000 |
-| `fadein` | 528 | 0.000000 | 1.000000 | 0.000000 … 0.000000 |
-| `fadeout` | 528 | 0.000000 | 0.158200 | 0.000000 … 0.000000 |
-| `ficurve` | 528 | 0.000000 | 0.500000 | 0.500000 … 0.500000 |
-| `filter` | 528 | 1.000000 | 1.000000 | 1.000000 … 1.000000 |
-| `filterq` | 528 | 0.102564 | 0.102564 | 0.102564 … 0.102564 |
-| `fishape` | 528 | 0.000000 | 0.000000 | 0.000000 … 0.000000 |
-| `foshape` | 528 | 0.000000 | 0.000000 | 0.000000 … 0.000000 |
-| `mute` | 528 | 0.000000 | 0.000000 | 0.000000 … 0.000000 |
-| `pitch` | 528 | 0.477958 | 1.000000 | 0.500000 … 0.500000 |
-| `pos` | 528 | 0.407500 | 0.544000 | 0.500000 … 0.500000 |
-| `solo` | 528 | 0.000000 | 0.000000 | 0.000000 … 0.000000 |
-| `spare1` | 528 | 0.000000 | 0.710000 | 0.500000 … 0.500000 |
-| `spare2` | 528 | 0.500000 | 0.500000 | 0.500000 … 0.500000 |
-| `stretch` | 528 | 0.176683 | 0.408213 | 0.374989 … 0.374989 |
-| `trimend` | 528 | 0.196200 | 1.000000 | 1.000000 … 1.000000 |
-| `trimstart` | 528 | 0.000000 | 0.001500 | 0.000000 … 0.000000 |
-| `vol` | 528 | 0.000000 | 0.804556 | 0.667929 … 0.699840 |
+## 2. Slot-Parameter `lN_*`
 
-### 1.2 Globale Parameter
+Rollup ueber alle 12 Slots (Wertebereich und Werksdefault):
 
-| ID | n | min | max | median | distinct | haeufigste Werte |
+| Parameterart | IDs | n | min | max | Default(s) | distinct (max) |
 |---|---|---|---|---|---|---|
-| `sat_amount` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | 0.000000 (44×) |
-| `reverb_size` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | 0.500000 (44×) |
-| `reverb_damp` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | 0.500000 (44×) |
-| `reverb_mix` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | 0.000000 (44×) |
-| `hollow_amt` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | 0.000000 (44×) |
-| `max_amount` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | 0.000000 (44×) |
-| `master_vol` | 44 | 0.833333 | 1.000000 | 0.833333 | 2 | 0.833333 (43×), 1.000000 (1×) |
-| `midi_mode` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | 0.000000 (44×) |
-| `root_note` | 44 | 0.283465 | 0.283465 | 0.283465 | 1 | 0.283465 (44×) |
-| `gspare1` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | 0.000000 (44×) |
-| `gspare2` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | 0.500000 (44×) |
-| `gspare3` | 44 | 0.000000 | 0.500000 | 0.500000 | 2 | 0.500000 (43×), 0.000000 (1×) |
+| `lN_dlymix` | 12 | 528 | 0.000000 | 0.000000 | 0.000000000 | 1 |
+| `lN_dlytime` | 12 | 528 | 0.300000 | 0.300000 | 0.300000012 | 1 |
+| `lN_fadein` | 12 | 528 | 0.000000 | 1.000000 | 0.000000000 | 5 |
+| `lN_fadeout` | 12 | 528 | 0.000000 | 0.158200 | 0.000000000 | 7 |
+| `lN_ficurve` | 12 | 528 | 0.000000 | 0.500000 | 0.500000000 | 3 |
+| `lN_filter` | 12 | 528 | 1.000000 | 1.000000 | 1.000000000 | 1 |
+| `lN_filterq` | 12 | 528 | 0.102564 | 0.102564 | 0.102564096 | 1 |
+| `lN_fishape` | 12 | 528 | 0.000000 | 0.000000 | 0.000000000 | 1 |
+| `lN_fistart` | 12 | 12 | 0.000000 | 0.000000 | 0.000000000 | 1 |
+| `lN_foshape` | 12 | 528 | 0.000000 | 0.000000 | 0.000000000 | 1 |
+| `lN_mute` | 12 | 528 | 0.000000 | 0.000000 | 0.000000000 | 1 |
+| `lN_pitch` | 12 | 528 | 0.477958 | 1.000000 | 0.500000060 | 6 |
+| `lN_pos` | 12 | 528 | 0.407500 | 0.544000 | 0.500000000 | 11 |
+| `lN_solo` | 12 | 528 | 0.000000 | 0.000000 | 0.000000000 | 1 |
+| `lN_spare1` | 12 | 528 | 0.000000 | 0.710000 | 0.500000000 | 4 |
+| `lN_spare2` | 12 | 528 | 0.500000 | 0.500000 | 0.500000000 | 1 |
+| `lN_stretch` | 12 | 528 | 0.176683 | 0.408213 | 0.374989420 | 2 |
+| `lN_trimend` | 12 | 528 | 0.196200 | 1.000000 | 1.000000000 | 5 |
+| `lN_trimstart` | 12 | 528 | 0.000000 | 0.001500 | 0.000000000 | 2 |
+| `lN_vol` | 12 | 528 | 0.000000 | 0.804556 | 0.699840486 | 11 |
 
-## 2. FX-Parameter `fxN_pM` (normalisiert)
+## 3. Globale Parameter
 
-### 2.1 Rollup ueber alle Slots
+| ID | n | min | max | Default | Anteil Default | distinct | Bruch-Kandidat |
+|---|---|---|---|---|---|---|---|
+| `sat_amount` | 44 | 0.000000 | 0.000000 | 0.000000000 | 100.0 % | 1 | – |
+| `reverb_size` | 44 | 0.500000 | 0.500000 | 0.500000000 | 100.0 % | 1 | 1/2 |
+| `reverb_damp` | 44 | 0.500000 | 0.500000 | 0.500000000 | 100.0 % | 1 | 1/2 |
+| `reverb_mix` | 44 | 0.000000 | 0.000000 | 0.000000000 | 100.0 % | 1 | – |
+| `hollow_amt` | 44 | 0.000000 | 0.000000 | 0.000000000 | 100.0 % | 1 | – |
+| `max_amount` | 44 | 0.000000 | 0.000000 | 0.000000000 | 100.0 % | 1 | – |
+| `master_vol` | 44 | 0.833333 | 1.000000 | 0.833333313 | 97.7 % | 2 | 5/6 |
+| `midi_mode` | 44 | 0.000000 | 0.000000 | 0.000000000 | 100.0 % | 1 | – |
+| `root_note` | 44 | 0.283465 | 0.283465 | 0.283464581 | 100.0 % | 1 | 36/127 |
+| `gspare1` | 44 | 0.000000 | 0.000000 | 0.000000000 | 100.0 % | 1 | – |
+| `gspare2` | 44 | 0.500000 | 0.500000 | 0.500000000 | 100.0 % | 1 | 1/2 |
+| `gspare3` | 44 | 0.000000 | 0.500000 | 0.500000000 | 97.7 % | 2 | 1/2 |
 
-| Index | n | min | max | Median-Bereich |
-|---|---|---|---|---|
-| `pp0` | 352 | 0.000000 | 1.000000 | 0.000000 … 0.500000 |
-| `pp1` | 352 | 0.000000 | 1.000000 | 0.000000 … 0.529000 |
-| `pp2` | 352 | 0.000000 | 0.887100 | 0.000000 … 0.500000 |
-| `pp3` | 352 | 0.000000 | 1.000000 | 0.000000 … 0.500000 |
-| `pp4` | 352 | 0.000000 | 0.817300 | 0.000000 … 0.162200 |
-| `pp5` | 352 | 0.000000 | 1.000000 | 0.000000 … 0.500000 |
-| `pp6` | 352 | 0.000000 | 1.000000 | 0.000000 … 0.709400 |
-| `pp7` | 352 | 0.000000 | 1.000000 | 0.000000 … 0.500000 |
-| `pp8` | 352 | 0.000000 | 0.000000 | 0.000000 … 0.000000 |
-| `pp9` | 352 | 0.000000 | 0.000000 | 0.000000 … 0.000000 |
-| `pp10` | 352 | 0.000000 | 0.000000 | 0.000000 … 0.000000 |
-| `pp11` | 352 | 0.000000 | 0.000000 | 0.000000 … 0.000000 |
-| `pp12` | 352 | 0.257000 | 1.000000 | 1.000000 … 1.000000 |
-| `pp13` | 352 | 0.196000 | 0.654300 | 0.500000 … 0.500000 |
+## 4. FX-Parameter `fxN_pM`
 
-### 2.2 Wert pro Slot-Index (Mittel ueber p0..p10)
+| Index | IDs | n | min | max | Default(s) | distinct (max) |
+|---|---|---|---|---|---|---|
+| `pp0` | 8 | 352 | 0.000000 | 1.000000 | 0.000000, 0.500000, 1.000000 | 16 |
+| `pp1` | 8 | 352 | 0.000000 | 1.000000 | 0.000000, 0.083300, 0.500000 | 12 |
+| `pp2` | 8 | 352 | 0.000000 | 0.887100 | 0.000000, 0.200000, 0.500000 | 12 |
+| `pp3` | 8 | 352 | 0.000000 | 1.000000 | 0.000000, 0.477100, 0.500000 | 9 |
+| `pp4` | 8 | 352 | 0.000000 | 0.817300 | 0.000000, 0.162200 | 4 |
+| `pp5` | 8 | 352 | 0.000000 | 1.000000 | 0.000000, 0.500000 | 4 |
+| `pp6` | 8 | 352 | 0.000000 | 1.000000 | 0.000000, 0.709400 | 4 |
+| `pp7` | 8 | 352 | 0.000000 | 1.000000 | 0.000000, 0.500000 | 3 |
+| `pp8` | 8 | 352 | 0.000000 | 0.000000 | 0.000000 | 1 |
+| `pp9` | 8 | 352 | 0.000000 | 0.000000 | 0.000000 | 1 |
+| `pp10` | 8 | 352 | 0.000000 | 0.000000 | 0.000000 | 1 |
+| `pp11` | 8 | 352 | 0.000000 | 0.000000 | 0.000000 | 1 |
+| `pp12` | 8 | 352 | 0.257000 | 1.000000 | 1.000000 | 8 |
+| `pp13` | 8 | 352 | 0.196000 | 0.654300 | 0.500000 | 3 |
 
-Aktive FX-Slots: siehe Abschnitt 4. Leere Slots sind an einem Muster aus `p12=1.0`, `p13=0.5` und sonst 0 erkennbar.
+### 4.1 Muster leerer FX-Slots
 
-## 3. Modulattribute je `type=` (aus 76 Chains + 44 Snapshots)
+Leere Slots (kein Modul an dieser Kettenposition) tragen ein festes Muster:
+
+* `p = [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 1.000, 0.500]` — 151×
+
+## 5. Modulattribute je `type=`
+
+Datenbasis: 76 Ketten-Presets + 43 Preset-Snapshots.
 
 ### `dist` — 185 Vorkommen
 
-Attributreihenfolge (kanonisch, stabilste Position zuerst):
+Parameterschema (Attributreihenfolge, ohne `type`/`on`/`mix`/`outGain`/`ir`):
 
-| # | Attribut | Position | Positionsstabilitaet | n | min | max | distinct |
-|---|---|---|---|---|---|---|---|
-| 0 | `on` | 0 | 1.00 | 185 | 1.000000 | 1.000000 | 1 |
-| 1 | `mix` | 1 | 1.00 | 185 | 0.386000 | 1.000000 | 7 |
-| 2 | `outGain` | 2 | 1.00 | 185 | 0.392002 | 2.000000 | 6 |
-| 3 | `drive` | 3 | 1.00 | 185 | 0.000000 | 100.000000 | 55 |
-| 4 | `mode` | 4 | 1.00 | 185 | 1.000000 | 12.000000 | 4 |
-| 5 | `folds` | 5 | 1.00 | 185 | 2.000000 | 2.400300 | 2 |
-| 6 | `agc` | 6 | 1.00 | 185 | 1.000000 | 1.000000 | 1 |
-| 7 | `eqmode` | 7 | 1.00 | 185 | 0.000000 | 0.000000 | 1 |
-| 8 | `flip` | 8 | 1.00 | 185 | 0.000000 | 0.000000 | 1 |
+`drive, mode, folds, agc, eqmode, flip`
+
+XML-Reihenfolge == Parameterschema: **nein** (1 Varianten beobachtet)
+
+| # | Attribut | n | min | max | distinct | konstant? |
+|---|---|---|---|---|---|---|
+| 0 | `drive` | 185 | 0.0000 | 100.0000 | 55 | nein |
+| 1 | `mode` | 185 | 1.0000 | 12.0000 | 4 | nein |
+| 2 | `folds` | 185 | 2.0000 | 2.4003 | 2 | nein |
+| 3 | `agc` | 185 | 1.0000 | 1.0000 | 1 | ja |
+| 4 | `eqmode` | 185 | 0.0000 | 0.0000 | 1 | ja |
+| 5 | `flip` | 185 | 0.0000 | 0.0000 | 1 | ja |
+| – | `mix` (Meta) | 185 | 0.3860 | 1.0000 | 7 | nein |
+| – | `outGain` (Meta) | 185 | 0.3920 | 2.0000 | 6 | nein |
 
 Kind-Elemente: `<WNode>` (98×)
 
 | Kind-Attribut | n | min | max | distinct |
 |---|---|---|---|---|
-| `WNode.seg` | 47 | 1.000000 | 1.000000 | 1 |
-| `WNode.ten` | 98 | -0.847286 | 0.950000 | 15 |
-| `WNode.x` | 98 | -1.000000 | 1.000000 | 10 |
-| `WNode.y` | 98 | -1.000000 | 1.000000 | 9 |
+| `WNode.seg` | 47 | 1.0000 | 1.0000 | 1 |
+| `WNode.ten` | 98 | -0.8473 | 0.9500 | 15 |
+| `WNode.x` | 98 | -1.0000 | 1.0000 | 10 |
+| `WNode.y` | 98 | -1.0000 | 1.0000 | 9 |
 
 ### `eq` — 138 Vorkommen
 
-Attributreihenfolge (kanonisch, stabilste Position zuerst):
+Parameterschema (Attributreihenfolge, ohne `type`/`on`/`mix`/`outGain`/`ir`):
 
-| # | Attribut | Position | Positionsstabilitaet | n | min | max | distinct |
-|---|---|---|---|---|---|---|---|
-| 0 | `on` | 0 | 1.00 | 138 | 1.000000 | 1.000000 | 1 |
-| 1 | `mix` | 1 | 1.00 | 138 | 1.000000 | 1.000000 | 1 |
-| 2 | `outGain` | 2 | 1.00 | 138 | 0.726430 | 1.216395 | 4 |
-| 3 | `lowgain` | 3 | 1.00 | 138 | 0.000000 | 0.000000 | 1 |
-| 4 | `lowfreq` | 4 | 1.00 | 138 | 90.000000 | 90.000000 | 1 |
-| 5 | `midgain` | 5 | 1.00 | 138 | 0.000000 | 0.000000 | 1 |
-| 6 | `midfreq` | 6 | 1.00 | 138 | 900.000000 | 900.000000 | 1 |
-| 7 | `midq` | 7 | 1.00 | 138 | 0.900000 | 0.900000 | 1 |
-| 8 | `highgain` | 8 | 1.00 | 138 | 0.000000 | 0.000000 | 1 |
-| 9 | `highfreq` | 9 | 1.00 | 138 | 8000.000000 | 8000.000000 | 1 |
-| 10 | `middyn` | 10 | 1.00 | 138 | 0.000000 | 0.000000 | 1 |
+`lowgain, lowfreq, midgain, midfreq, midq, highgain, highfreq, middyn`
+
+XML-Reihenfolge == Parameterschema: **nein** (1 Varianten beobachtet)
+
+| # | Attribut | n | min | max | distinct | konstant? |
+|---|---|---|---|---|---|---|
+| 0 | `lowgain` | 138 | 0.0000 | 0.0000 | 1 | ja |
+| 1 | `lowfreq` | 138 | 90.0000 | 90.0000 | 1 | ja |
+| 2 | `midgain` | 138 | 0.0000 | 0.0000 | 1 | ja |
+| 3 | `midfreq` | 138 | 900.0000 | 900.0000 | 1 | ja |
+| 4 | `midq` | 138 | 0.9000 | 0.9000 | 1 | ja |
+| 5 | `highgain` | 138 | 0.0000 | 0.0000 | 1 | ja |
+| 6 | `highfreq` | 138 | 8000.0000 | 8000.0000 | 1 | ja |
+| 7 | `middyn` | 138 | 0.0000 | 0.0000 | 1 | ja |
+| – | `mix` (Meta) | 138 | 1.0000 | 1.0000 | 1 | ja |
+| – | `outGain` (Meta) | 138 | 0.7264 | 1.2164 | 4 | nein |
 
 Kind-Elemente: `<Band>` (340×)
 
 | Kind-Attribut | n | min | max | distinct |
 |---|---|---|---|---|
-| `Band.ch` | 340 | 0.000000 | 0.000000 | 1 |
-| `Band.dyn` | 340 | 0.000000 | 0.000000 | 1 |
-| `Band.f` | 340 | 38.476601 | 14215.909180 | 140 |
-| `Band.g` | 340 | -32.000000 | 29.815826 | 139 |
-| `Band.kind` | 340 | 0.000000 | 4.000000 | 4 |
-| `Band.q` | 340 | 0.300000 | 2.211514 | 25 |
+| `Band.ch` | 340 | 0.0000 | 0.0000 | 1 |
+| `Band.dyn` | 340 | 0.0000 | 0.0000 | 1 |
+| `Band.f` | 340 | 38.4766 | 14215.9092 | 140 |
+| `Band.g` | 340 | -32.0000 | 29.8158 | 139 |
+| `Band.kind` | 340 | 0.0000 | 4.0000 | 4 |
+| `Band.q` | 340 | 0.3000 | 2.2115 | 25 |
 
 ### `final` — 49 Vorkommen
 
-Attributreihenfolge (kanonisch, stabilste Position zuerst):
+Parameterschema (Attributreihenfolge, ohne `type`/`on`/`mix`/`outGain`/`ir`):
 
-| # | Attribut | Position | Positionsstabilitaet | n | min | max | distinct |
-|---|---|---|---|---|---|---|---|
-| 0 | `on` | 0 | 1.00 | 49 | 1.000000 | 1.000000 | 1 |
-| 1 | `mix` | 1 | 1.00 | 49 | 1.000000 | 1.000000 | 1 |
-| 2 | `outGain` | 2 | 1.00 | 49 | 0.892784 | 1.000000 | 2 |
-| 3 | `boost` | 3 | 1.00 | 49 | 0.354900 | 12.000000 | 15 |
-| 4 | `freq` | 4 | 1.00 | 49 | 35.751301 | 95.694901 | 8 |
-| 5 | `clip` | 5 | 1.00 | 49 | 0.000000 | 37.228600 | 9 |
-| 6 | `upward` | 6 | 1.00 | 49 | 20.000000 | 20.000000 | 1 |
-| 7 | `monoF` | 7 | 1.00 | 49 | 60.000000 | 181.049896 | 7 |
-| 8 | `shelfOn` | 8 | 1.00 | 49 | 1.000000 | 1.000000 | 1 |
-| 9 | `monoOn` | 9 | 1.00 | 49 | 1.000000 | 1.000000 | 1 |
-| 10 | `clipOn` | 10 | 1.00 | 49 | 0.000000 | 1.000000 | 2 |
+`boost, freq, clip, upward, monoF, shelfOn, monoOn, clipOn`
+
+XML-Reihenfolge == Parameterschema: **nein** (1 Varianten beobachtet)
+
+| # | Attribut | n | min | max | distinct | konstant? |
+|---|---|---|---|---|---|---|
+| 0 | `boost` | 49 | 0.3549 | 12.0000 | 15 | nein |
+| 1 | `freq` | 49 | 35.7513 | 95.6949 | 8 | nein |
+| 2 | `clip` | 49 | 0.0000 | 37.2286 | 9 | nein |
+| 3 | `upward` | 49 | 20.0000 | 20.0000 | 1 | ja |
+| 4 | `monoF` | 49 | 60.0000 | 181.0499 | 7 | nein |
+| 5 | `shelfOn` | 49 | 1.0000 | 1.0000 | 1 | ja |
+| 6 | `monoOn` | 49 | 1.0000 | 1.0000 | 1 | ja |
+| 7 | `clipOn` | 49 | 0.0000 | 1.0000 | 2 | nein |
+| – | `mix` (Meta) | 49 | 1.0000 | 1.0000 | 1 | ja |
+| – | `outGain` (Meta) | 49 | 0.8928 | 1.0000 | 2 | nein |
 
 ### `mseq` — 94 Vorkommen
 
-Attributreihenfolge (kanonisch, stabilste Position zuerst):
+Parameterschema (Attributreihenfolge, ohne `type`/`on`/`mix`/`outGain`/`ir`):
 
-| # | Attribut | Position | Positionsstabilitaet | n | min | max | distinct |
-|---|---|---|---|---|---|---|---|
-| 0 | `on` | 0 | 1.00 | 94 | 1.000000 | 1.000000 | 1 |
-| 1 | `mix` | 1 | 1.00 | 94 | 1.000000 | 1.000000 | 1 |
-| 2 | `outGain` | 2 | 1.00 | 94 | 0.689931 | 1.308515 | 3 |
-| 3 | `midlow` | 3 | 1.00 | 94 | 0.000000 | 0.000000 | 1 |
-| 4 | `midhigh` | 4 | 1.00 | 94 | 0.000000 | 0.000000 | 1 |
-| 5 | `sidelow` | 5 | 1.00 | 94 | 0.000000 | 0.000000 | 1 |
-| 6 | `sidehigh` | 6 | 1.00 | 94 | 0.000000 | 0.000000 | 1 |
-| 7 | `width` | 7 | 1.00 | 94 | 100.000000 | 100.000000 | 1 |
-| 8 | `middyn` | 8 | 1.00 | 94 | 0.000000 | 0.000000 | 1 |
-| 9 | `sidedyn` | 9 | 1.00 | 94 | 0.000000 | 0.000000 | 1 |
-| 10 | `msolo` | 10 | 1.00 | 94 | 0.000000 | 0.000000 | 1 |
-| 11 | `ssolo` | 11 | 1.00 | 94 | 0.000000 | 0.000000 | 1 |
-| 12 | `mmute` | 12 | 1.00 | 94 | 0.000000 | 0.000000 | 1 |
-| 13 | `smute` | 13 | 1.00 | 94 | 0.000000 | 1.000000 | 2 |
+`midlow, midhigh, sidelow, sidehigh, width, middyn, sidedyn, msolo, ssolo, mmute, smute`
+
+XML-Reihenfolge == Parameterschema: **nein** (1 Varianten beobachtet)
+
+| # | Attribut | n | min | max | distinct | konstant? |
+|---|---|---|---|---|---|---|
+| 0 | `midlow` | 94 | 0.0000 | 0.0000 | 1 | ja |
+| 1 | `midhigh` | 94 | 0.0000 | 0.0000 | 1 | ja |
+| 2 | `sidelow` | 94 | 0.0000 | 0.0000 | 1 | ja |
+| 3 | `sidehigh` | 94 | 0.0000 | 0.0000 | 1 | ja |
+| 4 | `width` | 94 | 100.0000 | 100.0000 | 1 | ja |
+| 5 | `middyn` | 94 | 0.0000 | 0.0000 | 1 | ja |
+| 6 | `sidedyn` | 94 | 0.0000 | 0.0000 | 1 | ja |
+| 7 | `msolo` | 94 | 0.0000 | 0.0000 | 1 | ja |
+| 8 | `ssolo` | 94 | 0.0000 | 0.0000 | 1 | ja |
+| 9 | `mmute` | 94 | 0.0000 | 0.0000 | 1 | ja |
+| 10 | `smute` | 94 | 0.0000 | 1.0000 | 2 | nein |
+| – | `mix` (Meta) | 94 | 1.0000 | 1.0000 | 1 | ja |
+| – | `outGain` (Meta) | 94 | 0.6899 | 1.3085 | 3 | nein |
 
 Kind-Elemente: `<Band>` (289×)
 
 | Kind-Attribut | n | min | max | distinct |
 |---|---|---|---|---|
-| `Band.ch` | 289 | 0.000000 | 1.000000 | 2 |
-| `Band.dyn` | 289 | 0.000000 | 0.000000 | 1 |
-| `Band.f` | 289 | 52.084999 | 14744.519531 | 108 |
-| `Band.g` | 289 | -21.267023 | 28.088749 | 82 |
-| `Band.kind` | 289 | 0.000000 | 4.000000 | 5 |
-| `Band.q` | 289 | 0.300000 | 4.260968 | 25 |
+| `Band.ch` | 289 | 0.0000 | 1.0000 | 2 |
+| `Band.dyn` | 289 | 0.0000 | 0.0000 | 1 |
+| `Band.f` | 289 | 52.0850 | 14744.5195 | 108 |
+| `Band.g` | 289 | -21.2670 | 28.0887 | 82 |
+| `Band.kind` | 289 | 0.0000 | 4.0000 | 5 |
+| `Band.q` | 289 | 0.3000 | 4.2610 | 25 |
 
 ### `ott` — 27 Vorkommen
 
-Attributreihenfolge (kanonisch, stabilste Position zuerst):
+Parameterschema (Attributreihenfolge, ohne `type`/`on`/`mix`/`outGain`/`ir`):
 
-| # | Attribut | Position | Positionsstabilitaet | n | min | max | distinct |
-|---|---|---|---|---|---|---|---|
-| 0 | `on` | 0 | 1.00 | 27 | 1.000000 | 1.000000 | 1 |
-| 1 | `mix` | 1 | 1.00 | 27 | 1.000000 | 1.000000 | 1 |
-| 2 | `outGain` | 2 | 1.00 | 27 | 1.000000 | 2.000000 | 3 |
-| 3 | `depth` | 3 | 1.00 | 27 | 8.536900 | 41.004700 | 8 |
-| 4 | `time` | 4 | 1.00 | 27 | 100.000000 | 116.702698 | 2 |
-| 5 | `x1` | 5 | 1.00 | 27 | 120.000000 | 323.296326 | 2 |
-| 6 | `x2` | 6 | 1.00 | 27 | 2500.000000 | 2500.000000 | 1 |
-| 7 | `gl` | 7 | 1.00 | 27 | 0.000000 | 7.615000 | 3 |
-| 8 | `gm` | 8 | 1.00 | 27 | -2.793100 | 7.558000 | 8 |
-| 9 | `gh` | 9 | 1.00 | 27 | 0.000000 | 0.000000 | 1 |
-| 10 | `linear` | 10 | 1.00 | 27 | 0.000000 | 0.000000 | 1 |
+`depth, time, x1, x2, gl, gm, gh, linear`
+
+XML-Reihenfolge == Parameterschema: **nein** (1 Varianten beobachtet)
+
+| # | Attribut | n | min | max | distinct | konstant? |
+|---|---|---|---|---|---|---|
+| 0 | `depth` | 27 | 8.5369 | 41.0047 | 8 | nein |
+| 1 | `time` | 27 | 100.0000 | 116.7027 | 2 | nein |
+| 2 | `x1` | 27 | 120.0000 | 323.2963 | 2 | nein |
+| 3 | `x2` | 27 | 2500.0000 | 2500.0000 | 1 | ja |
+| 4 | `gl` | 27 | 0.0000 | 7.6150 | 3 | nein |
+| 5 | `gm` | 27 | -2.7931 | 7.5580 | 8 | nein |
+| 6 | `gh` | 27 | 0.0000 | 0.0000 | 1 | ja |
+| 7 | `linear` | 27 | 0.0000 | 0.0000 | 1 | ja |
+| – | `mix` (Meta) | 27 | 1.0000 | 1.0000 | 1 | ja |
+| – | `outGain` (Meta) | 27 | 1.0000 | 2.0000 | 3 | nein |
 
 ### `reverb` — 81 Vorkommen
 
-Attributreihenfolge (kanonisch, stabilste Position zuerst):
+Parameterschema (Attributreihenfolge, ohne `type`/`on`/`mix`/`outGain`/`ir`):
 
-| # | Attribut | Position | Positionsstabilitaet | n | min | max | distinct |
-|---|---|---|---|---|---|---|---|
-| 0 | `on` | 0 | 1.00 | 81 | 1.000000 | 1.000000 | 1 |
-| 1 | `mix` | 1 | 1.00 | 81 | 0.257000 | 0.520000 | 18 |
-| 2 | `outGain` | 2 | 1.00 | 81 | 1.000000 | 1.000000 | 1 |
-| 3 | `wet` | 3 | 1.00 | 81 | 35.000000 | 100.000000 | 9 |
-| 4 | `stereo` | 4 | 1.00 | 81 | 0.000000 | 100.000000 | 15 |
-| 5 | `tone` | 5 | 1.00 | 81 | 3.084800 | 100.000000 | 23 |
-| 6 | `speed` | 6 | 1.00 | 81 | 0.000000 | 11.778200 | 2 |
+`wet, stereo, tone, speed`
+
+XML-Reihenfolge == Parameterschema: **nein** (1 Varianten beobachtet)
+
+| # | Attribut | n | min | max | distinct | konstant? |
+|---|---|---|---|---|---|---|
+| 0 | `wet` | 81 | 35.0000 | 100.0000 | 9 | nein |
+| 1 | `stereo` | 81 | 0.0000 | 100.0000 | 15 | nein |
+| 2 | `tone` | 81 | 3.0848 | 100.0000 | 23 | nein |
+| 3 | `speed` | 81 | 0.0000 | 11.7782 | 2 | nein |
+| – | `mix` (Meta) | 81 | 0.2570 | 0.5200 | 18 | nein |
+| – | `outGain` (Meta) | 81 | 1.0000 | 1.0000 | 1 | ja |
 
 Kind-Elemente: `<Pt>` (205×)
 
 | Kind-Attribut | n | min | max | distinct |
 |---|---|---|---|---|
-| `Pt.t` | 205 | -1.000000 | 1.000000 | 29 |
-| `Pt.x` | 205 | 0.000000 | 1.000000 | 16 |
-| `Pt.y` | 205 | 0.000000 | 1.000000 | 9 |
+| `Pt.t` | 205 | -1.0000 | 1.0000 | 29 |
+| `Pt.x` | 205 | 0.0000 | 1.0000 | 16 |
+| `Pt.y` | 205 | 0.0000 | 1.0000 | 9 |
 
 ### `shaper` — 6 Vorkommen
 
-Attributreihenfolge (kanonisch, stabilste Position zuerst):
+Parameterschema (Attributreihenfolge, ohne `type`/`on`/`mix`/`outGain`/`ir`):
 
-| # | Attribut | Position | Positionsstabilitaet | n | min | max | distinct |
-|---|---|---|---|---|---|---|---|
-| 0 | `on` | 0 | 1.00 | 6 | 1.000000 | 1.000000 | 1 |
-| 1 | `mix` | 1 | 1.00 | 6 | 1.000000 | 1.000000 | 1 |
-| 2 | `outGain` | 2 | 1.00 | 6 | 1.000000 | 1.000000 | 1 |
-| 3 | `sPre` | 3 | 1.00 | 6 | 1.000000 | 1.000000 | 1 |
-| 4 | `sPost` | 4 | 1.00 | 6 | 1.000000 | 1.000000 | 1 |
-| 5 | `sLine` | 5 | 1.00 | 6 | 1.000000 | 1.000000 | 1 |
-| 6 | `shape` | 6 | 1.00 | 6 | 0.000000 | 2.000000 | 2 |
-| 7 | `amount` | 7 | 1.00 | 6 | 0.000000 | 100.000000 | 5 |
+`sPre, sPost, sLine, shape, amount`
+
+XML-Reihenfolge == Parameterschema: **nein** (1 Varianten beobachtet)
+
+| # | Attribut | n | min | max | distinct | konstant? |
+|---|---|---|---|---|---|---|
+| 0 | `sPre` | 6 | 1.0000 | 1.0000 | 1 | ja |
+| 1 | `sPost` | 6 | 1.0000 | 1.0000 | 1 | ja |
+| 2 | `sLine` | 6 | 1.0000 | 1.0000 | 1 | ja |
+| 3 | `shape` | 6 | 0.0000 | 2.0000 | 2 | nein |
+| 4 | `amount` | 6 | 0.0000 | 100.0000 | 5 | nein |
+| – | `mix` (Meta) | 6 | 1.0000 | 1.0000 | 1 | ja |
+| – | `outGain` (Meta) | 6 | 1.0000 | 1.0000 | 1 | ja |
 
 ### `trans` — 59 Vorkommen
 
-Attributreihenfolge (kanonisch, stabilste Position zuerst):
+Parameterschema (Attributreihenfolge, ohne `type`/`on`/`mix`/`outGain`/`ir`):
 
-| # | Attribut | Position | Positionsstabilitaet | n | min | max | distinct |
-|---|---|---|---|---|---|---|---|
-| 0 | `on` | 0 | 1.00 | 59 | 1.000000 | 1.000000 | 1 |
-| 1 | `mix` | 1 | 1.00 | 59 | 1.000000 | 1.000000 | 1 |
-| 2 | `outGain` | 2 | 1.00 | 59 | 0.945886 | 1.280745 | 3 |
-| 3 | `amount` | 3 | 1.00 | 59 | 100.000000 | 100.000000 | 1 |
-| 4 | `attack` | 4 | 1.00 | 59 | 0.000000 | 100.000000 | 22 |
-| 5 | `duck` | 5 | 1.00 | 59 | 0.000000 | 63.016899 | 12 |
-| 6 | `speed` | 6 | 1.00 | 59 | 47.160000 | 179.528107 | 19 |
+`amount, attack, duck, speed`
 
-## 4. Kreuztabelle: Preset → FX-Kette (Kern von F2)
+XML-Reihenfolge == Parameterschema: **nein** (1 Varianten beobachtet)
 
-### 4.1 Verteilung der Kettenformen
+| # | Attribut | n | min | max | distinct | konstant? |
+|---|---|---|---|---|---|---|
+| 0 | `amount` | 59 | 100.0000 | 100.0000 | 1 | ja |
+| 1 | `attack` | 59 | 0.0000 | 100.0000 | 22 | nein |
+| 2 | `duck` | 59 | 0.0000 | 63.0169 | 12 | nein |
+| 3 | `speed` | 59 | 47.1600 | 179.5281 | 19 | nein |
+| – | `mix` (Meta) | 59 | 1.0000 | 1.0000 | 1 | ja |
+| – | `outGain` (Meta) | 59 | 0.9459 | 1.2807 | 3 | nein |
+
+## 6. Kreuztabelle: Preset → Kette → `fxN_pM` (Kern von F2)
+
+### 6.1 Kettenformen
 
 | Modulreihenfolge | Presets |
 |---|---|
@@ -303,7 +354,9 @@ Attributreihenfolge (kanonisch, stabilste Position zuerst):
 | `eq,reverb,dist,eq,mseq,dist` | 1 |
 | `dist,eq,mseq,reverb,eq,dist` | 1 |
 
-### 4.2 Modultyp je Kettenposition
+Modulanzahl je Preset: 0 Module: 1×, 2 Module: 2×, 3 Module: 10×, 4 Module: 12×, 5 Module: 2×, 6 Module: 11×, 7 Module: 5×, 8 Module: 1×
+
+### 6.2 Modultyp je Kettenposition
 
 | Position | Typen (Anzahl) |
 |---|---|
@@ -316,11 +369,9 @@ Attributreihenfolge (kanonisch, stabilste Position zuerst):
 | 6 | `dist` (5), `eq` (1) |
 | 7 | `dist` (1) |
 
-### 4.3 Details je Preset
+### 6.3 `p12` (MIX) je Preset
 
-Vollstaendig im JSON (`crosstab.rows`). Kompakt hier:
-
-| Preset | Kette | p12 je Slot |
+| Preset | Kette | p12 (MIX) je Slot |
 |---|---|---|
 | `preset_01` | `eq,reverb,mseq,dist` | 1.000, 0.500, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000 |
 | `preset_02` | `reverb,dist,final,dist` | 0.271, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000 |
@@ -367,350 +418,416 @@ Vollstaendig im JSON (`crosstab.rows`). Kompakt hier:
 | `preset_43` | `eq,dist,reverb,dist,eq,mseq,dist` | 1.000, 0.704, 0.294, 1.000, 1.000, 1.000, 1.000, 1.000 |
 | `preset_44` | `eq,reverb,mseq,dist` | 1.000, 0.500, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000 |
 
-## 5. Kandidaten: Modulattribut → `fxN_pM`
+## 7. Abbildung Modulattribut → `fxN_pM`
 
-Verfahren: fuer jede Kombination (Modultyp, Attribut, p-Index) werden alle Beobachtungen aus den 44 Preset-Snapshots gesammelt. Ein Kandidat gilt als **exakt reproduzierend**, wenn eine lineare **oder** logarithmische Abbildung alle Punkte mit Toleranz 0.0015 trifft.
+**Quantisierung.** Die `fxN_pM`-Werte liegen auf einem festen Raster (bester Schritt **0.000100**, max. Abweichung 4.500e-08). Der Fit kann daher nur bis auf eine halbe Stufe genau sein; die Toleranz ist auf 1.2e-04 gesetzt.
 
-| Modultyp | Attribut | n | distinct(real) | Kandidaten (p, Trefferquote, Modell) |
+**Verfahren.** Fuer jedes Attribut eines Modultyps werden alle Beobachtungen aus den 43 Preset-Snapshots gesammelt (Attributwert in realer Einheit ↔ `fxN_pM` an der Position des Attributs im Parameterschema). Angepasst wird eine Gerade `p = a·x + b` per Kleinstquadrat.
+
+### 7.1 Bestaetigte Zuordnungen
+
+| Modultyp | Attribut | p | n | Stuetzwerte | a | b | Bereich bei p=0…1 | Konfidenz |
+|---|---|---|---|---|---|---|---|---|
+| `dist` | `drive` | 0 | 59 | 34 | 0.010000261 | -0.000008511 | 0.0000 … 99.9974 | hoch |
+| `dist` | `mode` | 1 | 59 | 4 | 0.083336699 | -0.000035664 | 0.0000 … 11.9995 | hoch |
+| `dist` | `mix` | 12 | 59 | 4 | 1.000000000 | 3.106e-10 | 0.0000 … 1.0000 | hoch |
+| `dist` | `outGain` | 13 | 59 | 3 | 0.500001936 | -0.000001689 | 0.0000 … 2.0000 | mittel |
+| `final` | `boost` | 0 | 12 | 7 | 0.083332492 | 0.000034718 | 0.0000 … 12.0001 | hoch |
+| `final` | `freq` | 1 | 12 | 4 | 0.005555249 | -0.111112221 | 20.0013 … 200.0112 | hoch |
+| `final` | `clip` | 2 | 12 | 4 | 0.009999564 | -0.000010829 | 0.0000 … 100.0044 | hoch |
+| `final` | `monoF` | 4 | 12 | 4 | 0.002272633 | -0.136362591 | 60.0020 … 500.0203 | hoch |
+| `mseq` | `outGain` | 13 | 34 | 2 | 0.500138329 | -0.000138329 | 0.0000 … 1.9994 | niedrig (2 Stuetzwert) |
+| `ott` | `depth` | 0 | 5 | 3 | 0.009998811 | 0.000036326 | 0.0000 … 100.0119 | mittel |
+| `ott` | `x1` | 2 | 5 | 2 | 0.002044798 | 0.226024193 | -110.5362 … 378.5096 | niedrig (2 Stuetzwert) |
+| `ott` | `outGain` | 13 | 5 | 2 | 0.499928254 | 0.000071746 | 0.0000 … 2.0003 | niedrig (2 Stuetzwert) |
+| `reverb` | `wet` | 0 | 29 | 4 | 0.009999951 | 0.000006065 | 0.0000 … 100.0005 | hoch |
+| `reverb` | `stereo` | 1 | 29 | 6 | 0.010000005 | -0.000006472 | 0.0000 … 100.0000 | hoch |
+| `reverb` | `tone` | 2 | 29 | 13 | 0.010000413 | -0.000026901 | 0.0000 … 99.9959 | hoch |
+| `reverb` | `mix` | 12 | 29 | 12 | 0.999999937 | 2.301e-08 | 0.0000 … 1.0000 | hoch |
+| `trans` | `attack` | 1 | 20 | 11 | 0.009999889 | 0.000010225 | 0.0000 … 100.0011 | hoch |
+| `trans` | `duck` | 2 | 20 | 8 | 0.010000443 | -0.000004622 | 0.0000 … 99.9956 | hoch |
+| `trans` | `speed` | 3 | 20 | 9 | 0.005434795 | -0.086954466 | 15.9996 … 199.9992 | hoch |
+| `trans` | `outGain` | 13 | 20 | 2 | 0.500796368 | -0.000796368 | 0.0000 … 1.9968 | niedrig (2 Stuetzwert) |
+
+### 7.2 Umkehrfunktionen (fuer die Implementierung)
+
+| Modultyp | Attribut | Umkehrfunktion |
+|---|---|---|
+| `dist` | `drive` | `x = (p - -0.000008511) / 0.010000261` |
+| `dist` | `mode` | `x = (p - -0.000035664) / 0.083336699` |
+| `dist` | `mix` | `x = (p - 3.106e-10) / 1.000000000` |
+| `dist` | `outGain` | `x = (p - -0.000001689) / 0.500001936` |
+| `final` | `boost` | `x = (p - 0.000034718) / 0.083332492` |
+| `final` | `freq` | `x = (p - -0.111112221) / 0.005555249` |
+| `final` | `clip` | `x = (p - -0.000010829) / 0.009999564` |
+| `final` | `monoF` | `x = (p - -0.136362591) / 0.002272633` |
+| `mseq` | `outGain` | `x = (p - -0.000138329) / 0.500138329` |
+| `ott` | `depth` | `x = (p - 0.000036326) / 0.009998811` |
+| `ott` | `x1` | `x = (p - 0.226024193) / 0.002044798` |
+| `ott` | `outGain` | `x = (p - 0.000071746) / 0.499928254` |
+| `reverb` | `wet` | `x = (p - 0.000006065) / 0.009999951` |
+| `reverb` | `stereo` | `x = (p - -0.000006472) / 0.010000005` |
+| `reverb` | `tone` | `x = (p - -0.000026901) / 0.010000413` |
+| `reverb` | `mix` | `x = (p - 2.301e-08) / 0.999999937` |
+| `trans` | `attack` | `x = (p - 0.000010225) / 0.009999889` |
+| `trans` | `duck` | `x = (p - -0.000004622) / 0.010000443` |
+| `trans` | `speed` | `x = (p - -0.086954466) / 0.005434795` |
+| `trans` | `outGain` | `x = (p - -0.000796368) / 0.500796368` |
+
+### 7.3 Einzelpunkt-Befunde (Position plausibel, Kurve unbekannt)
+
+Attribute, die in allen Presets denselben Wert haben, koennen keine Kurve belegen. Liegt ihr `p`-Wert aber nicht bei 0, ist die *Position* im Parameterschema zumindest konsistent:
+
+| Modultyp | Attribut | p | realer Wert | p-Wert |
 |---|---|---|---|---|
-| `dist` | `agc` | 59 | 1 | keine |
-| `dist` | `drive` | 59 | 34 | p0: 100% lin; p13: 97% lin; p12: 8% lin |
-| `dist` | `eqmode` | 59 | 1 | keine |
-| `dist` | `flip` | 59 | 1 | keine |
-| `dist` | `folds` | 59 | 1 | keine |
-| `dist` | `mix` | 59 | 4 | p12: 100% lin; p13: 97% lin; p13: 97% log |
-| `dist` | `mode` | 59 | 4 | p1: 100% lin; p1: 97% log; p13: 97% lin |
-| `dist` | `on` | 59 | 1 | keine |
-| `dist` | `outGain` | 59 | 3 | p13: 100% lin; p13: 98% log; p12: 90% lin |
-| `eq` | `highfreq` | 41 | 1 | keine |
-| `eq` | `highgain` | 41 | 1 | keine |
-| `eq` | `lowfreq` | 41 | 1 | keine |
-| `eq` | `lowgain` | 41 | 1 | keine |
-| `eq` | `middyn` | 41 | 1 | keine |
-| `eq` | `midfreq` | 41 | 1 | keine |
-| `eq` | `midgain` | 41 | 1 | keine |
-| `eq` | `midq` | 41 | 1 | keine |
-| `eq` | `mix` | 41 | 1 | keine |
-| `eq` | `on` | 41 | 1 | keine |
-| `eq` | `outGain` | 41 | 1 | keine |
-| `final` | `boost` | 12 | 7 | p0: 100% lin; p2: 50% log; p2: 33% lin |
-| `final` | `clip` | 12 | 4 | p2: 100% lin; p1: 50% lin; p4: 50% lin |
-| `final` | `clipOn` | 12 | 1 | keine |
-| `final` | `freq` | 12 | 4 | p1: 100% lin; p1: 67% log; p2: 58% lin |
-| `final` | `mix` | 12 | 1 | keine |
-| `final` | `monoF` | 12 | 4 | p4: 100% lin; p4: 75% log; p2: 75% log |
-| `final` | `monoOn` | 12 | 1 | keine |
-| `final` | `on` | 12 | 1 | keine |
-| `final` | `outGain` | 12 | 1 | keine |
-| `final` | `shelfOn` | 12 | 1 | keine |
-| `final` | `upward` | 12 | 1 | keine |
-| `mseq` | `middyn` | 34 | 1 | keine |
-| `mseq` | `midhigh` | 34 | 1 | keine |
-| `mseq` | `midlow` | 34 | 1 | keine |
-| `mseq` | `mix` | 34 | 1 | keine |
-| `mseq` | `mmute` | 34 | 1 | keine |
-| `mseq` | `msolo` | 34 | 1 | keine |
-| `mseq` | `on` | 34 | 1 | keine |
-| `mseq` | `outGain` | 34 | 2 | p13: 100% lin; p13: 100% log |
-| `mseq` | `sidedyn` | 34 | 1 | keine |
-| `mseq` | `sidehigh` | 34 | 1 | keine |
-| `mseq` | `sidelow` | 34 | 1 | keine |
-| `mseq` | `smute` | 34 | 1 | keine |
-| `mseq` | `ssolo` | 34 | 1 | keine |
-| `mseq` | `width` | 34 | 1 | keine |
-| `ott` | `depth` | 5 | 3 | p0: 100% lin; p4: 80% log; p13: 80% lin |
-| `ott` | `gh` | 5 | 1 | keine |
-| `ott` | `gl` | 5 | 3 | p4: 100% lin; p0: 80% lin; p13: 80% lin |
-| `ott` | `gm` | 5 | 3 | p5: 100% lin; p13: 80% lin; p0: 80% lin |
-| `ott` | `linear` | 5 | 1 | keine |
-| `ott` | `mix` | 5 | 1 | keine |
-| `ott` | `on` | 5 | 1 | keine |
-| `ott` | `outGain` | 5 | 2 | p2: 100% lin; p13: 100% lin; p2: 100% log |
-| `ott` | `time` | 5 | 1 | keine |
-| `ott` | `x1` | 5 | 2 | p2: 100% lin; p13: 100% lin; p2: 100% log |
-| `ott` | `x2` | 5 | 1 | keine |
-| `reverb` | `mix` | 29 | 12 | p12: 100% lin; p12: 31% log; p0: 31% lin |
-| `reverb` | `on` | 29 | 1 | keine |
-| `reverb` | `outGain` | 29 | 1 | keine |
-| `reverb` | `speed` | 29 | 1 | keine |
-| `reverb` | `stereo` | 29 | 6 | p1: 100% lin; p0: 83% lin; p0: 83% log |
-| `reverb` | `tone` | 29 | 13 | p2: 100% lin; p12: 10% lin; p12: 10% log |
-| `reverb` | `wet` | 29 | 4 | p0: 100% lin; p0: 90% log; p12: 31% lin |
-| `trans` | `amount` | 20 | 1 | keine |
-| `trans` | `attack` | 20 | 11 | p1: 100% lin; p13: 95% lin; p2: 20% lin |
-| `trans` | `duck` | 20 | 8 | p2: 100% lin; p13: 95% lin; p3: 35% lin |
-| `trans` | `mix` | 20 | 1 | keine |
-| `trans` | `on` | 20 | 1 | keine |
-| `trans` | `outGain` | 20 | 2 | p13: 100% lin; p13: 100% log; p3: 10% lin |
-| `trans` | `speed` | 20 | 9 | p3: 100% lin; p13: 95% lin; p13: 95% log |
+| `dist` | `folds` | 2 | 2.0000 | 0.2000 |
+| `dist` | `agc` | 3 | 1.0000 | 1.0000 |
+| `eq` | `lowgain` | 0 | 0.0000 | 0.5000 |
+| `eq` | `lowfreq` | 1 | 90.0000 | 0.5290 |
+| `eq` | `midgain` | 2 | 0.0000 | 0.5000 |
+| `eq` | `midfreq` | 3 | 900.0000 | 0.4771 |
+| `eq` | `midq` | 4 | 0.9000 | 0.1622 |
+| `eq` | `highgain` | 5 | 0.0000 | 0.5000 |
+| `eq` | `highfreq` | 6 | 8000.0000 | 0.7094 |
+| `eq` | `middyn` | 7 | 0.0000 | 0.5000 |
+| `eq` | `mix` | 12 | 1.0000 | 1.0000 |
+| `eq` | `outGain` | 13 | 1.0000 | 0.5000 |
+| `final` | `upward` | 3 | 20.0000 | 0.2000 |
+| `final` | `shelfOn` | 5 | 1.0000 | 1.0000 |
+| `final` | `monoOn` | 6 | 1.0000 | 1.0000 |
+| `final` | `clipOn` | 7 | 1.0000 | 1.0000 |
+| `final` | `mix` | 12 | 1.0000 | 1.0000 |
+| `final` | `outGain` | 13 | 1.0000 | 0.5000 |
+| `mseq` | `midlow` | 0 | 0.0000 | 0.5000 |
+| `mseq` | `midhigh` | 1 | 0.0000 | 0.5000 |
+| `mseq` | `sidelow` | 2 | 0.0000 | 0.5000 |
+| `mseq` | `sidehigh` | 3 | 0.0000 | 0.5000 |
+| `mseq` | `width` | 4 | 100.0000 | 0.5000 |
+| `mseq` | `middyn` | 5 | 0.0000 | 0.5000 |
+| `mseq` | `sidedyn` | 6 | 0.0000 | 0.5000 |
+| `mseq` | `mix` | 12 | 1.0000 | 1.0000 |
+| `ott` | `time` | 1 | 100.0000 | 0.4716 |
+| `ott` | `x2` | 3 | 2500.0000 | 0.5067 |
+| `ott` | `gh` | 6 | 0.0000 | 0.5000 |
+| `ott` | `mix` | 12 | 1.0000 | 1.0000 |
+| `reverb` | `speed` | 3 | 0.0000 | 0.5000 |
+| `reverb` | `outGain` | 13 | 1.0000 | 0.5000 |
+| `shaper` | `sPre` | 0 | 1.0000 | 0.2857 |
+| `shaper` | `sPost` | 1 | 1.0000 | 0.3125 |
+| `shaper` | `mix` | 12 | 1.0000 | 1.0000 |
+| `shaper` | `outGain` | 13 | 1.0000 | 0.5000 |
+| `trans` | `amount` | 0 | 100.0000 | 1.0000 |
+| `trans` | `mix` | 12 | 1.0000 | 1.0000 |
 
-## 6. Normalisierungskurven: Pruefungen
+### 7.4 Werksdefault-Vektor je Modultyp
 
-### 6.1 Verhaeltnis-Hypothesen
+Der haeufigste `fx`-Vektor eines Typs, gegenueber den Modulattributen an dieser Kettenposition. Alle Zeilen muessen unter **einer** Abbildung gleichzeitig erklaerbar sein — das ist die staerkste Bestaetigung der Parameterreihenfolge.
 
-**`root_note`**
+**`dist`** (Vektor in 4 Presets, 31 Varianten)
 
-```json
-{
-  "param": "root_note",
-  "observed_median": 0.283464581,
-  "observed_values": [
-    {
-      "value": 0.283465,
-      "count": 44,
-      "share": 1.0
-    }
-  ],
-  "hypothesis": "MIDI-Note n / 127 (n=36 -> C1)",
-  "predicted_36_127": 0.28346456692913385,
-  "delta": 1.4070866138915505e-08,
-  "match": true,
-  "top_value_note_estimates": [
-    {
-      "v": 0.283465,
-      "n_127": 36.0001,
-      "count": 44
-    }
-  ]
-}
-```
+| p | Attribut | realer Default | p-Wert |
+|---|---|---|---|
+| 0 | `drive` | 18.8306 | 0.1883 |
+| 1 | `mode` | 1.0000 | 0.0833 |
+| 2 | `folds` | 2.0000 | 0.2000 |
+| 3 | `agc` | 1.0000 | 1.0000 |
+| 4 | `eqmode` | 0.0000 | 0.0000 |
+| 5 | `flip` | 0.0000 | 0.0000 |
+| 12 | `mix` | 1.0000 | 1.0000 |
+| 13 | `outGain` | 1.0000 | 0.5000 |
 
-**`master_vol`**
+**`eq`** (Vektor in 41 Presets, 1 Varianten)
 
-```json
-{
-  "param": "master_vol",
-  "observed_median": 0.833333313,
-  "observed_values": [
-    {
-      "value": 0.833333,
-      "count": 43,
-      "share": 0.9773
-    },
-    {
-      "value": 1.0,
-      "count": 1,
-      "share": 0.0227
-    }
-  ],
-  "ratio_5_6": 0.9999999756,
-  "db_20log10": -1.5836251328882063,
-  "hypothesis": "linear 0..1.2 (0.8333 = 1/1.2) oder 0..1.2 Bereich",
-  "as_gain_1_over": 1.2000000292800006
-}
-```
+| p | Attribut | realer Default | p-Wert |
+|---|---|---|---|
+| 0 | `lowgain` | 0.0000 | 0.5000 |
+| 1 | `lowfreq` | 90.0000 | 0.5290 |
+| 2 | `midgain` | 0.0000 | 0.5000 |
+| 3 | `midfreq` | 900.0000 | 0.4771 |
+| 4 | `midq` | 0.9000 | 0.1622 |
+| 5 | `highgain` | 0.0000 | 0.5000 |
+| 6 | `highfreq` | 8000.0000 | 0.7094 |
+| 7 | `middyn` | 0.0000 | 0.5000 |
+| 12 | `mix` | 1.0000 | 1.0000 |
+| 13 | `outGain` | 1.0000 | 0.5000 |
 
-**`l0_stretch`**
+**`final`** (Vektor in 3 Presets, 7 Varianten)
 
-```json
-{
-  "param": "l0_stretch",
-  "observed_median": 0.37498942,
-  "hypotheses": {
-    "log_0.25_8": 0.91697,
-    "log_0.25_4": 0.707086,
-    "lin_0.25_8": 3.156168
-  },
-  "note": "1.0 als Zielwert pruefen: bei welchem v liegt Faktor 1.0?"
-}
-```
+| p | Attribut | realer Default | p-Wert |
+|---|---|---|---|
+| 0 | `boost` | 7.7166 | 0.6431 |
+| 1 | `freq` | 95.6949 | 0.4205 |
+| 2 | `clip` | 0.0000 | 0.0000 |
+| 3 | `upward` | 20.0000 | 0.2000 |
+| 4 | `monoF` | 60.0000 | 0.0000 |
+| 5 | `shelfOn` | 1.0000 | 1.0000 |
+| 6 | `monoOn` | 1.0000 | 1.0000 |
+| 7 | `clipOn` | 1.0000 | 1.0000 |
+| 12 | `mix` | 1.0000 | 1.0000 |
+| 13 | `outGain` | 1.0000 | 0.5000 |
 
-### 6.2 Wertebereichs-/Symmetriepruefung
+**`mseq`** (Vektor in 33 Presets, 2 Varianten)
 
-| Parameter | n | min | max | median | distinct | voll 0..1 | Median=0.5 | Anteil 0.5 | Symmetrie um 0.5 |
-|---|---|---|---|---|---|---|---|---|---|
-| `master_vol` | 44 | 0.833333 | 1.000000 | 0.833333 | 2 | nein | nein | 0.0 | 0.8333 |
-| `root_note` | 44 | 0.283465 | 0.283465 | 0.283465 | 1 | nein | nein | 0.0 | 0.4331 |
-| `sat_amount` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `reverb_size` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `reverb_damp` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `reverb_mix` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `hollow_amt` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `max_amount` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `midi_mode` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l0_vol` | 44 | 0.699840 | 0.804556 | 0.699840 | 2 | nein | nein | 0.0 | 0.5044 |
-| `l0_pitch` | 44 | 0.477958 | 0.543896 | 0.500000 | 6 | nein | ja | 0.7045 | 0.0219 |
-| `l0_stretch` | 44 | 0.374989 | 0.374989 | 0.374989 | 1 | nein | nein | 0.0 | 0.2500 |
-| `l0_filter` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l0_filterq` | 44 | 0.102564 | 0.102564 | 0.102564 | 1 | nein | nein | 0.0 | 0.7949 |
-| `l0_dlytime` | 44 | 0.300000 | 0.300000 | 0.300000 | 1 | nein | nein | 0.0 | 0.4000 |
-| `l0_dlymix` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l0_pos` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l0_fadein` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l0_fadeout` | 44 | 0.000000 | 0.158200 | 0.000000 | 7 | nein | nein | 0.0 | 0.8418 |
-| `l0_trimstart` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l0_trimend` | 44 | 0.196200 | 1.000000 | 1.000000 | 5 | nein | nein | 0.0 | 0.1962 |
-| `l0_ficurve` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l0_fishape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l0_foshape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l1_vol` | 44 | 0.495896 | 0.737372 | 0.667929 | 11 | nein | nein | 0.0 | 0.2333 |
-| `l1_pitch` | 44 | 0.500000 | 0.957583 | 0.500000 | 3 | nein | ja | 0.9545 | 0.4576 |
-| `l1_stretch` | 44 | 0.344057 | 0.374989 | 0.374989 | 2 | nein | nein | 0.0 | 0.2810 |
-| `l1_filter` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l1_filterq` | 44 | 0.102564 | 0.102564 | 0.102564 | 1 | nein | nein | 0.0 | 0.7949 |
-| `l1_dlytime` | 44 | 0.300000 | 0.300000 | 0.300000 | 1 | nein | nein | 0.0 | 0.4000 |
-| `l1_dlymix` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l1_pos` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l1_fadein` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l1_fadeout` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l1_trimstart` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l1_trimend` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l1_ficurve` | 44 | 0.068000 | 0.500000 | 0.500000 | 2 | nein | ja | 0.9773 | 0.4320 |
-| `l1_fishape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l1_foshape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l2_vol` | 44 | 0.626584 | 0.699840 | 0.699840 | 3 | nein | nein | 0.0 | 0.3264 |
-| `l2_pitch` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l2_stretch` | 44 | 0.374989 | 0.374989 | 0.374989 | 1 | nein | nein | 0.0 | 0.2500 |
-| `l2_filter` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l2_filterq` | 44 | 0.102564 | 0.102564 | 0.102564 | 1 | nein | nein | 0.0 | 0.7949 |
-| `l2_dlytime` | 44 | 0.300000 | 0.300000 | 0.300000 | 1 | nein | nein | 0.0 | 0.4000 |
-| `l2_dlymix` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l2_pos` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l2_fadein` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l2_fadeout` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l2_trimstart` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l2_trimend` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l2_ficurve` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l2_fishape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l2_foshape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l3_vol` | 44 | 0.683358 | 0.699840 | 0.699840 | 2 | nein | nein | 0.0 | 0.3832 |
-| `l3_pitch` | 44 | 0.500000 | 1.000000 | 0.500000 | 3 | nein | ja | 0.8636 | 0.5000 |
-| `l3_stretch` | 44 | 0.176683 | 0.374989 | 0.374989 | 2 | nein | nein | 0.0 | 0.4483 |
-| `l3_filter` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l3_filterq` | 44 | 0.102564 | 0.102564 | 0.102564 | 1 | nein | nein | 0.0 | 0.7949 |
-| `l3_dlytime` | 44 | 0.300000 | 0.300000 | 0.300000 | 1 | nein | nein | 0.0 | 0.4000 |
-| `l3_dlymix` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l3_pos` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l3_fadein` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l3_fadeout` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l3_trimstart` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l3_trimend` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l3_ficurve` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l3_fishape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l3_foshape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l4_vol` | 44 | 0.552330 | 0.743960 | 0.699840 | 5 | nein | nein | 0.0 | 0.2963 |
-| `l4_pitch` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l4_stretch` | 44 | 0.374989 | 0.408213 | 0.374989 | 2 | nein | nein | 0.0 | 0.2168 |
-| `l4_filter` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l4_filterq` | 44 | 0.102564 | 0.102564 | 0.102564 | 1 | nein | nein | 0.0 | 0.7949 |
-| `l4_dlytime` | 44 | 0.300000 | 0.300000 | 0.300000 | 1 | nein | nein | 0.0 | 0.4000 |
-| `l4_dlymix` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l4_pos` | 44 | 0.407500 | 0.544000 | 0.500000 | 11 | nein | ja | 0.7273 | 0.0485 |
-| `l4_fadein` | 44 | 0.000000 | 1.000000 | 0.000000 | 5 | ja | nein | 0.0 | 0.0000 |
-| `l4_fadeout` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l4_trimstart` | 44 | 0.000000 | 0.001500 | 0.000000 | 2 | nein | nein | 0.0 | 0.9985 |
-| `l4_trimend` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l4_ficurve` | 44 | 0.000000 | 0.500000 | 0.500000 | 3 | nein | ja | 0.7045 | 0.5000 |
-| `l4_fishape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l4_foshape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l5_vol` | 44 | 0.626584 | 0.699840 | 0.699840 | 2 | nein | nein | 0.0 | 0.3264 |
-| `l5_pitch` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l5_stretch` | 44 | 0.374989 | 0.374989 | 0.374989 | 1 | nein | nein | 0.0 | 0.2500 |
-| `l5_filter` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l5_filterq` | 44 | 0.102564 | 0.102564 | 0.102564 | 1 | nein | nein | 0.0 | 0.7949 |
-| `l5_dlytime` | 44 | 0.300000 | 0.300000 | 0.300000 | 1 | nein | nein | 0.0 | 0.4000 |
-| `l5_dlymix` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l5_pos` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l5_fadein` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l5_fadeout` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l5_trimstart` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l5_trimend` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l5_ficurve` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l5_fishape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l5_foshape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l6_vol` | 44 | 0.699840 | 0.699840 | 0.699840 | 1 | nein | nein | 0.0 | 0.3997 |
-| `l6_pitch` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l6_stretch` | 44 | 0.374989 | 0.374989 | 0.374989 | 1 | nein | nein | 0.0 | 0.2500 |
-| `l6_filter` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l6_filterq` | 44 | 0.102564 | 0.102564 | 0.102564 | 1 | nein | nein | 0.0 | 0.7949 |
-| `l6_dlytime` | 44 | 0.300000 | 0.300000 | 0.300000 | 1 | nein | nein | 0.0 | 0.4000 |
-| `l6_dlymix` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l6_pos` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l6_fadein` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l6_fadeout` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l6_trimstart` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l6_trimend` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l6_ficurve` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l6_fishape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l6_foshape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l7_vol` | 44 | 0.699840 | 0.699840 | 0.699840 | 1 | nein | nein | 0.0 | 0.3997 |
-| `l7_pitch` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l7_stretch` | 44 | 0.374989 | 0.374989 | 0.374989 | 1 | nein | nein | 0.0 | 0.2500 |
-| `l7_filter` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l7_filterq` | 44 | 0.102564 | 0.102564 | 0.102564 | 1 | nein | nein | 0.0 | 0.7949 |
-| `l7_dlytime` | 44 | 0.300000 | 0.300000 | 0.300000 | 1 | nein | nein | 0.0 | 0.4000 |
-| `l7_dlymix` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l7_pos` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l7_fadein` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l7_fadeout` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l7_trimstart` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l7_trimend` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l7_ficurve` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l7_fishape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l7_foshape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l8_vol` | 44 | 0.000000 | 0.699840 | 0.699840 | 2 | nein | nein | 0.0 | 0.3002 |
-| `l8_pitch` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l8_stretch` | 44 | 0.374989 | 0.374989 | 0.374989 | 1 | nein | nein | 0.0 | 0.2500 |
-| `l8_filter` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l8_filterq` | 44 | 0.102564 | 0.102564 | 0.102564 | 1 | nein | nein | 0.0 | 0.7949 |
-| `l8_dlytime` | 44 | 0.300000 | 0.300000 | 0.300000 | 1 | nein | nein | 0.0 | 0.4000 |
-| `l8_dlymix` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l8_pos` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l8_fadein` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l8_fadeout` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l8_trimstart` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l8_trimend` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l8_ficurve` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l8_fishape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l8_foshape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l9_vol` | 44 | 0.699840 | 0.699840 | 0.699840 | 1 | nein | nein | 0.0 | 0.3997 |
-| `l9_pitch` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l9_stretch` | 44 | 0.374989 | 0.374989 | 0.374989 | 1 | nein | nein | 0.0 | 0.2500 |
-| `l9_filter` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l9_filterq` | 44 | 0.102564 | 0.102564 | 0.102564 | 1 | nein | nein | 0.0 | 0.7949 |
-| `l9_dlytime` | 44 | 0.300000 | 0.300000 | 0.300000 | 1 | nein | nein | 0.0 | 0.4000 |
-| `l9_dlymix` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l9_pos` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l9_fadein` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l9_fadeout` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l9_trimstart` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l9_trimend` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l9_ficurve` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l9_fishape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l9_foshape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l10_vol` | 44 | 0.626584 | 0.699840 | 0.699840 | 2 | nein | nein | 0.0 | 0.3264 |
-| `l10_pitch` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l10_stretch` | 44 | 0.374989 | 0.374989 | 0.374989 | 1 | nein | nein | 0.0 | 0.2500 |
-| `l10_filter` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l10_filterq` | 44 | 0.102564 | 0.102564 | 0.102564 | 1 | nein | nein | 0.0 | 0.7949 |
-| `l10_dlytime` | 44 | 0.300000 | 0.300000 | 0.300000 | 1 | nein | nein | 0.0 | 0.4000 |
-| `l10_dlymix` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l10_pos` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l10_fadein` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l10_fadeout` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l10_trimstart` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l10_trimend` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l10_ficurve` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l10_fishape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l10_foshape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l11_vol` | 44 | 0.699840 | 0.699840 | 0.699840 | 1 | nein | nein | 0.0 | 0.3997 |
-| `l11_pitch` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l11_stretch` | 44 | 0.374989 | 0.374989 | 0.374989 | 1 | nein | nein | 0.0 | 0.2500 |
-| `l11_filter` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l11_filterq` | 44 | 0.102564 | 0.102564 | 0.102564 | 1 | nein | nein | 0.0 | 0.7949 |
-| `l11_dlytime` | 44 | 0.300000 | 0.300000 | 0.300000 | 1 | nein | nein | 0.0 | 0.4000 |
-| `l11_dlymix` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l11_pos` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l11_fadein` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l11_fadeout` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l11_trimstart` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l11_trimend` | 44 | 1.000000 | 1.000000 | 1.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l11_ficurve` | 44 | 0.500000 | 0.500000 | 0.500000 | 1 | nein | ja | 1.0 | 0.0000 |
-| `l11_fishape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
-| `l11_foshape` | 44 | 0.000000 | 0.000000 | 0.000000 | 1 | nein | nein | 0.0 | 1.0000 |
+| p | Attribut | realer Default | p-Wert |
+|---|---|---|---|
+| 0 | `midlow` | 0.0000 | 0.5000 |
+| 1 | `midhigh` | 0.0000 | 0.5000 |
+| 2 | `sidelow` | 0.0000 | 0.5000 |
+| 3 | `sidehigh` | 0.0000 | 0.5000 |
+| 4 | `width` | 100.0000 | 0.5000 |
+| 5 | `middyn` | 0.0000 | 0.5000 |
+| 6 | `sidedyn` | 0.0000 | 0.5000 |
+| 7 | `msolo` | 0.0000 | 0.0000 |
+| 8 | `ssolo` | 0.0000 | 0.0000 |
+| 9 | `mmute` | 0.0000 | 0.0000 |
+| 10 | `smute` | 0.0000 | 0.0000 |
+| 12 | `mix` | 1.0000 | 1.0000 |
+| 13 | `outGain` | 1.0000 | 0.5000 |
+
+**`ott`** (Vektor in 3 Presets, 3 Varianten)
+
+| p | Attribut | realer Default | p-Wert |
+|---|---|---|---|
+| 0 | `depth` | 8.5369 | 0.0854 |
+| 1 | `time` | 100.0000 | 0.4716 |
+| 2 | `x1` | 120.0000 | 0.4714 |
+| 3 | `x2` | 2500.0000 | 0.5067 |
+| 4 | `gl` | 0.0000 | 0.5000 |
+| 5 | `gm` | 0.0000 | 0.5000 |
+| 6 | `gh` | 0.0000 | 0.5000 |
+| 7 | `linear` | 0.0000 | 0.0000 |
+| 12 | `mix` | 1.0000 | 1.0000 |
+| 13 | `outGain` | 1.0000 | 0.5000 |
+
+**`reverb`** (Vektor in 3 Presets, 16 Varianten)
+
+| p | Attribut | realer Default | p-Wert |
+|---|---|---|---|
+| 0 | `wet` | 100.0000 | 1.0000 |
+| 1 | `stereo` | 100.0000 | 1.0000 |
+| 2 | `tone` | 74.2373 | 0.7424 |
+| 3 | `speed` | 0.0000 | 0.5000 |
+| 12 | `mix` | 0.5000 | 0.5000 |
+| 13 | `outGain` | 1.0000 | 0.5000 |
+
+**`shaper`** (Vektor in 1 Presets, 1 Varianten)
+
+| p | Attribut | realer Default | p-Wert |
+|---|---|---|---|
+| 0 | `sPre` | 1.0000 | 0.2857 |
+| 1 | `sPost` | 1.0000 | 0.3125 |
+| 2 | `sLine` | 1.0000 | 0.0000 |
+| 3 | `shape` | 2.0000 | 0.0000 |
+| 4 | `amount` | 31.2542 | 0.0000 |
+| 12 | `mix` | 1.0000 | 1.0000 |
+| 13 | `outGain` | 1.0000 | 0.5000 |
+
+**`trans`** (Vektor in 3 Presets, 11 Varianten)
+
+| p | Attribut | realer Default | p-Wert |
+|---|---|---|---|
+| 0 | `amount` | 100.0000 | 1.0000 |
+| 1 | `attack` | 0.0000 | 0.0000 |
+| 2 | `duck` | 36.9296 | 0.3693 |
+| 3 | `speed` | 47.6499 | 0.1720 |
+| 12 | `mix` | 1.0000 | 1.0000 |
+| 13 | `outGain` | 1.0000 | 0.5000 |
+
+### 7.5 Nicht bestimmbare Zuordnungen
+
+| Modultyp | Attribut | p | n | real distinct | Status |
+|---|---|---|---|---|---|
+| `dist` | `folds` | 2 | 59 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `dist` | `agc` | 3 | 59 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `dist` | `eqmode` | 4 | 59 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `dist` | `flip` | 5 | 59 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `eq` | `lowgain` | 0 | 41 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `eq` | `lowfreq` | 1 | 41 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `eq` | `midgain` | 2 | 41 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `eq` | `midfreq` | 3 | 41 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `eq` | `midq` | 4 | 41 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `eq` | `highgain` | 5 | 41 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `eq` | `highfreq` | 6 | 41 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `eq` | `middyn` | 7 | 41 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `eq` | `mix` | 12 | 41 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `eq` | `outGain` | 13 | 41 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `final` | `upward` | 3 | 12 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `final` | `shelfOn` | 5 | 12 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `final` | `monoOn` | 6 | 12 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `final` | `clipOn` | 7 | 12 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `final` | `mix` | 12 | 12 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `final` | `outGain` | 13 | 12 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `mseq` | `midlow` | 0 | 34 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `mseq` | `midhigh` | 1 | 34 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `mseq` | `sidelow` | 2 | 34 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `mseq` | `sidehigh` | 3 | 34 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `mseq` | `width` | 4 | 34 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `mseq` | `middyn` | 5 | 34 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `mseq` | `sidedyn` | 6 | 34 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `mseq` | `msolo` | 7 | 34 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `mseq` | `ssolo` | 8 | 34 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `mseq` | `mmute` | 9 | 34 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `mseq` | `smute` | 10 | 34 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `mseq` | `mix` | 12 | 34 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `ott` | `time` | 1 | 5 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `ott` | `x2` | 3 | 5 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `ott` | `gl` | 4 | 5 | 3 | Fit unplausibel (negativer unterer Rand) |
+| `ott` | `gm` | 5 | 5 | 3 | Fit unplausibel (negativer unterer Rand) |
+| `ott` | `gh` | 6 | 5 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `ott` | `linear` | 7 | 5 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `ott` | `mix` | 12 | 5 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `reverb` | `speed` | 3 | 29 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `reverb` | `outGain` | 13 | 29 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `shaper` | `sPre` | 0 | 1 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `shaper` | `sPost` | 1 | 1 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `shaper` | `sLine` | 2 | 1 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `shaper` | `shape` | 3 | 1 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `shaper` | `amount` | 4 | 1 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `shaper` | `mix` | 12 | 1 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `shaper` | `outGain` | 13 | 1 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `trans` | `amount` | 0 | 20 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+| `trans` | `mix` | 12 | 20 | 1 | Attribut konstant -> Kurve nicht bestimmbar |
+
+### 7.7 Rueckrechnung (Roundtrip)
+
+| Modultyp | Attribute verifiziert | max. Rekonstruktionsfehler |
+|---|---|---|
+| `dist` | 4 / 4 | 5.36e-03 |
+| `eq` | 0 / 0 | 0.00e+00 |
+| `final` | 4 / 4 | 6.38e-03 |
+| `mseq` | 1 / 1 | 2.22e-16 |
+| `ott` | 5 / 5 | 1.98e-03 |
+| `reverb` | 4 / 4 | 4.67e-03 |
+| `shaper` | 0 / 0 | 0.00e+00 |
+| `trans` | 4 / 4 | 6.77e-03 |
+
+### 7.8 Parameterschema je Modultyp (XML-Reihenfolge)
+
+* `dist`: `p0…p5` = `drive`, `mode`, `folds`, `agc`, `eqmode`, `flip` → `p12` = MIX, `p13` = OUTGAIN
+* `eq`: `p0…p7` = `lowgain`, `lowfreq`, `midgain`, `midfreq`, `midq`, `highgain`, `highfreq`, `middyn` → `p12` = MIX, `p13` = OUTGAIN
+* `final`: `p0…p7` = `boost`, `freq`, `clip`, `upward`, `monoF`, `shelfOn`, `monoOn`, `clipOn` → `p12` = MIX, `p13` = OUTGAIN
+* `mseq`: `p0…p10` = `midlow`, `midhigh`, `sidelow`, `sidehigh`, `width`, `middyn`, `sidedyn`, `msolo`, `ssolo`, `mmute`, `smute` → `p12` = MIX, `p13` = OUTGAIN
+* `ott`: `p0…p7` = `depth`, `time`, `x1`, `x2`, `gl`, `gm`, `gh`, `linear` → `p12` = MIX, `p13` = OUTGAIN
+* `reverb`: `p0…p3` = `wet`, `stereo`, `tone`, `speed` → `p12` = MIX, `p13` = OUTGAIN
+* `shaper`: `p0…p4` = `sPre`, `sPost`, `sLine`, `shape`, `amount` → `p12` = MIX, `p13` = OUTGAIN
+* `trans`: `p0…p3` = `amount`, `attack`, `duck`, `speed` → `p12` = MIX, `p13` = OUTGAIN
+
+## 8. Normalisierungskurven (F1)
+
+### 8.1 `stretch`
+
+Default (Werkswert): `0.374989420` in 44 Slots.
+
+| Kurve | Faktor beim Default | v fuer Faktor 1.0 | Abweichung zum Default |
+|---|---|---|---|
+| `log_0.25_8` | 0.916970 | 0.400000 | 0.025011 |
+| `lin_0.25_8` | 3.156168 | 0.096774 | -0.278215 |
+| `log_0.25_4` | 0.707086 | 0.500000 | 0.125011 |
+| `lin_0.25_4` | 1.656210 | 0.200000 | -0.174989 |
+| `log_0.5_2` | 0.840884 | 0.500000 | 0.125011 |
+| `lin_0.5_2` | 1.062484 | 0.333333 | -0.041656 |
+| `log_0.125_8` | 0.594577 | 0.500000 | 0.125011 |
+| `lin_0.125_8` | 3.078042 | 0.111111 | -0.263878 |
+| `log_0.25_10` | 0.997001 | 0.375804 | 0.000814 |
+| `lin_0.25_10` | 3.906147 | 0.076923 | -0.298066 |
+| `log_0.25_16` | 1.189155 | 0.333333 | -0.041656 |
+| `lin_0.25_16` | 6.156083 | 0.047619 | -0.327370 |
+| `log_0.5_8` | 1.414172 | 0.250000 | -0.124989 |
+| `lin_0.5_8` | 3.312421 | 0.066667 | -0.308323 |
+| `log_0.25_6` | 0.823199 | 0.436209 | 0.061219 |
+| `lin_0.25_6` | 2.406189 | 0.130435 | -0.244555 |
+
+Potenz-Kurve `v = ((f-0.25)/7.75)^s` mit Faktor 1.0 beim Default: **s = 0.420000** (JUCE-Skew äquivalent 2.380952).
+
+### 8.2 `pitch`
+
+Default: `0.500000060` — Abstand zu 0.5 beträgt **1.0 float32-ULP**.
+
+| Reichweite | Semitöne der beobachteten Werte | max. Abweichung vom 1-HT-Raster |
+|---|---|---|
+| pm1 | -0.044, 0.000, 0.009, 0.021, 0.083, 0.088 | 0.0878 |
+| pm2 | -0.088, 0.000, 0.019, 0.041, 0.167, 0.176 | 0.1756 |
+| pm3 | -0.132, 0.000, 0.028, 0.062, 0.250, 0.263 | 0.2634 |
+| pm6 | -0.265, 0.000, 0.056, 0.123, 0.500, 0.527 | 0.5000 |
+| pm12 | -0.529, 0.000, 0.112, 0.247, 1.000, 1.054 | 0.4710 |
+| pm24 | -1.058, 0.000, 0.224, 0.494, 2.000, 2.107 | 0.4940 |
+| pm5 | -0.220, 0.000, 0.047, 0.103, 0.417, 0.439 | 0.4390 |
+| pm7 | -0.309, 0.000, 0.065, 0.144, 0.583, 0.615 | 0.4167 |
+| pm10 | -0.441, 0.000, 0.093, 0.206, 0.833, 0.878 | 0.4408 |
+| pm36 | -1.587, 0.000, 0.336, 0.741, 3.000, 3.160 | 0.4130 |
+
+Bestes Raster: **pm1**
+
+### 8.3 `root_note`
+
+Default: `0.283464581`, distinct = 1.
+
+| Skala | Wert beim Default | naechste Ganzzahl | Abweichung |
+|---|---|---|---|
+| `*127` | 36.000002 | 36 | 0.000001787 |
+| `*128` | 36.283466 | 36 | 0.283466368 |
+| `*12` | 3.401575 | 3 | 0.401574972 |
+| `*24` | 6.803150 | 7 | -0.196850056 |
+| `*36` | 10.204725 | 10 | 0.204724916 |
+
+Bruch-Kandidat: **36/127** (Fehler 1.41e-08).
+
+### 8.4 `filterq`
+
+Default: `0.102564096` (konstant in allen Slots).
+
+Bruch-Kandidat: 4/39
+
+| Q-Bereich @ Default-Q | vorhergesagt | Abweichung |
+|---|---|---|
+| `[0.1,4]@Q=0.5` | 0.102564103 | 7.000e-09 |
+
+### 8.5 `vol` und `master_vol`
+
+**`lN_vol`** — Default `0.699840486`
+
+* `20·log10(Default)` = -3.1000 dB
+* Lineare Verstaerkung mit 1.0 beim Default ⇒ Maximalwert 1.428897 (3.1000 dB)
+
+| dB-Bereich | Default in dB | Glattheit | bestes Raster | Rasterfehler |
+|---|---|---|---|---|
+| [0, 10] | 6.998 | 0.0016 | 1.0 dB | 0.046 |
+| [-25, 5] | -4.005 | 0.0048 | 1.0 dB | 0.137 |
+| [-24, 6] | -3.005 | 0.0048 | 1.0 dB | 0.137 |
+| [-30, 10] | -2.006 | 0.0064 | 2.0 dB | 0.091 |
+| [-40, 10] | -5.008 | 0.0080 | 0.25 dB | 0.089 |
+| [-50, 10] | -8.010 | 0.0096 | 0.25 dB | 0.093 |
+
+**`master_vol`** — Default `0.833333313` (97.7 % aller Presets), distinct = 2
+
+* Bruch-Kandidat: **5/6**
+* dB-Skala mit 0 dB beim Default ⇒ Bereich `[lo, lo + |lo|/0.8333]` z. B. für lo = -60, -50, -48, -40, -36, -30, -25, -24, -20 dB:
+
+| lo (dB) | hi (dB) |
+|---|---|
+| -60 | 12.0000 |
+| -50 | 10.0000 |
+| -48 | 9.6000 |
+| -40 | 8.0000 |
+| -36 | 7.2000 |
+| -30 | 6.0000 |
+| -25 | 5.0000 |
+| -24 | 4.8000 |
+| -20 | 4.0000 |
+
+* Lineare Verstaerkung mit 1.0 beim Default ⇒ `gain = v / 0.833333313`, Maximalwert 1.200000 (1.58 dB).
+
+| dB-Bereich | Default in dB | Abstand zur Ganzzahl |
+|---|---|---|
+| [-60, 6] | -5.000 | 0.0000 |
+| [-60, 12] | -0.000 | 0.0000 |
+| [-50, 10] | -0.000 | 0.0000 |
+| [-48, 6] | -3.000 | 0.0000 |
+| [-36, 6] | -1.000 | 0.0000 |
+| [-30, 6] | -0.000 | 0.0000 |
 
 ---
 
-## 7. Rohdaten
+## 9. Rohdaten
 
-Vollstaendige Auswertung: `_private/mining/report.json` (nicht Teil des oeffentlichen Repos).
+Vollstaendige Auswertung inkl. aller Einzelwerte: [`_private/mining/report.json`](../../_private/mining/report.json) (nicht Teil des oeffentlichen Repos).

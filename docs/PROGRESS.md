@@ -5,6 +5,32 @@ Laufendes Protokoll. Neueste Einträge oben. Format:
 
 ---
 
+## 2026-11-17 — Welle 1: FX-Gerüst integriert, Repo live
+
+**Erledigt**
+
+* **GitHub-Repo angelegt und gepusht:** <https://github.com/TotalBassJunkie/bass-forge-kick-architect> (public).
+  CI-Workflow `Build` läuft bei jedem Push.
+* **FX-Ketten-Framework** (B-69) von Grund auf vorhanden und **im Build integriert**:
+  `src/fx/FxModule.h` (Schnittstelle, `FxType`, Parameterbeschreibung),
+  `src/fx/FxFactory.*` (Registry der neun Modultypen), `src/fx/PassThroughModule.h`
+  (Test-Platzhalter), `src/fx/FxChainProcessor.*` (Kette, MIX-Blende, OUT-GAIN,
+  Bypass, Latenzausgleich, Display-Puffer je Modul).
+* **Tests: 22 Testfälle, 3.407 Assertions, alle grün** — inklusive FX-Kette
+  (Reihenfolge über OUT-GAIN, MIX 0/0,5/1, unbekannter Modultyp, Bypass, Latenz-Summe).
+* Library-Audioformate vollständig erfasst (siehe Bestandsaufnahme 2.2.1):
+  die 2.443 WAVs sind gemischt 16/24-bit-PCM und 32-bit-Float, überwiegend
+  44,1 kHz stereo, dazu 32 mono-IRs und 8 Dateien mit 48 kHz.
+
+**Gates:** Build grün · Tests grün · Remote `origin/main` aktuell.
+
+**Nächste Schritte**
+
+1. Wellen 1 einmischen: StyleModel/Randomizer, SampleLibrary (laufen).
+2. Danach P3 (Engine-Core) und P4 (WSOLA) als Kernstück.
+
+---
+
 ## 2026-11-17 — Welle 0/1: Fundament gebaut
 
 **Erledigt (P0, B-00…B-06)**

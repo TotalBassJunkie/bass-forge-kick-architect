@@ -59,6 +59,8 @@ set(BFKA_ENGINE_SOURCES
     )
 
 set(BFKA_FX_SOURCES
+    src/fx/FxFactory.cpp
+    src/fx/FxChainProcessor.cpp
     )
 
 set(BFKA_LIBRARY_SOURCES
@@ -77,6 +79,10 @@ set(BFKA_HEADERS
     src/core/Log.h
     src/core/ParameterRegistry.h
     src/core/KickState.h
+    src/fx/FxModule.h
+    src/fx/FxFactory.h
+    src/fx/PassThroughModule.h
+    src/fx/FxChainProcessor.h
     src/plugin/PluginProcessor.h
     src/plugin/PluginEditor.h
     )

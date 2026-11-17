@@ -94,7 +94,31 @@ Damit sind zwei Dinge schon im Namen kodiert, die das Plugin nutzt:
 * **Tonart** bei melodischen Pools (`... 12 A 150.wav`, `... 11 G# 150.wav`) → der
   Crunch/Rumble trägt den Grundton im Namen; die Analyse bestätigt ihn.
 
-### 2.3 Sonstige Laufzeitdaten
+### 2.2.1 Audioformate der Library (Header-Scan aller 2.443 Dateien)
+
+Die Library ist **nicht** einheitlich — das ist für den WAV-Import wichtig:
+
+| Format | Anzahl |
+|---|---|
+| PCM 24 bit, 2 Kanäle, 44,1 kHz | 1.320 |
+| IEEE-Float 32 bit, 2 Kanäle, 44,1 kHz | 747 |
+| PCM 16 bit, 2 Kanäle, 44,1 kHz | 336 |
+| PCM 24 bit, **1 Kanal**, 44,1 kHz | 32 |
+| IEEE-Float 32 bit, 2 Kanäle, **48 kHz** | 8 |
+
+Verteilung nach Gruppe (Auszug): Punch-Ordner mischen 24-bit-PCM / 32-bit-Float /
+16-bit-PCM (425 / 280 / 105), Rumbles sind überwiegend 24-bit-PCM (202) mit 52 Float-Dateien,
+die Punch-Reverbs und Schranz-Enhancer sind durchgehend 24-bit-PCM.
+`Impulses/` enthält alle drei PCM-Varianten plus 8 Float-Dateien mit 48 kHz, davon 32 mono.
+
+**Konsequenz:** Der Reader muss 16/24-bit-PCM und 32-bit-Float, mono und stereo sowie
+44,1 und 48 kHz verarbeiten und auf die Projekt-Rate resampeln. JUCEs `AudioFormatManager`
+deckt das ab; die Analyse- und Stretch-Stufen dürfen keine feste Rate annehmen.
+
+Beispielwerte einer Rumble-Datei: 2 Kanäle, 44,1 kHz, 24 bit, 105.840 Samples = 2,4 s,
+635.120 B — das entspricht exakt 2,4 s × 44.100 Hz.
+
+
 
 * `prefs.json` (1002 B): flache Key/Value-Liste der Einstellungen, u. a.
   `theme`, `customBase`, `customAccent` (z. B. `4287226368` = ARGB), `visStyle`, `lookDemon`,
