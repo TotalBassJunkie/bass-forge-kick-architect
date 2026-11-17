@@ -94,6 +94,16 @@ void SampleVoice::prepare (double outputSampleRate, int maxBlockSize)
     updateDerived();
 }
 
+void SampleVoice::setPreRendered (const juce::AudioBuffer<float>* buffer, double sampleRate)
+{
+    preRendered     = buffer;
+    preRenderedRate = (sampleRate > 0.0) ? sampleRate : outputRate;
+
+    // Eine laufende Voice bleibt aktiv: der Puffer ist nur eine andere Quelle,
+    // keine Unterbrechung.
+    updateDerived();
+}
+
 void SampleVoice::setSettings (const VoiceSettings& newSettings)
 {
     voiceSettings = newSettings;
@@ -123,21 +133,40 @@ void SampleVoice::updateDerived() noexcept
     const auto safeOutputRate = juce::jmax (1.0, outputRate);
     const auto safeSourceRate = juce::jmax (1.0, sourceRate);
 
-    // Erweiterungspunkt B-44: Pitch und Stretch wirken NUR hier. In P3 sind
-    // beide Faktoren 1,0, der Schritt ist damit genau sourceRate/outputRate.
-    stepPerOutputSample = (sourceRate > 0.0 && outputRate > 0.0)
-                              ? (safeSourceRate / safeOutputRate) * pitchRatio / juce::jmax (1.0e-9, stretchRatio)
+    // B-43: Bei KEEP PITCH mit vorgerendertem Puffer ist dieser die effektive
+    // Quelle; Pitch und Stretch stecken schon darin und werden nicht erneut
+    // angewendet. Ohne Puffer (oder bei REPITCH) gilt die Rohquelle.
+    const bool usePreRendered = (voiceSettings.mode == StretchMode::keepPitch
+                                 && preRendered != nullptr);
+
+    activeSource  = usePreRendered ? preRendered : source;
+    activeRate    = usePreRendered ? juce::jmax (1.0, preRenderedRate) : safeSourceRate;
+    pitchAccurate = usePreRendered;
+
+    const double effectivePitch   = usePreRendered
+                                        ? 1.0
+                                        : std::pow (2.0, juce::jlimit (-24.0, 24.0, voiceSettings.pitchSemitones) / 12.0);
+    const double effectiveStretch = usePreRendered
+                                        ? 1.0
+                                        : juce::jlimit (0.25, 8.0, voiceSettings.stretchFactor);
+
+    pitchRatio   = effectivePitch;
+    stretchRatio = effectiveStretch;
+
+    // Pitch und Stretch wirken NUR hier: auf Leseschritt UND Laenge.
+    stepPerOutputSample = (activeRate > 0.0 && outputRate > 0.0)
+                              ? (activeRate / safeOutputRate) * pitchRatio / juce::jmax (1.0e-9, stretchRatio)
                               : 1.0;
 
-    if (source == nullptr || (! (stepPerOutputSample > 0.0)))
+    if (activeSource == nullptr || (! (stepPerOutputSample > 0.0)))
         return;
 
-    const auto sourceSamples = source->getNumSamples();
+    const auto sourceSamples = activeSource->getNumSamples();
 
     if (sourceSamples <= 0)
         return;
 
-    const auto sourceLengthSeconds = (double) sourceSamples / safeSourceRate;
+    const auto sourceLengthSeconds = (double) sourceSamples / activeRate;
 
     // --- Trim-Fenster ------------------------------------------------------
     const auto trimStart = juce::jlimit (0.0, sourceLengthSeconds,
@@ -156,11 +185,11 @@ void SampleVoice::updateDerived() noexcept
     if (! (windowSeconds > 0.0))
         return;
 
-    readStartSourcePos = trimStart * safeSourceRate;
+    readStartSourcePos = trimStart * activeRate;
 
     // --- Laenge in Ausgabe-Samples ----------------------------------------
     // Bewusst NICHT ueber "Quell-Samples / step" gerechnet: dabei wuerde sich
-    // sourceRate im Zaehler und Nenner nur fast herauskuerzen und die Laenge
+    // die Quellrate im Zaehler und Nenner nur fast herauskuerzen und die Laenge
     // koennte je nach Rundung um ein Sample springen (44,1 kHz -> 48 kHz).
     // Die Dauer folgt direkt aus dem Zeitbezug:
     //     Dauer = Fensterlaenge * stretchRatio / pitchRatio
@@ -257,7 +286,7 @@ float SampleVoice::gainForSample (double timeInVoice, juce::int64 sampleInVoice)
 
 void SampleVoice::renderNextBlock (juce::AudioBuffer<float>& target, int startSample, int numSamples)
 {
-    if (! active || source == nullptr)
+    if (! active || activeSource == nullptr)
         return;
 
     const auto targetChannels = target.getNumChannels();
@@ -274,12 +303,12 @@ void SampleVoice::renderNextBlock (juce::AudioBuffer<float>& target, int startSa
     if (samples <= 0)
         return;
 
-    const auto sourceChannels = juce::jmin (source->getNumChannels(), kMaxChannels);
+    const auto sourceChannels = juce::jmin (activeSource->getNumChannels(), kMaxChannels);
 
     if (sourceChannels <= 0)
         return;
 
-    const auto lastSourceIndex = source->getNumSamples() - 1;
+    const auto lastSourceIndex = activeSource->getNumSamples() - 1;
 
     if (lastSourceIndex < 0)
         return;
@@ -288,7 +317,7 @@ void SampleVoice::renderNextBlock (juce::AudioBuffer<float>& target, int startSa
     const float* sourceData[kMaxChannels] = { nullptr, nullptr };
 
     for (int ch = 0; ch < sourceChannels; ++ch)
-        sourceData[ch] = source->getReadPointer (ch);
+        sourceData[ch] = activeSource->getReadPointer (ch);
 
     const auto outputRateSafe = juce::jmax (1.0, outputRate);
 

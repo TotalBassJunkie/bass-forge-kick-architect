@@ -46,6 +46,15 @@ target_sources(BFKA_Tests PRIVATE
     ModuleCardLayoutTests.cpp
     ImpulseLibraryTests.cpp
     PresetEmbedTests.cpp
+    PitchStretchTests.cpp
+    PitchShifterTests.cpp
+    PreRenderTests.cpp
+    QualityMetricsTests.cpp
+    UndoHistoryTests.cpp
+    ChaosEngineTests.cpp
+    DialogHostTests.cpp
+    OnsetDetectorTests.cpp
+    AnalysisCacheTests.cpp
     TestMain.cpp
     ../src/core/Version.cpp
     ../src/core/Log.cpp
@@ -53,6 +62,13 @@ target_sources(BFKA_Tests PRIVATE
     ../src/core/KickState.cpp
     ../src/core/FxChainIO.cpp
     ../src/core/PresetIO.cpp
+    ../src/core/UndoHistory.cpp
+    ../src/engine/PitchShifter.cpp
+    ../src/engine/PreRenderCache.cpp
+    ../src/library/ChaosEngine.cpp
+    ../src/library/analysis/OnsetDetector.cpp
+    ../src/library/analysis/AnalysisCache.cpp
+    ../src/ui/overlays/DialogHost.cpp
     ../src/ui/FxChainModel.cpp
     ../src/ui/ModuleStructureView.cpp
     ../src/ui/ModuleCard.cpp

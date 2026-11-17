@@ -55,6 +55,7 @@ set(BFKA_CORE_SOURCES
     src/core/KickState.cpp
     src/core/FxChainIO.cpp
     src/core/PresetIO.cpp
+    src/core/UndoHistory.cpp
     )
 
 set(BFKA_ENGINE_SOURCES
@@ -62,6 +63,8 @@ set(BFKA_ENGINE_SOURCES
     src/engine/KickRenderer.cpp
     src/engine/KickAssembler.cpp
     src/engine/WsolaStretcher.cpp
+    src/engine/PitchShifter.cpp
+    src/engine/PreRenderCache.cpp
     )
 
 set(BFKA_FX_SOURCES
@@ -84,6 +87,9 @@ set(BFKA_LIBRARY_SOURCES
     src/library/StyleModel.cpp
     src/library/RandomizerEngine.cpp
     src/library/ImpulseLibrary.cpp
+    src/library/ChaosEngine.cpp
+    src/library/analysis/OnsetDetector.cpp
+    src/library/analysis/AnalysisCache.cpp
     )
 
 set(BFKA_UI_SOURCES
@@ -93,6 +99,7 @@ set(BFKA_UI_SOURCES
     src/ui/FxPage.cpp
     src/ui/SlotCard.cpp
     src/ui/KickPage.cpp
+    src/ui/overlays/DialogHost.cpp
     src/ui/editors/MultibandView.cpp
     src/ui/editors/ConvolverView.cpp
     src/ui/editors/DynamicEqView.cpp
@@ -113,6 +120,7 @@ set(BFKA_HEADERS
     src/core/KickState.h
     src/core/FxChainIO.h
     src/core/PresetIO.h
+    src/core/UndoHistory.h
     src/fx/FxModule.h
     src/fx/FxFactory.h
     src/fx/PassThroughModule.h
@@ -133,10 +141,15 @@ set(BFKA_HEADERS
     src/engine/KickAssembler.h
     src/engine/WsolaStretcher.h
     src/engine/Resampler.h
+    src/engine/PitchShifter.h
+    src/engine/PreRenderCache.h
     src/library/SampleLibrary.h
     src/library/StyleModel.h
     src/library/RandomizerEngine.h
     src/library/ImpulseLibrary.h
+    src/library/ChaosEngine.h
+    src/library/analysis/OnsetDetector.h
+    src/library/analysis/AnalysisCache.h
     src/plugin/PluginProcessor.h
     src/plugin/PluginEditor.h
     src/ui/UiTheme.h
@@ -146,6 +159,7 @@ set(BFKA_HEADERS
     src/ui/FxPage.h
     src/ui/SlotCard.h
     src/ui/KickPage.h
+    src/ui/overlays/DialogHost.h
     src/ui/editors/MultibandView.h
     src/ui/editors/ConvolverView.h
     src/ui/editors/DynamicEqView.h

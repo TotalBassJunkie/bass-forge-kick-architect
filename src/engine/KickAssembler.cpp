@@ -109,6 +109,12 @@ VoiceSettings KickAssembler::voiceSettingsForSlot (const KickState& state,
     settings.fadeOut.shape         = shapeFromCurve (curvePercent);
     settings.fadeOut.shapeAmount   = -shapeAmount;
 
+    // B-42/B-43: Pitch in Halbtoenen (-24..+24), Stretch als Zeitfaktor
+    // (0,25..8) und die globale Betriebsart KEEP PITCH / REPITCH.
+    settings.pitchSemitones = (double) engineering (state, prefix + "pitch", 0.0f);
+    settings.stretchFactor  = (double) engineering (state, prefix + "stretch", 1.0f);
+    settings.mode           = state.stretchMode();
+
     return settings;
 }
 

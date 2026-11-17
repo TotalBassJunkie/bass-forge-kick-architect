@@ -2,6 +2,8 @@
 
 #include <juce_audio_basics/juce_audio_basics.h>
 
+#include "core/KickState.h"   // StretchMode (B-43)
+
 namespace bfka
 {
 
@@ -45,7 +47,8 @@ struct FadeSpec
  * Die Werte kommen aus dem Kick-Zustand: `pos` -> `positionSeconds`,
  * `trimstart`/`trimend` -> `trimStartSeconds`/`trimEndSeconds`, `fadein`/`fadeout`
  * -> `fadeIn`/`fadeOut` (L = Prozent * getrimmte Dauer), `vol` -> `gainLinear`,
- * `mute`/`solo` direkt. Pitch und Stretch sind in P3 nicht enthalten (Ticket B-44).
+ * `mute`/`solo` direkt, `pitch`/`stretch` und die Betriebsart aus dem
+ * Kick-Zustand (B-42/B-43).
  */
 struct VoiceSettings
 {
@@ -70,6 +73,15 @@ struct VoiceSettings
     /** Solo wird hier nur mitgefuehrt. Die Aufloesung braucht die Summe aller
         Slots und passiert in `KickRenderer::noteOn()`. */
     bool solo = false;
+
+    /** Pitch in Halbtoenen, -24..+24 (B-42). Bei KEEP PITCH laengenneutral. */
+    double pitchSemitones = 0.0;
+
+    /** Zeitfaktor 0.25..8.0; > 1 = laenger (B-42). */
+    double stretchFactor  = 1.0;
+
+    /** Wie Pitch/Stretch wirken (B-43). */
+    StretchMode mode      = StretchMode::keepPitch;
 };
 
 /**
@@ -127,6 +139,18 @@ public:
     void setSettings (const VoiceSettings& newSettings);
 
     const VoiceSettings& settings() const noexcept { return voiceSettings; }
+
+    /**
+     * Uebergibt einen vorgerenderten Puffer (B-43, KEEP PITCH).
+     * Der Puffer ist NICHT besessen und muss die Voice ueberleben. Bei
+     * `mode == StretchMode::keepPitch` liest die Voice ausschliesslich diesen
+     * Puffer und wendet pitchRatio/stretchRatio NICHT erneut an (der Puffer
+     * enthaelt beides schon). `nullptr` schaltet zurueck auf die Rohquelle.
+     */
+    void setPreRendered (const juce::AudioBuffer<float>* buffer, double sampleRate);
+
+    /** true, wenn die Tonhoehe wirklich erhalten bleibt (KEEP PITCH mit Puffer). */
+    bool isPitchAccurate() const noexcept { return pitchAccurate; }
 
     // --- Wiedergabe --------------------------------------------------------
     /**
@@ -192,14 +216,20 @@ private:
     juce::int64 elapsed = 0;      ///< Ausgabe-Samples seit startAt()
     bool        active  = false;  ///< wird gerade wiedergegeben
 
-    // --- Erweiterungspunkt B-44 (Pitch/Stretch) ----------------------------
-    // In P3 sind beide Faktoren fest 1,0 (Originalwiedergabe). Sie wirken
-    // ausschliesslich in updateDerived() auf `stepPerOutputSample` und damit auf
-    // Lesegeschwindigkeit UND Laenge. Fuer KEEP PITCH (laengenneutral) muss B-44
-    // spaeter einen vorbereiteten WSOLA-Puffer als Quelle einsetzen; siehe
+    // --- Erweiterungspunkt B-42/B-43 (Pitch/Stretch) -----------------------
+    // `pitchRatio`/`stretchRatio` wirken ausschliesslich in updateDerived() auf
+    // `stepPerOutputSample` und damit auf Lesegeschwindigkeit UND Laenge. Bei
+    // KEEP PITCH mit vorgerendertem Puffer werden beide auf 1,0 gesetzt: der
+    // Puffer enthaelt Pitch und Stretch bereits. Siehe
     // docs/specs/voice-and-render.md, Abschnitt 9.
-    double pitchRatio   = 1.0;   ///< 2^(Halbtoene/12); B-44
-    double stretchRatio = 1.0;   ///< Zeitfaktor >1 = laenger; B-44
+    double pitchRatio   = 1.0;   ///< 2^(Halbtoene/12); B-42
+    double stretchRatio = 1.0;   ///< Zeitfaktor >1 = laenger; B-42
+
+    const juce::AudioBuffer<float>* preRendered = nullptr;
+    double preRenderedRate = 0.0;
+    const juce::AudioBuffer<float>* activeSource = nullptr;   ///< effektive Quelle
+    double activeRate = 48000.0;                              ///< Rate der effektiven Quelle
+    bool   pitchAccurate = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SampleVoice)
 };
