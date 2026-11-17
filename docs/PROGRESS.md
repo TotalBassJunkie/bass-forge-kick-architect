@@ -36,7 +36,7 @@ Laufendes Protokoll. Neueste Einträge oben. Format:
   IR-Pfade die Module (schließt O5 aus der Ketten-Engine-Spec).
 * **Doku:** `docs/specs/fx-multiband.md`, `fx-convolver.md`,
   `fx-dynamic-eq.md`; Ketten-Engine-Spec auf zehn Typen aktualisiert.
-* **Tests: 212 Testfälle, 491.404 Assertions, alle grün.** Neu: 36 Tests für
+* **Tests: 212 Testfälle, 491.404 Assertions, alle grün.** Neu: 30 Modul-Tests (9 Multiband, 10 Convolver, 11 Dynamic EQ) für
   die drei Module (Impuls-/Sinus-/Hüllkurvenmessungen, True-Stereo-Routing,
   Zustands-Roundtrip, Kettenintegration OTT → Convolver → Dynamic EQ).
   Baseline vor der Änderung: 180 Testfälle / 480.817 Assertions.

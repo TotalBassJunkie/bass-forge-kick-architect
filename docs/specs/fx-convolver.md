@@ -2,7 +2,7 @@
 
 **Ticket:** B-141 (Phase 2, Integration externer FX-Plugin-Funktionen)
 **Code:** `src/fx/modules/ConvolverModule.h/.cpp`
-**Tests:** `tests/ConvolverModuleTests.cpp` (12 Testfälle) + Kettentest in `tests/FxChainTests.cpp`
+**Tests:** `tests/ConvolverModuleTests.cpp` (10 Testfälle) + Kettentest in `tests/FxChainTests.cpp`
 **Stand:** 2026-11-17
 
 ---

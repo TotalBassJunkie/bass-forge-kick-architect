@@ -2,7 +2,7 @@
 
 **Ticket:** B-142 (Phase 2, Integration externer FX-Plugin-Funktionen)
 **Code:** `src/fx/modules/DynamicEqModule.h/.cpp`
-**Tests:** `tests/DynamicEqModuleTests.cpp` (13 Testfälle) + Kettentest in `tests/FxChainTests.cpp`
+**Tests:** `tests/DynamicEqModuleTests.cpp` (11 Testfälle) + Kettentest in `tests/FxChainTests.cpp`
 **Stand:** 2026-11-17
 
 ---

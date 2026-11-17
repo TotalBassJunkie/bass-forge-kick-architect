@@ -2,7 +2,7 @@
 
 **Ticket:** B-140 (Phase 2, Integration externer FX-Plugin-Funktionen)
 **Code:** `src/fx/modules/MultibandModule.h/.cpp`, Bausteine in `src/fx/dsp/Biquad.h`
-**Tests:** `tests/MultibandModuleTests.cpp` (11 Testfälle) + Kettentest in `tests/FxChainTests.cpp`
+**Tests:** `tests/MultibandModuleTests.cpp` (9 Testfälle) + Kettentest in `tests/FxChainTests.cpp`
 **Stand:** 2026-11-17
 
 ---
