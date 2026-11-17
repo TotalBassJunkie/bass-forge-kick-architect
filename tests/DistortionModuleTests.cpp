@@ -286,7 +286,7 @@ TEST_CASE ("Distortion: WAVEFOLD faltet mit folds", "[fx][dist]")
     const float withEightFolds = module.shape (0.3125f);
     REQUIRE (std::abs (withTwoFolds - withEightFolds) > 0.01f);
 
-    // folds wird geklemmt (2 … 8).
+    // folds wird geklemmt (2 ... 8).
     module.setParam (DistortionModule::paramFolds, 100.0f);
     REQUIRE (std::isfinite (module.shape (0.7f)));
     REQUIRE (std::abs (module.shape (0.7f)) <= 1.0f + 1e-6f);
@@ -526,12 +526,13 @@ TEST_CASE ("Distortion: Segmentmodi der Kurve", "[fx][dist]")
 // DRIVE und Ceiling
 // ===========================================================================
 
-TEST_CASE ("Distortion: DRIVE 0 reicht das Signal sauber durch", "[fx][dist][!mayfail]")
+TEST_CASE ("Distortion: DRIVE 0 reicht das Signal bitidentisch durch", "[fx][dist]")
 {
-    // BEKANNTER FEHLER (Ticket B-63b): der Ausgang ist rund 3,5 dB leiser als der
-    // Eingang, obwohl bei DRIVE 0 nur verzoegert werden soll. Das deutet auf einen
-    // Fehler in der Verzoegerungslinie (copyDelayed) hin. Der Test bleibt im
-    // Bestand, ist aber als "may fail" markiert, damit die Pipeline gruen bleibt.
+    // Bei DRIVE 0 wird die Kurve nicht angewendet. Das Modul umgeht dann das
+    // 2x-Oversampling und schiebt den Eingang ueber eine reine
+    // Verzoegerungsleitung um genau `latencySamples()` nach hinten. Dieser Pfad
+    // ist damit samplegenau (anders als der Nasspfad, dessen IIR-Halbbandfilter
+    // eine frequenzabhaengige Gruppenlaufzeit haben).
     DistortionModule module;
     configure (module, 0.0f /* drive */, 0 /* mode */, 2.0f, 1, 0, 0);
 
@@ -544,34 +545,16 @@ TEST_CASE ("Distortion: DRIVE 0 reicht das Signal sauber durch", "[fx][dist][!ma
     REQUIRE (latency >= 0);
     REQUIRE (latency < 64);
 
-    // Das Modul laeuft durch 2x-Oversampling (IIR-Halbband). Dessen Gruppenlaufzeit
-    // ist frequenzabhaengig, deshalb ist ein samplegenauer Vergleich nach
-    // `latencySamples()` NICHT erreichbar. Geprueft wird stattdessen:
-    //  - der Kopf ist still (Latenz),
-    //  - danach ist das Signal sauber (RMS und Spitzenwert praktisch unveraendert).
-    const int settle = latency + 64;
-
-    for (int ch = 0; ch < 2; ++ch)
-        for (int n = 0; n < latency; ++n)
-            REQUIRE (std::abs (buffer.getSample (ch, n)) < 1.0e-6f);
-
     for (int ch = 0; ch < 2; ++ch)
     {
-        double sumIn = 0.0, sumOut = 0.0;
-
-        for (int n = settle; n < 900; ++n)
+        for (int n = 0; n < 900; ++n)
         {
-            sumIn  += (double) original.getSample (ch, n) * original.getSample (ch, n);
-            sumOut += (double) buffer.getSample (ch, n) * buffer.getSample (ch, n);
+            // Kopf: die Verzoegerungsleitung ist noch leer.
+            const float expected = (n >= latency) ? original.getSample (ch, n - latency) : 0.0f;
+
+            INFO ("Kanal " << ch << " Sample " << n << " (Latenz " << latency << ")");
+            REQUIRE_THAT (buffer.getSample (ch, n), WithinAbs (expected, 1e-6));
         }
-
-        const auto rmsIn  = std::sqrt (sumIn  / juce::jmax (1, 900 - settle));
-        const auto rmsOut = std::sqrt (sumOut / juce::jmax (1, 900 - settle));
-
-        INFO ("Kanal " << ch << " rmsIn " << rmsIn << " rmsOut " << rmsOut);
-        REQUIRE (rmsIn > 0.0);
-        REQUIRE (rmsOut > 0.0);
-        REQUIRE (std::abs (20.0 * std::log10 (rmsOut / rmsIn)) < 0.5);
     }
 }
 
@@ -581,29 +564,19 @@ TEST_CASE ("Distortion: DRIVE 0 ist auch bei lauten Signalen clean (nur Ceiling)
     configure (module, 0.0f, 4 /* fuzz */, 2.0f, 1, 0, 0);
 
     juce::AudioBuffer<float> buffer = makeSine (1, 2000, 80.0, 0.5f);
+    const juce::AudioBuffer<float> original = buffer;
 
     module.process (buffer);
 
-    // Kein Fuzz-Charakter bei DRIVE 0: das Signal bleibt ein sauberer Sinus.
-    // Geprueft wird die Grundform (kein Clipping, keine Sprünge) statt einer
-    // samplegenauen Kopie (siehe vorheriger Test zur Latenz).
-    const int settle = module.latencySamples() + 64;
-    float peak = 0.0f;
+    // Kein Fuzz-Charakter bei DRIVE 0: der Ausgang ist der verzoegerte Eingang.
+    const int latency = module.latencySamples();
 
-    for (int n = settle; n < 2000; ++n)
-        peak = juce::jmax (peak, std::abs (buffer.getSample (0, n)));
-
-    INFO ("Spitzenwert bei DRIVE 0: " << peak);
-    REQUIRE (peak > 0.4f);
-    REQUIRE (peak < 0.55f);
-
-    // Keine harten Sprünge: die maximale Sample-zu-Sample-Aenderung bleibt
-    // im Bereich eines Sinus gleicher Frequenz und Amplitude.
-    float maxStep = 0.0f;
-    for (int n = settle + 1; n < 2000; ++n)
-        maxStep = juce::jmax (maxStep, std::abs (buffer.getSample (0, n) - buffer.getSample (0, n - 1)));
-
-    REQUIRE (maxStep < 0.05f);
+    for (int n = latency; n < 2000; ++n)
+    {
+        INFO ("Sample " << n << " (Latenz " << latency << ")");
+        REQUIRE_THAT (buffer.getSample (0, n),
+                      WithinAbs (original.getSample (0, n - latency), 1e-6));
+    }
 }
 
 TEST_CASE ("Distortion: Ceiling haelt bei +-8 in allen Modi", "[fx][dist]")

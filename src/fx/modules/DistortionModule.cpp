@@ -388,8 +388,8 @@ void DistortionModule::copyDelayed (juce::AudioBuffer<float>& buffer,
         for (int ch = 0; ch < numChannels; ++ch)
         {
             const float in = data[(size_t) ch][n];
-            data[(size_t) ch][n]      = ring[(size_t) ch][readPos];
-            ring[(size_t) ch][readPos] = in;
+            data[(size_t) ch][n] = ring[(size_t) ch][readPos];
+            ring[(size_t) ch][delayWritePos] = in;
         }
 
         delayWritePos = (delayWritePos + 1) % ringSize;
