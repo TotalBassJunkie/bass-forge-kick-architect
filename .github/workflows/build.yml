@@ -60,7 +60,14 @@ jobs:
         run: |
           $exe = Get-ChildItem build -Recurse -Filter BFKA_Tests.exe | Select-Object -First 1
           if (-not $exe) { throw 'BFKA_Tests.exe nicht gefunden' }
+
+          # JUCE-Logs (log::w/log::i) gehen nach stderr; PowerShell wertet stderr
+          # nativer Programme bei ErrorActionPreference=Stop als Abbruch. Den
+          # Exitcode pruefen wir deshalb selbst.
+          $ErrorActionPreference = 'Continue'
           & $exe.FullName
+          $code = $LASTEXITCODE
+          if ($code -ne 0) { throw "Unit-Tests fehlgeschlagen (Exitcode $code)" }
 
       - name: Artefakte sammeln
         shell: pwsh
