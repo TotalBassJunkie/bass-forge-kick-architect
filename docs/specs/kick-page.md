@@ -28,7 +28,7 @@ aus `PluginProcessor` (`APVTS` + `extraState`), die Seite liest und schreibt nur
 | `src/ui/SlotCard.{h,cpp}` | Slot-Karte (Rollenband, Regler, Flags, Mini-Wellenform) |
 | `src/ui/UiTheme.h` | Farben/Maße (unverändert genutzt) |
 | `src/plugin/PluginEditor.{h,cpp}` | Rahmen, Seitenumschalter, hält beide Seiten |
-| `tests/KickPageTests.cpp` | 11 Testfälle (Logik + Render) |
+| `tests/KickPageTests.cpp` | 12 Testfälle (Logik + Render) |
 
 ## 2. Transport
 
@@ -140,6 +140,7 @@ Slot-Karten waren leer, obwohl der Kick klang.
 | Reglertexte | „0.00 dB“, „0.00 st“, „1.000 x“ (Rundungsrauschen) |
 | Visualiser | PARTS/SUM rendern, MUTE ändert die Summe nicht negativ |
 | Demo-Kick | Demo landet im Zustand, Karten stimmen mit Zustand überein (WARN ohne Library) |
+| Preset-Rundweg | Preset mit Sample laedt die Slots in den Renderer (Pegel kommt mit) |
 | Editor | beide Seiten vorhanden und zeichenbar |
 
 Renderings für die Sichtprüfung: `BFKA_RENDER_UI=1` schreibt

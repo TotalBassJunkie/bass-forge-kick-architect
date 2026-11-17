@@ -505,5 +505,5 @@ kamen vier Tickets, die beim Bauen nötig wurden. Einzelheiten in
 | B-89 | Resize/UIScaler/HiDPI | offen |
 
 **Getestete Eigenschaften:** siehe docs/specs/kick-page.md (Abschnitt 7).
-Aktueller Stand **316 Testfälle / 540.097 Assertions** (+11 Testfälle / +120
+Aktueller Stand **317 Testfälle / 540.115 Assertions** (+12 Testfälle / +138
 Assertions gegenüber Welle 8).

@@ -72,10 +72,16 @@ im Release: Convolver true stereo (4-Kanal-IR, 2 s) 5,2 %, Multiband linearphasi
 (513 Taps) 4,7 %. Tabelle in `docs/specs/fx-chain-engine.md` §9.1. Offen bleibt
 der Sidechain-Hosttest in einer DAW (Teil 2 von B-153).
 
-**Tests: 316 Testfälle, 540.097 Assertions, alle grün.** Neu:
-`tests/KickPageTests.cpp` mit 11 Testfällen (12 Karten, Sample laden/leeren,
+**Preset-Rundweg nachgezogen.** `applyState()` lädt die Sample-Referenzen des
+Zustands jetzt selbst in den Renderer (`loadFromState`) — vorher zeigte ein
+geladenes Preset seine Slots in den Karten, spielte sie aber nicht. `startDemoKick()`
+nutzt denselben Weg und zählt nur noch die belegten Slots.
+
+**Tests: 317 Testfälle, 540.115 Assertions, alle grün.** Neu:
+`tests/KickPageTests.cpp` mit 12 Testfällen (12 Karten, Sample laden/leeren,
 Live-Regler, BPM/Klemmung, Rollen/Sperren, Reglertexte, Visualiser PARTS/SUM,
-Demo-Kick gegen den Zustand, Editor mit beiden Seiten). Baseline: 305 / 539.977.
+Demo-Kick gegen den Zustand, Preset-Rundweg mit Sample, Editor mit beiden
+Seiten). Baseline: 305 / 539.977.
 
 **Gates:** Build grün (VST3 + Standalone, keine neuen Warnungen) · Suite grün ·
 UI-Renderings gesichtet (`C:\bfka-re\ui-kickpage-*.png`) · Doku aktualisiert.
