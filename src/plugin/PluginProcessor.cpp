@@ -1,4 +1,4 @@
-﻿#include "plugin/PluginProcessor.h"
+#include "plugin/PluginProcessor.h"
 #include "plugin/PluginEditor.h"
 
 #include "core/ParameterRegistry.h"
@@ -14,8 +14,10 @@ PluginProcessor::PluginProcessor()
                                 .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       apvts (*this, nullptr, "PARAMETERS", createLayout())
 {
-    extraState = juce::ValueTree ("BFKAExtra");
-    extraState.setProperty ("schemaVersion", 1, nullptr);
+    // Wurzel `BFKAKick`: enthaelt Slots, `<FxChain>` und die Metadaten. Die
+    // Parameterwerte kommen beim Capture ohnehin aus dem APVTS und werden dort
+    // ueberschrieben; so gibt es nur ein Schema fuer den Gesamt-Zustand (B-143).
+    extraState = KickState{}.toValueTree();
 
     log::i (juce::String (Version::productName) + " " + Version::get() + " gestartet");
 }
@@ -51,6 +53,9 @@ void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 
     renderer.prepare (sampleRate, samplesPerBlock);
     fxChain.prepare (sampleRate, samplesPerBlock);
+
+    // Kette aus dem Zustand bauen und die Latenz an den Host melden (B-143).
+    rebuildEngineChain();
 
     if (contentRoot == juce::File())
     {
@@ -162,30 +167,23 @@ juce::AudioProcessorEditor* PluginProcessor::createEditor()
 
 KickState PluginProcessor::captureState() const
 {
+    // Basis: der gespeicherte Nicht-Parameter-Zustand. Die Wurzel ist ein
+    // `BFKAKick` (Konstruktor, `applyState()`, `setFxChain()`), damit Slots,
+    // Rollen, Locks, Sample-Pfade und die FX-Kette verlustfrei zurueckkommen.
     KickState state;
+    juce::String error;
+
+    if (auto stored = KickState::fromValueTree (extraState, error))
+        state = *stored;
+    else
+        log::w ("captureState: extraState nicht lesbar (" + error + ") - nur Parameter");
+
+    // Parameter sind die Wahrheit im APVTS (Host-Automation, Editor).
     const auto& registry = ParameterRegistry::get();
 
     for (const auto& d : registry.all())
         if (auto* p = apvts.getRawParameterValue (d.id))
             state.setParam (d.id, p->load());
-
-    // Slots/FX/Meta aus extraState
-    juce::String error;
-    if (auto restored = KickState::fromValueTree (extraState, error))
-    {
-        for (int i = 0; i < KickState::kNumSlots; ++i)
-        {
-            state.setSample (i, restored->getSample (i));
-            state.setRole (i, restored->getRole (i));
-            state.setLocked (i, restored->isLocked (i));
-            state.setKeyTracked (i, restored->isKeyTracked (i));
-        }
-
-        state.fxChain()   = restored->fxChain();
-        state.align()     = restored->align();
-        state.setStyleId (restored->getStyleId());
-        state.setPresetName (restored->getPresetName());
-    }
 
     return state;
 }
@@ -199,31 +197,50 @@ void PluginProcessor::applyState (const KickState& state)
         if (auto* p = apvts.getParameter (all[i].id))
             p->setValueNotifyingHost (state.values()[i]);
 
-    juce::ValueTree extra ("BFKAExtra");
-    extra.setProperty ("schemaVersion", 1, nullptr);
+    // Der komplette Zustand inklusive `<FxChain>`; danach die Engine bauen.
+    extraState = state.toValueTree();
 
-    juce::ValueTree slots ("Slots");
-    for (int i = 0; i < KickState::kNumSlots; ++i)
+    setFxChain (state.fxChain());
+}
+
+void PluginProcessor::rebuildEngineChain()
+{
+    currentChain = {};
+
+    juce::String error;
+
+    if (auto stored = KickState::fromValueTree (extraState, error))
+        currentChain = stored->fxChain();
+    else
+        log::w ("rebuildEngineChain: Zustand nicht lesbar (" + error + ")");
+
+    fxChain.setChain (currentChain);
+
+    // Nach jedem Rebuild neu melden: Modullatenzen koennen sich mit der
+    // Sample-Rate (Multiband-FIR) oder dem Modus (Convolver) aendern.
+    setLatencySamples (fxChain.totalLatencySamples());
+}
+
+void PluginProcessor::setFxChain (const FxChain& chain)
+{
+    currentChain = chain;
+
+    juce::String error;
+    KickState state;
+
+    if (auto stored = KickState::fromValueTree (extraState, error))
+        state = *stored;
+
+    state.fxChain() = chain;
+    extraState = state.toValueTree();
+
+    // Vor `prepareToPlay()` gibt es noch keine Engine; `prepareToPlay()` baut
+    // die Kette dann aus dem Zustand.
+    if (fxChain.isPrepared())
     {
-        juce::ValueTree s ("Slot");
-        s.setProperty ("index", i, nullptr);
-        s.setProperty ("role", (int) state.getRole (i), nullptr);
-        s.setProperty ("locked", state.isLocked (i), nullptr);
-        s.setProperty ("keyTracked", state.isKeyTracked (i), nullptr);
-
-        if (const auto& sample = state.getSample (i); sample.has_value())
-        {
-            s.setProperty ("relPath", sample->relPath, nullptr);
-            s.setProperty ("absPath", sample->absPath, nullptr);
-            s.setProperty ("fileName", sample->fileName, nullptr);
-            s.setProperty ("roleId", sample->roleId, nullptr);
-        }
-
-        slots.appendChild (s, nullptr);
+        fxChain.setChain (chain);
+        setLatencySamples (fxChain.totalLatencySamples());
     }
-    extra.appendChild (slots, nullptr);
-
-    extraState = extra;
 }
 
 void PluginProcessor::getStateInformation (juce::MemoryBlock& destData)

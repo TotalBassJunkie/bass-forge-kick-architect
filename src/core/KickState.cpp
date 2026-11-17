@@ -1,4 +1,5 @@
 #include "core/KickState.h"
+#include "core/FxChainIO.h"
 #include "core/ParameterRegistry.h"
 
 namespace bfka
@@ -10,7 +11,6 @@ namespace
     const juce::Identifier kSlotsType { "Slots" };
     const juce::Identifier kSlotType  { "Slot" };
     const juce::Identifier kParamsType{ "Params" };
-    const juce::Identifier kFxType    { "FxChain" };
     const juce::Identifier kPType     { "P" };
 }
 }
@@ -205,20 +205,8 @@ juce::ValueTree KickState::toValueTree() const
     }
     root.appendChild (params, nullptr);
 
-    juce::ValueTree fx (kFxType);
-    fx.setProperty ("bypassAll", chain.bypassAll, nullptr);
-    for (const auto& m : chain.modules)
-    {
-        juce::ValueTree module ("Module");
-        module.setProperty ("type", m.type, nullptr);
-        module.setProperty ("on", m.enabled, nullptr);
-        module.setProperty ("mix", m.mix, nullptr);
-        module.setProperty ("outGain", m.outGain, nullptr);
-        if (m.data.isValid())
-            module.appendChild (m.data.createCopy(), nullptr);
-        fx.appendChild (module, nullptr);
-    }
-    root.appendChild (fx, nullptr);
+    // FX-Kette: Schema liegt in core/FxChainIO.cpp (B-143).
+    root.appendChild (fxChainToValueTree (chain), nullptr);
 
     return root;
 }
@@ -276,26 +264,8 @@ std::optional<KickState> KickState::fromValueTree (const juce::ValueTree& tree, 
         state.setParam (id, (float) (double) p.getProperty ("v", 0.0));
     }
 
-    const auto fx = tree.getChildWithName (kFxType);
-    if (fx.isValid())
-    {
-        state.chain.bypassAll = (bool) fx.getProperty ("bypassAll", false);
-        for (int i = 0; i < fx.getNumChildren(); ++i)
-        {
-            const auto m = fx.getChild (i);
-            FxModuleState module;
-            module.type    = m.getProperty ("type", "").toString();
-            module.enabled = (bool) m.getProperty ("on", true);
-            module.mix     = (float) (double) m.getProperty ("mix", 1.0);
-            module.outGain = (float) (double) m.getProperty ("outGain", 1.0);
-
-            if (m.getNumChildren() > 0)
-                module.data = m.getChild (0).createCopy();
-
-            if (module.type.isNotEmpty())
-                state.chain.modules.push_back (std::move (module));
-        }
-    }
+    if (auto parsed = fxChainFromValueTree (tree))
+        state.chain = std::move (*parsed);
 
     state.dirty = false;
     error.clear();

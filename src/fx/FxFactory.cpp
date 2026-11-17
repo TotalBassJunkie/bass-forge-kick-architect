@@ -63,6 +63,15 @@ bool FxFactory::isRegistered (FxType type) const
     return false;
 }
 
+FxFactory::Creator FxFactory::creatorFor (FxType type) const
+{
+    for (const auto& entry : entries)
+        if (entry.type == type)
+            return entry.creator;
+
+    return {};
+}
+
 std::unique_ptr<FxModule> FxFactory::create (const juce::String& typeString) const
 {
     const auto type = fxTypeFromString (typeString);

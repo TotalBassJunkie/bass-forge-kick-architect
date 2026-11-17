@@ -66,20 +66,21 @@ namespace
     struct ScopedTypeOverride
     {
         ScopedTypeOverride (FxType type, FxFactory::Creator creator)
-            : overridden (type)
+            : overridden (type),
+              previous (FxFactory::get().creatorFor (type))
         {
             FxFactory::get().registerType (overridden, std::move (creator));
         }
 
+        // Stellt den vorherigen Erzeuger wieder her. Ein Platzhalter waere hier
+        // falsch: er wuerde das echte Modul fuer alle folgenden Tests ersetzen.
         ~ScopedTypeOverride()
         {
-            const auto type = overridden;
-
-            FxFactory::get().registerType (type,
-                                           [type] { return std::make_unique<PassThroughModule> (type); });
+            FxFactory::get().registerType (overridden, std::move (previous));
         }
 
-        FxType overridden;
+        FxType           overridden;
+        FxFactory::Creator previous;
     };
 
     const std::vector<FxType>& allFxTypes()

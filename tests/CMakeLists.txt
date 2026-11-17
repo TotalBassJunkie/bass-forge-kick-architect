@@ -26,11 +26,14 @@ target_sources(BFKA_Tests PRIVATE
     ConvolverModuleTests.cpp
     DynamicEqModuleTests.cpp
     KickAssemblerTests.cpp
+    FxChainIOTests.cpp
+    PluginProcessorStateTests.cpp
     TestMain.cpp
     ../src/core/Version.cpp
     ../src/core/Log.cpp
     ../src/core/ParameterRegistry.cpp
     ../src/core/KickState.cpp
+    ../src/core/FxChainIO.cpp
     ../src/fx/FxFactory.cpp
     ../src/fx/FxChainProcessor.cpp
     ../src/fx/modules/ConvolverModule.cpp
@@ -47,6 +50,8 @@ target_sources(BFKA_Tests PRIVATE
     ../src/engine/KickRenderer.cpp
     ../src/engine/KickAssembler.cpp
     ../src/engine/WsolaStretcher.cpp
+    ../src/plugin/PluginProcessor.cpp
+    ../src/plugin/PluginEditor.cpp
     )
 
 target_include_directories(BFKA_Tests PRIVATE ../src)

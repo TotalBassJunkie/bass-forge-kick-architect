@@ -58,6 +58,24 @@ public:
     /** Uebernimmt einen Zustand (Parameter + Slots + FX). */
     void applyState (const KickState& state);
 
+    // --- FX-Kette (B-143) -------------------------------------------------
+    /**
+     * Uebernimmt eine neue Kette: schreibt sie in `extraState`, baut die
+     * Engine-Module neu und meldet die neue Gesamtlatenz an den Host.
+     *
+     * Nur vom Message-Thread aufrufen — `FxChainProcessor::setChain()`
+     * allokiert und bereitet die Module vor. In der UI immer
+     * `suspendProcessing (true)` … `setFxChain (…)` … `suspendProcessing (false)`
+     * verwenden.
+     */
+    void setFxChain (const FxChain& chain);
+
+    /** Die Kette, wie sie zuletzt gesetzt wurde (Zustand, nicht die Engine). */
+    const FxChain& getFxChain() const noexcept { return currentChain; }
+
+    /** Anzahl der im Engine-Rack gebauten Plaetze (Diagnose/Test). */
+    int getEngineModuleCount() const noexcept { return fxChain.numModules(); }
+
     /** Letzte gespielte MIDI-Note (Anzeige/Test). */
     int getLastNote() const noexcept { return lastNote.load(); }
 
@@ -79,9 +97,19 @@ public:
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createLayout();
 
+    /**
+     * Baut `currentChain` aus `extraState` und schiebt sie in die Engine;
+     * setzt danach die Host-Latenz. Laeuft auf dem Message-Thread.
+     */
+    void rebuildEngineChain();
+
     juce::AudioProcessorValueTreeState apvts;
 
-    /** Nicht-Parameter-Zustand: Samples, Rollen, Locks, FX-Kette, Metadaten. */
+    /** Nicht-Parameter-Zustand: Samples, Rollen, Locks, FX-Kette, Metadaten.
+     *
+     * Einzige Wahrheit fuer die FX-Kette: jede Aenderung an der Kette landet
+     * zuerst hier (siehe `setFxChain()`), `captureState()` liest sie von hier.
+     */
     juce::ValueTree extraState;
 
     KickRenderer     renderer;
@@ -89,6 +117,9 @@ private:
     KickAssembler    assembler;
     juce::File       contentRoot;
     juce::String     lastLoadReport;
+
+    /** Die aktuell gesetzte Kette (Spiegel von `extraState`, Zustand + Engine). */
+    FxChain currentChain;
 
     double currentSampleRate = 48000.0;
     int    currentBlockSize  = 512;

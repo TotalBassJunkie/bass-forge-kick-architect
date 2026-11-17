@@ -44,6 +44,15 @@ public:
     bool isRegistered (FxType type) const;
 
     /**
+     * Der aktuell hinterlegte Erzeuger fuer einen Typ; leer, wenn keiner.
+     *
+     * Damit laesst sich eine Registrierung befristet ersetzen und danach exakt
+     * wiederherstellen (Tests, A/B-Austausch einzelner Module), ohne den
+     * echten Erzeuger zu kennen.
+     */
+    Creator creatorFor (FxType type) const;
+
+    /**
      * Erzeugt eine Modulinstanz aus der XML-Kennung ("eq", "dist", …).
      * Unbekannte Kennungen und nicht registrierte Typen liefern `nullptr`;
      * eine Meldung macht der Aufrufer (er kennt den Kettenplatz).
