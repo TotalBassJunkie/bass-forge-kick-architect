@@ -534,3 +534,24 @@ Parameter je Modul", sondern eine **feste, typabhängige Zuordnung** mit zwei
 Reserve-Slots (`p12`/`p13` sind belegt, `p[k…11]` ungenutzt). Für die
 Preset-Kompatibilität muss diese Zuordnung **pro Modultyp** implementiert werden —
 inklusive der `shaper`-Ausnahme.
+
+---
+
+## 12. Phase-2-Erweiterung (B-140…B-142)
+
+Die drei Integrations-Module erweitern das Bridge-Schema, ohne es zu brechen:
+
+| Modul | Referenz-Attribute (Position bleibt) | zusätzliche Attribute |
+|---|---|---|
+| `ott` | `depth`, `time`, `x1`, `x2`, `gl`, `gm`, `gh`, `linear` → **p0…p7** | `inGain`, `cleanXov`, `thL/M/H`, `buL/M/H`, `bdL/M/H`, `upwdStr`, `dnwdStr` (p8…p11 bzw. zustandsgebunden) |
+| `reverb` | `wet`, `stereo`, `tone`, `speed` → **p0…p3** | `predelay`, `decay`, `modDepth`, `modRate`, `mod90`, `reverse`, `monoIn`, `normalize`, `irGain`, `trueStereo`, `zeroLat`, `envStart/Attack/Hold/Release` (zustandsgebunden) |
+| `dynEq` (neu) | – (kein Referenztyp) | 19 globale + 4×11 Band-Attribute; `p0…p11` automatisierbar, Rest zustandsgebunden |
+
+**Regel für Import und Roundtrip:** Maßgeblich sind immer die realen Werte im
+eingebetteten `<FxChain>`-Snapshot. Die `fx`-Proxy-Parameter dienen der
+Host-Automation. Beim Import von Referenz-Presets sind `p8…p11` bei `ott`
+historisch unbenutzt (0.0) und dürfen **nicht** als reale Attributwerte
+interpretiert werden; beim Nachbau gilt: erst Snapshot lesen, dann optional
+die Bridge für Automation anwenden.
+
+`p12` (MIX) und `p13` (OUTGAIN/2) bleiben unverändert für alle Typen.

@@ -306,6 +306,10 @@ void FxChainProcessor::setChain (const FxChain& chain)
         else
         {
             applyModuleParams (*module, state.data);
+
+            // Struktur-Zustand (Baender, Kurven, IR-Pfad) an das Modul geben.
+            if (state.data.isValid())
+                module->setState (state.data);
         }
 
         moduleList.push_back (std::move (module));

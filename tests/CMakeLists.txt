@@ -22,6 +22,9 @@ target_sources(BFKA_Tests PRIVATE
     EqualizerModuleTests.cpp
     FiltersModuleTests.cpp
     TransientShaperModuleTests.cpp
+    MultibandModuleTests.cpp
+    ConvolverModuleTests.cpp
+    DynamicEqModuleTests.cpp
     KickAssemblerTests.cpp
     TestMain.cpp
     ../src/core/Version.cpp
@@ -30,9 +33,12 @@ target_sources(BFKA_Tests PRIVATE
     ../src/core/KickState.cpp
     ../src/fx/FxFactory.cpp
     ../src/fx/FxChainProcessor.cpp
+    ../src/fx/modules/ConvolverModule.cpp
     ../src/fx/modules/DistortionModule.cpp
+    ../src/fx/modules/DynamicEqModule.cpp
     ../src/fx/modules/EqualizerModule.cpp
     ../src/fx/modules/FiltersModule.cpp
+    ../src/fx/modules/MultibandModule.cpp
     ../src/fx/modules/TransientShaperModule.cpp
     ../src/library/SampleLibrary.cpp
     ../src/library/StyleModel.cpp

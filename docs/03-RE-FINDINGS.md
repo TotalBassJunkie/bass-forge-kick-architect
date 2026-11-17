@@ -212,3 +212,55 @@ FX-Brücke. Umgesetzt in `src/core/ParameterRegistry.cpp` und `docs/04-SPEC…`.
 
 Jeder Punkt wird geschlossen, sobald eine Spec-Datei unter `docs/specs/` vorliegt, die
 im Parity-Test (B-130) reproduzierbare Werte liefert.
+
+---
+
+## 7. Phase-2-Analyse: Xfer OTT, Convology XT, TDR Nova (B-140…B-142)
+
+Für die drei Integrations-Module wurden ausschließlich **Installer-Payloads,
+VST3-Binaries und öffentliche Handbücher** gelesen. Es wurde kein Code
+dekompiliert, keine Assets übernommen.
+
+### 7.1 Vorgehen
+
+| Plugin | Zugang | Auswertung |
+|---|---|---|
+| Xfer OTT 1.37 | `Install_Xfer_OTT_137.exe` (NSIS), entpackt mit 7-Zip nach `C:\bfka-re\ott` | Bezeichner-Strings der VST3-Binary; daraus die vollständige Parameterliste (19 Einträge) und die UI-Kennungen |
+| Convology XT 1.34 | `ConvologyXT-134.exe` (NSIS), entpackt nach `C:\bfka-re\convology` | Handbuch-PDF (20 Seiten) als Funktionsquelle; VST3-Strings als Gegenprobe; Factory Library nur zur Formatprüfung gesichtet (nicht übernommen) |
+| TDR Nova | `TDR Nova - setup.exe` (Inno Setup), silente Installation, Ziel `C:\Program Files\Common Files\VST3\TDR Nova.vst3` | Bezeichner-/Enum-Strings der VST3-Binary (Band-Parameter, HP/LP-Typen, Prozessziele, Qualitäts-/Sidechain-Modi); Handbuch (docs.tokyodawn.net) für SPLIT/STICKY/W-Band |
+
+**Keine Standalone-Versionen** der drei Plugins vorhanden; FL Studio war für
+die Analyse nicht nötig.
+
+### 7.2 Belegte Inventare (Auszug)
+
+* **OTT:** `In Gain`, `Depth`, `Time`, `Out Gain`, `Clean XOV`,
+  `Thresh L/M/H`, `Gain L/M/H`, `Byp Upwd L/M/H`, `Byp Dnwd L/M/H`,
+  `Upwd Strgth`, `Dnwd Strgth`; UI-Untertitel „MULTIBAND UP/DOWN COMPRESSOR",
+  Version 1.3.7. Semantik: Depth = Nass-/Trocken-Blende; Time steuert Attack
+  und Release gegenläufig.
+* **Convology XT:** IR-Laden aus WAV/AIF (1/2/4 Kanäle, True-Stereo
+  L→L, L→R, R→L, R→R), Time-Hüllkurve (Start/Attack/Hold/Release), EQ- und
+  Decay-Kurve (11 Punkte, ±24 dB bzw. 0,1×…2×), Normalize/IR-Gain/Reverse/
+  Mono-Input, Stereo-Modulator mit 90°-Option, Decay/Stretch/Predelay,
+  Mix/Output/Width (0…200 %), Zero-Latency-Option.
+* **TDR Nova:** 4 Bänder mit `bandActive/Type/Freq/Gain/Q/Dyn/Threshold/Ratio/
+  Attack/Release/Split`, HP/LP mit 6/12/24/72 dB/Okt, W-Band-Dynamik,
+  `dryMix`, `gain`, `delta`, `eqAutoGain`, Prozessziele
+  (Mono/Stereo/Sum/Diff/Left/Right/Dual Mono), Qualität (Eco/Precise/Precise−),
+  Sidechain-Modi (Int SC/Ext SC/Int SC flat), Analyzer-Parameter.
+
+### 7.3 Was daraus im Nachbau wurde
+
+| Fremdfunktion | Umsetzung | Spec |
+|---|---|---|
+| OTT-Dynamik + Crossovers | `MultibandModule` auf dem Referenzplatz `ott`, LR4/LR8 und linearphasiger FIR-Split | fx-multiband.md |
+| Convology-IR-Engine | `ConvolverModule` auf dem Referenzplatz `reverb`, `juce::dsp::Convolution`, IR-Aufbereitung auf dem Message-Thread | fx-convolver.md |
+| Nova-Dynamic-EQ | neuer Modultyp `dynEq` (serielle Kaskade + Wideband-Stufe) | fx-dynamic-eq.md |
+
+### 7.4 Bewusst nicht übernommen
+
+* Factory-IR-Library und Werks-Presets (fremder Content),
+* UI-Grafiken, Logos, Schriften, Handbuchtexte der Vorbilder,
+* externe Sidechain-Kanäle (der Kick Architect ist ein Instrument),
+* Lizenz-/Registrierungslogik (siehe A1).

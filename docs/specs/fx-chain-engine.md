@@ -1,6 +1,7 @@
 # FX-Ketten-Engine — Spezifikation und Vertrag
 
-**Ticket:** B-69 (Ketten-Engine), Grundlage für B-60…B-68 (die neun Module)
+**Ticket:** B-69 (Ketten-Engine), Grundlage für B-60…B-68 (die neun Referenzmodule)
+sowie für die Phase-2-Module `ott`, `reverb` und `dynEq` (B-140…B-142)
 **Code:** `src/fx/FxModule.h`, `src/fx/FxFactory.h/.cpp`, `src/fx/PassThroughModule.h`,
 `src/fx/FxChainProcessor.h/.cpp`
 **Tests:** `tests/FxChainTests.cpp` (12 Testfälle, 651 Assertions)
@@ -251,7 +252,8 @@ bool isRegistered (FxType) const;
 2. Parameter aus `FxModuleState::data` übernehmen: **jedes Attribut, dessen Name
    `FxParamDesc::id` entspricht**, in Anzeige-Einheiten, geklemmt auf den deklarierten
    Bereich. Fehlende/krumme Attribute (String, void) werden ignoriert, das Modul behält
-   dann seinen Default.
+   dann seinen Default. Danach erhält das Modul den **Struktur-Zustand** über
+   `setState (state.data)` (Bänder, Kurven, IR-Pfad, Envelopen).
 3. `enabled`, `mix`, `outGain` in die Laufzeit-Slots übernehmen.
 4. Unbekannte Typen: **Platz bleibt erhalten** (`modules()[i] == nullptr`) und
    `bfka::log::w` meldet es. Dadurch stimmen Kartenindex und Kettenposition der UI
@@ -294,7 +296,7 @@ entspricht. Für „Copy/Paste“ gilt dasselbe; die Zwischenablage hält nur de
 
 ---
 
-## 7. Die neun Modultypen
+## 7. Die zehn Modultypen
 
 ### 7.1 Kennungen und Enum
 
@@ -306,9 +308,10 @@ entspricht. Für „Copy/Paste“ gilt dasselbe; die Zwischenablage hält nur de
 | `dist` | `distortion` | Distortion | `drive`, `mode`, `folds`, `agc`, `eqmode`, `flip` + `<WNode x y ten seg>`-Kurve |
 | `shaper` | `kickShaper` | Kick Shaper | `sPre`, `sPost`, `sLine`, `shape`, `amount` + `<Pt x y t>`-Hüllkurve |
 | `trans` | `transientShaper` | Transient Shaper | `amount`, `attack`, `duck`, `speed` |
-| `reverb` | `convolver` | Convolver | `ir`, `wet`, `stereo`, `tone`, `speed` + `<Pt x y t>`-Hüllkurve |
+| `reverb` | `convolver` | Convolver | `wet`, `stereo`, `tone`, `speed` + Phase-2-Attribute (Predelay, Decay, Modulation, Reverse, Mono-In, Normalize, IR-Gain, True-Stereo, Zero-Latency, Time-Hüllkurve) + `<Eq>`/`<Dc>`-Kurven (siehe fx-convolver.md) |
 | `final` | `finalizer` | Finalizer | `boost`, `freq`, `clip`, `upward`, `monoF`, `shelfOn`, `monoOn`, `clipOn` |
-| `ott` | `multiband` | Multiband | `depth`, `time`, `x1`, `x2`, `gl`, `gm`, `gh`, `linear` |
+| `ott` | `multiband` | Multiband | `depth`, `time`, `x1`, `x2`, `gl`, `gm`, `gh`, `linear` + OTT-Attribute (`inGain`, `cleanXov`, `thL/M/H`, `bu*`, `bd*`, `upwdStr`, `dnwdStr`, siehe fx-multiband.md) |
+| `dynEq` | `dynamicEq` | Dynamic EQ | 19 globale Attribute + 4 Bänder mit je 11 Attributen (TDR-Nova-Integration, siehe fx-dynamic-eq.md) |
 
 **Jedes Modul hat zusätzlich:** `on` (Bypass), `mix`, `outGain` — diese drei sind
 **Kettenzustand** (`FxModuleState`), keine `FxParamDesc`-Einträge.
@@ -375,6 +378,32 @@ unproblematisch; zu enge führen zu hörbaren Preset-Abweichungen.
 * `reportedLatencySamples` meldet eine Latenz, **ohne** zu verzögern — damit ist die
   Latenzlogik der Kette (Ringlinie, Bypass-Erhalt, PDC-Summe) ohne echten DSP prüfbar.
 
+### 7.4 Phase-2-Module (`ott`, `reverb`, `dynEq`)
+
+Drei Module integrieren Funktionen externer Plugins. Sie nutzen dieselbe
+`FxModule`-Schnittstelle, haben aber zusätzliche Attribute, die nur im
+Snapshot (`FxModuleState::data`) stehen und nicht über die 14 Proxy-Parameter
+automatisierbar sind:
+
+| Modul | Typ-String | Spec |
+|---|---|---|
+| Multiband (Xfer OTT) | `ott` | `docs/specs/fx-multiband.md` |
+| Convolver (Convology XT) | `reverb` | `docs/specs/fx-convolver.md` |
+| Dynamic EQ (TDR Nova) | `dynEq` | `docs/specs/fx-dynamic-eq.md` |
+
+Regeln:
+
+* Die **Referenz-Attribute des jeweiligen Originaltyps behalten ihre
+  Bridge-Positionen** (`p0…p7` bei `ott`, `p0…p3` bei `reverb`); zusätzliche
+  Attribute folgen danach. `p12`/`p13` bleiben MIX/OUTGAIN.
+* `setChain()` ruft nach dem Übernehmen der Skalar-Attribute jetzt
+  `module->setState (state.data)` auf. Damit erreichen Bänder, Kurven,
+  IR-Pfade und Envelopen erstmals die Module (schließt O5/O6 für die neuen
+  Module und für den Equalizer).
+* Der Convolver bearbeitet IR-Änderungen auf dem Message-Thread und
+  synchronisiert sie über `prepare()` in die Faltung; der Audio-Thread
+  allokiert weiterhin nicht.
+
 ---
 
 ## 8. Getestete Eigenschaften (`tests/FxChainTests.cpp`)
@@ -390,7 +419,7 @@ unproblematisch; zu enge führen zu hörbaren Preset-Abweichungen.
 | Modulattribute | `data`-Attribute landen geklemmt im Modul |
 | Latenz | Summe (4+8=12), Bypass hält Latenz (Impuls bei 8), Modul selbst verzögert nicht |
 | Display | `pre`/`post`-Pegel, Kanäle, Fenster (128 bzw. 512), `valid`-Zustände |
-| Typ-Kennungen | Hin-/Rückabbildung aller neun Typen, unbekannt → `nullopt` |
+| Typ-Kennungen | Hin-/Rückabbildung aller zehn Typen, unbekannt → `nullopt` |
 
 ---
 
@@ -402,8 +431,8 @@ unproblematisch; zu enge führen zu hörbaren Preset-Abweichungen.
 | **O2** | Lookahead-Länge des Finalizer-Ceilings (Vorschlag 1,5 ms) und ein „latency-free“-Modus | Kick-Verschiebung im Raster, Klang | B-67: messen, dann `latencySamples()` festlegen |
 | **O3** | Equal-Power-Blende des Convolvers liegt **im Modul** (`wet` gegen Direktsignal); die Ketten-MIX bleibt linear | Mischverhalten bei 50 % | B-66: Equal-Power im Modul, Kette unverändert lassen |
 | **O4** | `mix`/`outGain` springen pro Block (kein Rampen) → Zipper bei Automation | Hörbarkeit bei Automation | Nachrüsten: `applyGainRamp` über den Block (kleine Änderung, additiv) |
-| **O5** | `FxModuleState::data` enthält nur Attribute; Kind-Elemente (`<Band>`, `<WNode>`, `<Pt>`) erreichen das Modul **nicht** | EQ-Bänder, Waveshaper-Kurven, Hüllkurven sind Teil der Module | Erweiterung: optionaler zweiter Übergabeweg (`ValueTree` an `setState()`), siehe O6 |
-| **O6** | Zustandsübertragung Modul↔Zustand ist einseitig (nur Zustand → Modul) | Nach dem Bearbeiten in der UI muss der Zustand zurückgeschrieben werden | `getState()`/`setState()` im Interface ergänzen (Ticket B-91/B-93) |
+| **O5** | ~~`FxModuleState::data` enthält nur Attribute; Kind-Elemente erreichen das Modul nicht~~ **behoben**: `setChain()` ruft `module->setState (state.data)` (Phase 2) | EQ-Bänder, Kurven, IR-Pfade sind Teil der Module | erledigt für `eq`, `ott`, `reverb`, `dynEq`; weitere Module folgen beim Bau |
+| **O6** | Zustandsübertragung Modul↔Zustand ist einseitig (nur Zustand → Modul); `getState()` wird von der Kette noch nicht zurückgeschrieben | Nach dem Bearbeiten in der UI muss der Zustand zurückgeschrieben werden | `getState()`/`setState()` im Interface ergänzen (Ticket B-91/B-93); `ConvolverModule::getState()` liefert bereits `ir`/`<Eq>`/`<Dc>` |
 | **O7** | Kartenindex ↔ Kettenposition bei unbekannten Typen (`nullptr`) | UI darf keine Karte für ein unbekanntes Modul zeichnen | UI: `modules()[i] == nullptr` → Karte als „nicht unterstützt“ darstellen |
 | **O8** | `fxN_pM` → Modulparameter (F2) | Host-Automation je Modul | Nach Modulimplementierung: `params()`-Reihenfolge als Zuordnung festschreiben, `p12 = mix`, `p13` Reserve (Hypothese aus `03-RE-FINDINGS.md`, 3.2) |
 | **O9** | Display zeigt `post` **nach** OUT GAIN, aber **vor** der Latenzkorrektur | Vergleich zweier Displays kann verschoben wirken | Mit B-92 klären, ob die UI latenzkompensiert zeichnet |

@@ -65,9 +65,12 @@ set(BFKA_ENGINE_SOURCES
 set(BFKA_FX_SOURCES
     src/fx/FxFactory.cpp
     src/fx/FxChainProcessor.cpp
+    src/fx/modules/ConvolverModule.cpp
     src/fx/modules/DistortionModule.cpp
+    src/fx/modules/DynamicEqModule.cpp
     src/fx/modules/EqualizerModule.cpp
     src/fx/modules/FiltersModule.cpp
+    src/fx/modules/MultibandModule.cpp
     src/fx/modules/TransientShaperModule.cpp
     )
 
@@ -94,9 +97,13 @@ set(BFKA_HEADERS
     src/fx/FxFactory.h
     src/fx/PassThroughModule.h
     src/fx/FxChainProcessor.h
+    src/fx/dsp/Biquad.h
+    src/fx/modules/ConvolverModule.h
     src/fx/modules/DistortionModule.h
+    src/fx/modules/DynamicEqModule.h
     src/fx/modules/EqualizerModule.h
     src/fx/modules/FiltersModule.h
+    src/fx/modules/MultibandModule.h
     src/fx/modules/TransientShaperModule.h
     src/engine/SampleVoice.h
     src/engine/KickRenderer.h

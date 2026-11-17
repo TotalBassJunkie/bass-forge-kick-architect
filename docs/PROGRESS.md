@@ -5,6 +5,67 @@ Laufendes Protokoll. Neueste Einträge oben. Format:
 
 ---
 
+## 2026-11-17 — Welle 6: FX-Integration von OTT, TDR Nova und Convology XT
+
+**Erledigt (Phase 2, B-140…B-142)**
+
+* **Multiband (Xfer OTT 1.37)** — `src/fx/modules/MultibandModule.*`:
+  3-Band-Up/Down-Kompressor mit Depth, Time (gegenläufig Attack/Release),
+  In/Gain, Clean-Crossover (LR4/LR8), Thresholds je Band, Band-Input-Gains,
+  Bypass Aufwärts/Abwärts je Band sowie linearphasigem FIR-Split (513 Taps,
+  256 Samples Latenz). Parameterinventar aus der VST3-Binary
+  (`In Gain`, `Clean XOV`, `Thresh L/M/H`, `Byp Upwd/Dnwd L/M/H`,
+  `Upwd/Dnwd Strgth`) — die Referenz-Attribute bleiben auf `p0…p7`.
+* **Convolver (Convology XT 1.34)** — `src/fx/modules/ConvolverModule.*`:
+  IR-Laden (WAV/AIF, 1/2/4 Kanäle inkl. True Stereo), Time-Hüllkurve
+  (Start/Attack/Hold/Release), EQ-Kurve und frequenzabhängige Decay-Kurve
+  (je 11 Punkte), Normalize, IR-Gain, Reverse, Mono-Input, Stereo-Modulator
+  (90°-Quadratur), Decay-Skalierung, Stretch (Resampling), Predelay,
+  Width 0…200 %, Zero-Latency-Kopf oder feste 2048 Samples Latenz.
+  Faltung über `juce::dsp::Convolution`; IR-Aufbereitung auf dem
+  Message-Thread, deterministisch per `prepare()` in die Engine übernommen.
+* **Dynamic EQ (TDR Nova)** — `src/fx/modules/DynamicEqModule.*`, **neuer
+  Modultyp `dynEq`**: 4 Bänder (Low-Shelf/Bell/High-Shelf) mit je
+  Threshold/Ratio/Attack/Release, SPLIT/STICKY, HP/LP mit 6/12/24/72 dB/Okt,
+  W-Band mit eigener Dynamik, Dry Mix, Output Gain, EQ Auto Gain, Delta,
+  sieben Prozessziele (Mono/Stereo/Sum/Diff/Left/Right/Dual Mono).
+  Der bestehende Referenz-`eq` bleibt unverändert (Parität der 44 Presets).
+* **`FxChainProcessor::setChain()`** übergibt jetzt den Struktur-Zustand über
+  `module->setState (state.data)` — damit erreichen EQ-Bänder, Kurven und
+  IR-Pfade die Module (schließt O5 aus der Ketten-Engine-Spec).
+* **Doku:** `docs/specs/fx-multiband.md`, `fx-convolver.md`,
+  `fx-dynamic-eq.md`; Ketten-Engine-Spec auf zehn Typen aktualisiert.
+* **Tests: 212 Testfälle, 491.404 Assertions, alle grün.** Neu: 36 Tests für
+  die drei Module (Impuls-/Sinus-/Hüllkurvenmessungen, True-Stereo-Routing,
+  Zustands-Roundtrip, Kettenintegration OTT → Convolver → Dynamic EQ).
+  Baseline vor der Änderung: 180 Testfälle / 480.817 Assertions.
+
+**RE-Provenienz (nur lesend, nichts im Repo)**
+
+* Installer aus `BF Kick Forge Plugins for FX` entpackt bzw. installiert
+  (Analysis-Kopien unter `C:\bfka-re\`): OTT (NSIS, VST3 + AAX),
+  Convology XT (NSIS, VST3/AAX/VST2 + Factory Library + **Handbuch-PDF**),
+  TDR Nova (Inno Setup, VST3 x64 + x86).
+* Parameterinventare aus den Bezeichner-Strings der VST3-Binaries;
+  Bediensemantik aus dem Convology-Handbuch und der öffentlichen
+  TDR-Nova-/OTT-Dokumentation. Keine Standalone-Versionen vorhanden.
+* Keine IRs, Presets, Assets oder Strings der Fremd-Plugins wurden übernommen.
+
+**Bewusste Abweichungen (dokumentiert in den Specs):** serielle statt parallele
+Nova-Struktur, keine Factory-IRs, kein externer Sidechain, OTT-`x1`-Bereich
+20…1000 Hz, Quality-Modus ohne Oversampling-Unterschied.
+
+**Gates:** Build grün (VST3 + Standalone) · Suite grün · Dokumentation aktualisiert.
+
+**Nächste Schritte**
+
+1. UI (P9): Karten und Graphen für die neuen Module (OTT-Crossover,
+   Convolver-Kurven, Dynamic-EQ-Bänder).
+2. Verbleibende Referenzmodule: `mseq`, `shaper`, `final`.
+3. Modul-Presets (`getState()`-Rückschreiben in den Kick-Zustand, O6).
+
+---
+
 ## 2026-11-17 — Welle 5: Der erste hörbare Kick
 
 **Erledigt**

@@ -428,3 +428,30 @@ niemand „fehlende Funktion" vermutet:
 
 Nach jeder Welle: Lead integriert, CI muss grün sein, Fortschritt wird committet und
 in `docs/PROGRESS.md` fortgeschrieben.
+
+---
+
+## 20. Phase 2 — FX-Integration externer Plugins (B-140…B-142)
+
+**Ziel:** Die Funktionen von drei Referenz-Plugins in eigene Rack-Module
+überführen — ohne Assets, Presets, IRs oder Code der Vorbilder zu übernehmen.
+Die Analyse erfolgte an den Installern/VST3-Binaries und den öffentlichen
+Handbüchern (Details in `docs/03-RE-FINDINGS.md` §7).
+
+| ID | Modul | Vorbild | Ergebnis | Spec | Status |
+|---|---|---|---|---|---|
+| **B-140** | `ott` Multiband | Xfer Records OTT 1.37 | 3-Band Up/Down-Kompressor, Depth/Time, Crossovers, Band-Gains, Thresholds, Richtungs-Bypässe, linearphasiger Split | `docs/specs/fx-multiband.md` | fertig |
+| **B-141** | `reverb` Convolver | Convology XT 1.34 | True-Stereo-IRs, Time-Hüllkurve, EQ-/Decay-Kurven, Modulation, Stretch, Predelay, Width, Zero-Latency-Kopf | `docs/specs/fx-convolver.md` | fertig |
+| **B-142** | `dynEq` Dynamic EQ | TDR Nova | 4 dynamische Bänder, SPLIT/STICKY, HP/LP, W-Band, Auto-Gain, Delta, 7 Prozessziele | `docs/specs/fx-dynamic-eq.md` | fertig |
+
+**Abnahmekriterien je Modul**
+
+1. Build warnungsfrei unter `/W4`, Tests grün.
+2. Referenz-Attribute des Originaltyps behalten ihre Bridge-Positionen;
+   Zusatzfunktionen liegen im Zustand (Snapshot).
+3. Spec mit Parameter-/Funktionstabelle, DSP-Beschreibung und bewussten
+   Abweichungen.
+4. Bypass/Neutralzustand nachweisbar (Parameter-Defaults).
+
+**Nicht enthalten (bewusst):** Factory-IR-Library, externe Sidechain-Kanäle,
+Preset-Browser/Automation-Table der Vorbilder, UI-Nachbau der Vorbilder.

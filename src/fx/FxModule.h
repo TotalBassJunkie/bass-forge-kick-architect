@@ -10,8 +10,9 @@
 /**
  * Schnittstelle des FX-Racks (Ticket B-69).
  *
- * Dieses Header ist der Vertrag zwischen der Ketten-Engine und den neun
- * Modulen. Es ist bewusst header-only und enthaelt keinen DSP.
+ * Dieses Header ist der Vertrag zwischen der Ketten-Engine und den zehn
+ * Modulen (neun Referenztypen + `dynEq` aus Phase 2). Es ist bewusst
+ * header-only und enthaelt keinen DSP.
  *
  * Grundregeln (Details in docs/specs/fx-chain-engine.md):
  *
@@ -26,7 +27,7 @@
 namespace bfka
 {
 
-/** Die neun Modultypen des Racks. */
+/** Die zehn Modultypen des Racks (neun Referenztypen + `dynEq`). */
 enum class FxType
 {
     filters = 0,        ///< "filt"  — Filters (LP/HP/Band/Notch/Phaser/Comb)
@@ -37,11 +38,12 @@ enum class FxType
     transientShaper,    ///< "trans" — Transient Shaper
     convolver,          ///< "reverb"— Convolver
     finalizer,          ///< "final" — Finalizer
-    multiband           ///< "ott"   — Multiband-Kompressor
+    multiband,          ///< "ott"   — Multiband-Kompressor
+    dynamicEq           ///< "dynEq" — Dynamischer Equalizer (Phase-2-Modul)
 };
 
-/** Alle neun Typen in Anzeige-/Registrier-Reihenfolge. */
-inline constexpr int kNumFxTypes = 9;
+/** Alle Typen in Anzeige-/Registrier-Reihenfolge (Phase 2: zehn). */
+inline constexpr int kNumFxTypes = 10;
 
 /**
  * XML-Kennung eines Modultyps, exakt wie im Referenzformat (`type="…"`).
@@ -60,6 +62,7 @@ inline juce::String toString (FxType type)
         case FxType::convolver:       return "reverb";
         case FxType::finalizer:       return "final";
         case FxType::multiband:       return "ott";
+        case FxType::dynamicEq:       return "dynEq";
     }
 
     return {};
@@ -79,6 +82,7 @@ inline std::optional<FxType> fxTypeFromString (const juce::String& typeString)
     if (key == "reverb") return FxType::convolver;
     if (key == "final")  return FxType::finalizer;
     if (key == "ott")    return FxType::multiband;
+    if (key == "dyneq")  return FxType::dynamicEq;
 
     return std::nullopt;
 }
@@ -97,6 +101,7 @@ inline juce::String fxDisplayName (FxType type)
         case FxType::convolver:       return "Convolver";
         case FxType::finalizer:       return "Finalizer";
         case FxType::multiband:       return "Multiband";
+        case FxType::dynamicEq:       return "Dynamic EQ";
     }
 
     return {};
@@ -120,7 +125,7 @@ struct FxParamDesc
 };
 
 /**
- * Basisklasse aller neun Module.
+ * Basisklasse aller Module.
  *
  * Lebenszyklus: Konstruktor -> `prepare()` -> beliebig oft `process()`/`reset()`
  * -> Destruktor. `prepare()` darf mehrfach aufgerufen werden (neue Sample-Rate

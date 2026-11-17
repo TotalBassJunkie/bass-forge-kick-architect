@@ -1,9 +1,12 @@
 #include "fx/FxFactory.h"
 
 #include "fx/PassThroughModule.h"
+#include "fx/modules/ConvolverModule.h"
 #include "fx/modules/DistortionModule.h"
+#include "fx/modules/DynamicEqModule.h"
 #include "fx/modules/EqualizerModule.h"
 #include "fx/modules/FiltersModule.h"
+#include "fx/modules/MultibandModule.h"
 #include "fx/modules/TransientShaperModule.h"
 
 namespace bfka
@@ -26,9 +29,10 @@ FxFactory::FxFactory()
     registerType (FxType::distortion,      [] { return std::make_unique<DistortionModule>(); });
     registerType (FxType::kickShaper,      [] { return std::make_unique<PassThroughModule> (FxType::kickShaper); });
     registerType (FxType::transientShaper, [] { return std::make_unique<TransientShaperModule>(); });
-    registerType (FxType::convolver,       [] { return std::make_unique<PassThroughModule> (FxType::convolver); });
+    registerType (FxType::convolver,       [] { return std::make_unique<ConvolverModule>(); });
     registerType (FxType::finalizer,       [] { return std::make_unique<PassThroughModule> (FxType::finalizer); });
-    registerType (FxType::multiband,       [] { return std::make_unique<PassThroughModule> (FxType::multiband); });
+    registerType (FxType::multiband,       [] { return std::make_unique<MultibandModule>(); });
+    registerType (FxType::dynamicEq,       [] { return std::make_unique<DynamicEqModule>(); });
 }
 
 void FxFactory::registerType (FxType type, Creator creator)

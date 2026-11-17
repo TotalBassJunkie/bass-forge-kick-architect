@@ -88,7 +88,7 @@ namespace
         {
             FxType::filters, FxType::equalizer, FxType::midSideEq, FxType::distortion,
             FxType::kickShaper, FxType::transientShaper, FxType::convolver,
-            FxType::finalizer, FxType::multiband
+            FxType::finalizer, FxType::multiband, FxType::dynamicEq
         };
 
         return types;
@@ -109,6 +109,7 @@ TEST_CASE ("Modultyp-Kennungen werden korrekt abgebildet", "[fx]")
     REQUIRE (fxTypeFromString ("reverb") == FxType::convolver);
     REQUIRE (fxTypeFromString ("final")  == FxType::finalizer);
     REQUIRE (fxTypeFromString ("ott")    == FxType::multiband);
+    REQUIRE (fxTypeFromString ("dynEq")  == FxType::dynamicEq);
 
     // Gross-/Kleinschreibung und Leerzeichen sind tolerant.
     REQUIRE (fxTypeFromString ("  DIST ") == FxType::distortion);
@@ -125,7 +126,7 @@ TEST_CASE ("Modultyp-Kennungen werden korrekt abgebildet", "[fx]")
     }
 }
 
-TEST_CASE ("Registry kennt alle neun Typen und erzeugt Module", "[fx]")
+TEST_CASE ("Registry kennt alle Typen und erzeugt Module", "[fx]")
 {
     const auto& factory = FxFactory::get();
     const auto types = factory.availableTypes();
@@ -157,7 +158,7 @@ TEST_CASE ("Drei Module mit OUT GAIN 0.5 ergeben 0.125", "[fx]")
     FxChain chain;
 
     for (int i = 0; i < 3; ++i)
-        chain.modules.push_back (makeModule ("ott", 1.0f, 0.5f));
+        chain.modules.push_back (makeModule ("final", 1.0f, 0.5f));
 
     FxChainProcessor chainProcessor;
     chainProcessor.prepare (kSampleRate, kBlockSize);
@@ -182,7 +183,7 @@ TEST_CASE ("Drei Module mit OUT GAIN 0.5 ergeben 0.125", "[fx]")
 TEST_CASE ("setChain vor prepare funktioniert ebenfalls", "[fx]")
 {
     FxChain chain;
-    chain.modules.push_back (makeModule ("ott", 1.0f, 0.5f));
+    chain.modules.push_back (makeModule ("final", 1.0f, 0.5f));
 
     FxChainProcessor chainProcessor;
     chainProcessor.setChain (chain);          // noch ohne prepare()
@@ -207,9 +208,9 @@ TEST_CASE ("setChain vor prepare funktioniert ebenfalls", "[fx]")
 TEST_CASE ("Abschaltetes Modul wird uebersprungen", "[fx]")
 {
     FxChain chain;
-    chain.modules.push_back (makeModule ("ott", 1.0f, 1.0f,  true));
-    chain.modules.push_back (makeModule ("ott", 1.0f, 0.25f, false));   // aus
-    chain.modules.push_back (makeModule ("ott", 1.0f, 0.5f,  true));
+    chain.modules.push_back (makeModule ("final", 1.0f, 1.0f,  true));
+    chain.modules.push_back (makeModule ("final", 1.0f, 0.25f, false));   // aus
+    chain.modules.push_back (makeModule ("final", 1.0f, 0.5f,  true));
 
     FxChainProcessor chainProcessor;
     chainProcessor.prepare (kSampleRate, kBlockSize);
@@ -226,7 +227,7 @@ TEST_CASE ("Abschaltetes Modul wird uebersprungen", "[fx]")
 TEST_CASE ("Ketten-Bypass rechnet kein Modul", "[fx]")
 {
     FxChain chain;
-    chain.modules.push_back (makeModule ("ott", 1.0f, 0.25f));
+    chain.modules.push_back (makeModule ("final", 1.0f, 0.25f));
     chain.bypassAll = true;
 
     FxChainProcessor chainProcessor;
@@ -251,7 +252,7 @@ TEST_CASE ("MIX blendet trocken und nass", "[fx]")
 {
     constexpr float input = 0.25f;
 
-    auto state = makeModule ("ott", 1.0f, 1.0f);
+    auto state = makeModule ("final", 1.0f, 1.0f);
     setAttribute (state, "amount", 200.0);      // nass = 2x Eingang
 
     FxChain chain;
@@ -295,9 +296,9 @@ TEST_CASE ("MIX blendet trocken und nass", "[fx]")
 TEST_CASE ("Unbekannter Modultyp wird uebersprungen", "[fx]")
 {
     FxChain chain;
-    chain.modules.push_back (makeModule ("ott", 1.0f, 0.5f));
+    chain.modules.push_back (makeModule ("final", 1.0f, 0.5f));
     chain.modules.push_back (makeModule ("quatsch", 1.0f, 0.1f));
-    chain.modules.push_back (makeModule ("ott", 1.0f, 0.5f));
+    chain.modules.push_back (makeModule ("final", 1.0f, 0.5f));
 
     FxChainProcessor chainProcessor;
     chainProcessor.prepare (kSampleRate, kBlockSize);
@@ -324,9 +325,9 @@ TEST_CASE ("Unbekannter Modultyp wird uebersprungen", "[fx]")
 // ---------------------------------------------------------------------------
 TEST_CASE ("Modulattribute aus dem Zustand landen im Modul", "[fx]")
 {
-    // "ott" ist noch mit dem Platzhalter belegt; hier geht es nur um den Weg
+    // "final" ist noch mit dem Platzhalter belegt; hier geht es nur um den Weg
     // Zustand -> Modul, nicht um DSP.
-    auto state = makeModule ("ott", 1.0f, 1.0f);
+    auto state = makeModule ("final", 1.0f, 1.0f);
     setAttribute (state, "amount", 50.0);     // 50 % Pegel
 
     FxChain chain;
@@ -338,7 +339,7 @@ TEST_CASE ("Modulattribute aus dem Zustand landen im Modul", "[fx]")
 
     REQUIRE (chainProcessor.modules().size() == 1);
     REQUIRE (chainProcessor.modules()[0] != nullptr);
-    REQUIRE (chainProcessor.modules()[0]->type() == FxType::multiband);
+    REQUIRE (chainProcessor.modules()[0]->type() == FxType::finalizer);
     REQUIRE_FALSE (chainProcessor.modules()[0]->params().empty());
     REQUIRE (chainProcessor.modules()[0]->params()[0].id == "amount");
     REQUIRE_THAT (chainProcessor.modules()[0]->getParam (0), WithinAbs (50.0f, 1.0e-4f));
@@ -352,7 +353,7 @@ TEST_CASE ("Modulattribute aus dem Zustand landen im Modul", "[fx]")
 
 TEST_CASE ("Modulattribute werden auf den deklarierten Bereich geklemmt", "[fx]")
 {
-    auto state = makeModule ("ott", 1.0f, 1.0f);
+    auto state = makeModule ("final", 1.0f, 1.0f);
     setAttribute (state, "amount", 900.0);    // ueber dem Maximum (400)
 
     FxChain chain;
@@ -369,14 +370,17 @@ TEST_CASE ("Modulattribute werden auf den deklarierten Bereich geklemmt", "[fx]"
 
 TEST_CASE ("Echte Module ersetzen die Platzhalter", "[fx]")
 {
-    // Gebaut und in der Factory registriert sind inzwischen vier Module; die
-    // uebrigen fuenf laufen weiter als Platzhalter.
+    // Gebaut und in der Factory registriert: eq, dist, trans, filt, reverb,
+    // ott und dynEq. Die uebrigen Typen laufen weiter als Platzhalter.
     struct Expectation { const char* typeString; const char* firstParam; };
 
-    for (const auto& expected : { Expectation { "eq",    "lowgain" },
-                                  Expectation { "dist",  "drive"   },
-                                  Expectation { "trans", "amount"  },
-                                  Expectation { "filt",  "type"    } })
+    for (const auto& expected : { Expectation { "eq",     "lowgain" },
+                                  Expectation { "dist",   "drive"   },
+                                  Expectation { "trans",  "amount"  },
+                                  Expectation { "filt",   "type"    },
+                                  Expectation { "reverb", "wet"     },
+                                  Expectation { "ott",    "depth"   },
+                                  Expectation { "dynEq",  "outGain" } })
     {
         const auto module = FxFactory::get().create (expected.typeString);
         INFO ("Typ " << expected.typeString);
@@ -386,7 +390,7 @@ TEST_CASE ("Echte Module ersetzen die Platzhalter", "[fx]")
     }
 
     // Noch nicht gebaute Module fallen weiterhin auf den Platzhalter zurueck.
-    for (const auto& stillStub : { "mseq", "shaper", "reverb", "final", "ott" })
+    for (const auto& stillStub : { "mseq", "shaper", "final" })
     {
         const auto module = FxFactory::get().create (stillStub);
         INFO ("Typ " << stillStub);
@@ -452,7 +456,7 @@ TEST_CASE ("Latenz wird summiert und beim Ueberspringen gehalten", "[fx]")
 TEST_CASE ("Display liefert Ein- und Ausgang je Modul", "[fx]")
 {
     FxChain chain;
-    chain.modules.push_back (makeModule ("ott", 1.0f, 0.5f));
+    chain.modules.push_back (makeModule ("final", 1.0f, 0.5f));
 
     FxChainProcessor chainProcessor;
     chainProcessor.prepare (kSampleRate, kBlockSize);
@@ -482,4 +486,113 @@ TEST_CASE ("Display liefert Ein- und Ausgang je Modul", "[fx]")
     chainProcessor.prepare (kSampleRate, 1024);
     REQUIRE (chainProcessor.displayFor (0).pre.getNumSamples() == FxChainProcessor::kMaxDisplaySamples);
     REQUIRE_FALSE (chainProcessor.displayFor (0).valid);
+}
+
+// ---------------------------------------------------------------------------
+// Phase-2-Module in der Kette
+// ---------------------------------------------------------------------------
+TEST_CASE ("Kette aus OTT, Convolver und Dynamic EQ laeuft stabil", "[fx]")
+{
+    FxChain chain;
+    chain.modules.push_back (makeModule ("ott",   1.0f, 1.0f));
+    chain.modules.push_back (makeModule ("reverb", 1.0f, 1.0f));
+    chain.modules.push_back (makeModule ("dynEq",  1.0f, 1.0f));
+
+    FxChainProcessor chainProcessor;
+    chainProcessor.prepare (kSampleRate, kBlockSize);
+    chainProcessor.setChain (chain);
+
+    REQUIRE (chainProcessor.numModules() == 3);
+    REQUIRE (chainProcessor.modules()[0] != nullptr);
+    REQUIRE (chainProcessor.modules()[1] != nullptr);
+    REQUIRE (chainProcessor.modules()[2] != nullptr);
+
+    // Alle drei Module sind latenzfrei (Convolver im Zero-Latency-Modus).
+    REQUIRE (chainProcessor.totalLatencySamples() == 0);
+
+    juce::AudioBuffer<float> buffer (2, kBlockSize);
+    juce::Random random (0x51ab);
+
+    double energy = 0.0;
+
+    for (int block = 0; block < 40; ++block)
+    {
+        for (int s = 0; s < kBlockSize; ++s)
+        {
+            const float value = random.nextFloat() * 0.4f - 0.2f;
+            buffer.setSample (0, s, value);
+            buffer.setSample (1, s, value);
+        }
+
+        chainProcessor.process (buffer);
+
+        for (int ch = 0; ch < 2; ++ch)
+        {
+            for (int s = 0; s < kBlockSize; ++s)
+            {
+                const float value = buffer.getSample (ch, s);
+                REQUIRE (std::isfinite (value));
+                energy += (double) value * (double) value;
+            }
+        }
+    }
+
+    REQUIRE (energy > 0.0);
+}
+
+TEST_CASE ("Struktur-Zustand (EQ-Baender) erreicht das Modul", "[fx]")
+{
+    FxModuleState state = makeModule ("eq", 1.0f, 1.0f);
+    state.data = juce::ValueTree (juce::Identifier ("Module"));
+
+    juce::ValueTree band (juce::Identifier ("Band"));
+    band.setProperty (juce::Identifier ("kind"), juce::var (0), nullptr);   // Bell
+    band.setProperty (juce::Identifier ("f"),    juce::var (1000.0), nullptr);
+    band.setProperty (juce::Identifier ("q"),    juce::var (0.9), nullptr);
+    band.setProperty (juce::Identifier ("g"),    juce::var (12.0), nullptr);
+    state.data.appendChild (band, nullptr);
+
+    FxChain chain;
+    chain.modules.push_back (state);
+
+    FxChainProcessor chainProcessor;
+    chainProcessor.prepare (kSampleRate, kBlockSize);
+    chainProcessor.setChain (chain);
+
+    juce::AudioBuffer<float> buffer (2, kBlockSize);
+
+    constexpr double kPi = 3.14159265358979323846;
+    const double increment = 2.0 * kPi * 1000.0 / kSampleRate;
+    double phase = 0.0;
+    double sumOfSquares = 0.0;
+
+    for (int block = 0; block < 80; ++block)
+    {
+        for (int s = 0; s < kBlockSize; ++s)
+        {
+            const float value = (float) (0.2 * std::sin (phase));
+            phase += increment;
+
+            buffer.setSample (0, s, value);
+            buffer.setSample (1, s, value);
+        }
+
+        chainProcessor.process (buffer);
+
+        if (block > 30)
+        {
+            for (int s = 0; s < kBlockSize; ++s)
+            {
+                const double y = (double) buffer.getSample (0, s);
+                sumOfSquares += y * y;
+            }
+        }
+    }
+
+    const double measuredSamples = 49.0 * (double) kBlockSize;
+    const double outputRms = std::sqrt (sumOfSquares / measuredSamples);
+    const double inputRms  = 0.2 / std::sqrt (2.0);
+    const double gainDb    = 20.0 * std::log10 (outputRms / inputRms);
+
+    REQUIRE_THAT (gainDb, WithinAbs (12.0, 1.5));
 }

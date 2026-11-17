@@ -25,8 +25,16 @@ Samples (je Slot: Pitch, Stretch, Trim, Fades) → ALIGN / PHASE ALIGN
   zusammen.
 * **Style-Randomizer** mit Genre-Regeln, Pflicht- und Optionalteilen, No-Repeat-Logik
   und einem CHAOS-Modus.
-* **Modulares FX-Rack** mit neun Modultypen: Filters, Equalizer, Mid/Side-EQ,
-  Distortion, Kick Shaper, Transient Shaper, Convolver, Finalizer, Multiband.
+* **Modulares FX-Rack** mit zehn Modultypen: Filters, Equalizer, Mid/Side-EQ,
+  Distortion, Kick Shaper, Transient Shaper, Convolver, Finalizer, Multiband
+  und Dynamic EQ.
+* **Phase-2-Integrationen** (eigene Module auf Basis der Referenz-Plätze):
+  Multiband nach dem Vorbild des Xfer OTT (Up/Down-Kompression, Crossovers,
+  linearer Split, Band-Bypässe), Convolver nach dem Vorbild von Convology XT
+  (True-Stereo-IRs, EQ-/Decay-Kurven, Hüllkurve, Modulation, Stretch, Predelay,
+  Width) und Dynamic EQ nach dem Vorbild des TDR Nova (4 dynamische Bänder,
+  HP/LP, W-Band, Auto-Gain, Delta, sieben Prozessziele). Eigene Implementierung,
+  keine Assets oder Presets der Vorbilder.
 * **Key-Track**: der Kick folgt gespielten Noten, mit Oktav-Angleich der Schichten.
 * **Export per Drag & Drop**: fertiger Kick (Master) oder jede Schicht einzeln (Stems).
 
@@ -104,7 +112,7 @@ ctest --test-dir build --output-on-failure
 docs/           Bestandsaufnahme, Masterplan, Spezifikationen, Fortschritt
 src/core/       Zustand, Parameter-Registry, Preset-/Chain-IO
 src/engine/     Sample-Voices, Renderer, Stretch/Pitch, ALIGN
-src/fx/         Die neun FX-Module und die Ketten-Engine
+src/fx/         Die FX-Module und die Ketten-Engine
 src/library/    Content-Index, WAV-Analyse, Key-/BPM-Erkennung
 src/ui/         Look & Feel, Seiten, Widgets, Overlays
 src/plugin/     Plugin-Prozessor und Editor (JUCE-Einstieg)
@@ -125,7 +133,7 @@ resources/      Eigene Icons, Theme-Daten, Demo-Paket
 | **P3** | Engine-Core (Voices, Summe, Auto-Gain) | geplant |
 | **P4** | Stretch & Pitch (eigene WSOLA-Engine) | geplant |
 | **P5** | ALIGN & PHASE ALIGN | geplant |
-| **P6** | Neun FX-Module | geplant |
+| **P6** | FX-Module (9 Referenztypen + Dynamic EQ) | teilweise gebaut |
 | **P7** | Style-Randomizer | geplant |
 | **P8–P10** | KICK-UI, FX-UI, Overlays | geplant |
 | **P11** | Export & Drag and Drop | geplant |
