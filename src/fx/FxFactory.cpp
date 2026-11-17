@@ -1,6 +1,9 @@
 #include "fx/FxFactory.h"
 
 #include "fx/PassThroughModule.h"
+#include "fx/modules/DistortionModule.h"
+#include "fx/modules/EqualizerModule.h"
+#include "fx/modules/TransientShaperModule.h"
 
 namespace bfka
 {
@@ -17,11 +20,11 @@ FxFactory::FxFactory()
     // diese Eintraege per registerType(); die Reihenfolge hier ist die
     // Anzeige-Reihenfolge in availableTypes().
     registerType (FxType::filters,         [] { return std::make_unique<PassThroughModule> (FxType::filters); });
-    registerType (FxType::equalizer,       [] { return std::make_unique<PassThroughModule> (FxType::equalizer); });
+    registerType (FxType::equalizer,       [] { return std::make_unique<EqualizerModule>(); });
     registerType (FxType::midSideEq,       [] { return std::make_unique<PassThroughModule> (FxType::midSideEq); });
-    registerType (FxType::distortion,      [] { return std::make_unique<PassThroughModule> (FxType::distortion); });
+    registerType (FxType::distortion,      [] { return std::make_unique<DistortionModule>(); });
     registerType (FxType::kickShaper,      [] { return std::make_unique<PassThroughModule> (FxType::kickShaper); });
-    registerType (FxType::transientShaper, [] { return std::make_unique<PassThroughModule> (FxType::transientShaper); });
+    registerType (FxType::transientShaper, [] { return std::make_unique<TransientShaperModule>(); });
     registerType (FxType::convolver,       [] { return std::make_unique<PassThroughModule> (FxType::convolver); });
     registerType (FxType::finalizer,       [] { return std::make_unique<PassThroughModule> (FxType::finalizer); });
     registerType (FxType::multiband,       [] { return std::make_unique<PassThroughModule> (FxType::multiband); });

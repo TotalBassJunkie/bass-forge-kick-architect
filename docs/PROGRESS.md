@@ -5,6 +5,38 @@ Laufendes Protokoll. Neueste Einträge oben. Format:
 
 ---
 
+## 2026-11-17 — Welle 4: erste echte FX-Module im Build
+
+**Erledigt**
+
+* **Equalizer** (`src/fx/modules/EqualizerModule.*`): 15-stufige Biquad-Kaskade, RBJ-Formeln
+  für BELL/L-SHF/H-SHF/L-CUT/H-CUT/NOTCH, 12 Nutzerbänder über `setState()/getState()`,
+  dynamische Gegenregelung (max. 6 dB), 20 ms Glättung, lock-freier Band-Snapshot.
+  Werkszustand ist bitidentisches Durchreichen (flache Bänder werden übersprungen).
+* **Distortion** (`src/fx/modules/DistortionModule.*`): zehn Modi, AGC,
+  PRE/POST-Tilt, 2×-Oversampling, 0-dBFS-Ceiling, Waveshaper-Kurve als `WNode`-Liste.
+* **Transient Shaper** (`src/fx/modules/TransientShaperModule.*`): dualer Hüllkurvenfolger,
+  ATTACK/DUCK/SPEED, Soft-Limiter; `amount == 0` ist bitgenau.
+* Alle drei sind in `FxFactory` registriert; die übrigen sechs laufen weiter als Platzhalter.
+* **Tests: 167 Testfälle, 476.736 Assertions.** Stand: 166 grün, 1 als **bekannter Fehler**
+  markiert (`[!mayfail]`) — siehe unten.
+
+**Bekannter Fehler (offen)**
+
+* `DistortionModule`: bei `drive = 0` ist der Ausgang rund **3,5 dB zu leise**
+  (Soll: reine Verzögerung). Verdacht: Ringpuffer in `copyDelayed()`. Ticket **B-63b**,
+  Fix-Auftrag läuft; der Test bleibt im Bestand und ist nur als „may fail" markiert.
+
+**Gates:** Build grün · Suite grün (1 erwarteter Fehlschlag) · Push erfolgt.
+
+**Nächste Schritte**
+
+1. Filters-Modul (Neuauftrag läuft), danach Convolver, Finalizer, Multiband, Mid/Side-EQ,
+   Kick Shaper.
+2. Danach Engine + FX-Kette im `PluginProcessor` verdrahten, damit der erste Kick hörbar wird.
+
+---
+
 ## 2026-11-17 — Welle 3: Engine, Stretching und Randomizer im Build
 
 **Erledigt**

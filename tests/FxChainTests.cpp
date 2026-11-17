@@ -324,7 +324,9 @@ TEST_CASE ("Unbekannter Modultyp wird uebersprungen", "[fx]")
 // ---------------------------------------------------------------------------
 TEST_CASE ("Modulattribute aus dem Zustand landen im Modul", "[fx]")
 {
-    auto state = makeModule ("dist", 1.0f, 1.0f);
+    // "filt" ist noch mit dem Platzhalter belegt; hier geht es nur um den Weg
+    // Zustand -> Modul, nicht um DSP.
+    auto state = makeModule ("filt", 1.0f, 1.0f);
     setAttribute (state, "amount", 50.0);     // 50 % Pegel
 
     FxChain chain;
@@ -336,7 +338,7 @@ TEST_CASE ("Modulattribute aus dem Zustand landen im Modul", "[fx]")
 
     REQUIRE (chainProcessor.modules().size() == 1);
     REQUIRE (chainProcessor.modules()[0] != nullptr);
-    REQUIRE (chainProcessor.modules()[0]->type() == FxType::distortion);
+    REQUIRE (chainProcessor.modules()[0]->type() == FxType::filters);
     REQUIRE_FALSE (chainProcessor.modules()[0]->params().empty());
     REQUIRE (chainProcessor.modules()[0]->params()[0].id == "amount");
     REQUIRE_THAT (chainProcessor.modules()[0]->getParam (0), WithinAbs (50.0f, 1.0e-4f));
@@ -350,8 +352,8 @@ TEST_CASE ("Modulattribute aus dem Zustand landen im Modul", "[fx]")
 
 TEST_CASE ("Modulattribute werden auf den deklarierten Bereich geklemmt", "[fx]")
 {
-    auto state = makeModule ("dist", 1.0f, 1.0f);
-    setAttribute (state, "amount", 500.0);    // ueber dem Maximum (400)
+    auto state = makeModule ("filt", 1.0f, 1.0f);
+    setAttribute (state, "amount", 900.0);    // ueber dem Maximum (400)
 
     FxChain chain;
     chain.modules.push_back (state);
@@ -363,6 +365,27 @@ TEST_CASE ("Modulattribute werden auf den deklarierten Bereich geklemmt", "[fx]"
     REQUIRE (chainProcessor.modules().size() == 1);
     REQUIRE (chainProcessor.modules()[0] != nullptr);
     REQUIRE_THAT (chainProcessor.modules()[0]->getParam (0), WithinAbs (400.0f, 1.0e-4f));
+}
+
+TEST_CASE ("Echte Module ersetzen die Platzhalter", "[fx]")
+{
+    // Ab hier sind Equalizer, Distortion und Transient Shaper echte Module.
+    // Geprueft wird ueber den ersten Parameternamen, den nur das echte Modul hat.
+    struct Expectation { const char* typeString; const char* firstParam; };
+
+    for (const auto& expected : { Expectation { "eq",    "lowgain" },
+                                  Expectation { "dist",  "drive"   },
+                                  Expectation { "trans", "amount"  } })
+    {
+        const auto module = FxFactory::get().create (expected.typeString);
+        INFO ("Typ " << expected.typeString);
+        REQUIRE (module != nullptr);
+        REQUIRE_FALSE (module->params().empty());
+        REQUIRE (module->params()[0].id == juce::String (expected.firstParam));
+    }
+
+    // Noch nicht gebaute Module fallen weiterhin auf den Platzhalter zurueck.
+    REQUIRE (FxFactory::get().create ("filt") != nullptr);
 }
 
 // ---------------------------------------------------------------------------

@@ -18,6 +18,9 @@ target_sources(BFKA_Tests PRIVATE
     RandomizerEngineTests.cpp
     VoiceAndRenderTests.cpp
     WsolaTests.cpp
+    DistortionModuleTests.cpp
+    EqualizerModuleTests.cpp
+    TransientShaperModuleTests.cpp
     TestMain.cpp
     ../src/core/Version.cpp
     ../src/core/Log.cpp
@@ -25,6 +28,9 @@ target_sources(BFKA_Tests PRIVATE
     ../src/core/KickState.cpp
     ../src/fx/FxFactory.cpp
     ../src/fx/FxChainProcessor.cpp
+    ../src/fx/modules/DistortionModule.cpp
+    ../src/fx/modules/EqualizerModule.cpp
+    ../src/fx/modules/TransientShaperModule.cpp
     ../src/library/SampleLibrary.cpp
     ../src/library/StyleModel.cpp
     ../src/library/RandomizerEngine.cpp
