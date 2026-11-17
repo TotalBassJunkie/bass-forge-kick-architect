@@ -168,6 +168,7 @@ TEST_CASE ("Convolver: Dirac-IR reicht das Signal durch", "[fx][convolver]")
 
     setNeutralParams (*module);
     module->loadImpulseFromBuffer (makeDiracIr (512), kSampleRate);
+    module->prepare (kSampleRate, kBlockSize);
 
     REQUIRE (module->hasImpulseResponse());
     REQUIRE (module->currentIrLength() == 512);
@@ -214,6 +215,7 @@ TEST_CASE ("Convolver: Predelay verzoegert den nassen Anteil", "[fx][convolver]"
     setNeutralParams (*module);
     setParamById (*module, "predelay", 100.0f);
     module->loadImpulseFromBuffer (makeDiracIr (512), kSampleRate);
+    module->prepare (kSampleRate, kBlockSize);
 
     std::vector<float> output;
     juce::AudioBuffer<float> buffer (2, kBlockSize);
@@ -246,6 +248,7 @@ TEST_CASE ("Convolver: Stretch veraendert die IR-Laenge", "[fx][convolver]")
 
     setNeutralParams (*module);
     module->loadImpulseFromBuffer (makeConstantIr (4800, 0.01f), kSampleRate);
+    module->prepare (kSampleRate, kBlockSize);
 
     REQUIRE (module->currentIrLength() == 4800);
 
@@ -262,8 +265,10 @@ TEST_CASE ("Convolver: Decay skaliert die IR-Huellkurve", "[fx][convolver]")
 
     setNeutralParams (*module);
     module->loadImpulseFromBuffer (makeConstantIr (48000, 0.1f), kSampleRate);
+    module->prepare (kSampleRate, kBlockSize);
 
     setParamById (*module, "decay", 0.5f);
+    module->prepare (kSampleRate, kBlockSize);
 
     juce::AudioBuffer<float> buffer (2, kBlockSize);
     std::vector<float> output;
@@ -307,6 +312,7 @@ TEST_CASE ("Convolver: Normalize skaliert die IR auf Einheitsenergie", "[fx][con
         setNeutralParams (*module);
         setParamById (*module, "normalize", normalize ? 1.0f : 0.0f);
         module->loadImpulseFromBuffer (ir, kSampleRate);
+        module->prepare (kSampleRate, kBlockSize);
 
         juce::AudioBuffer<float> buffer (2, kBlockSize);
         float peak = 0.0f;
@@ -348,6 +354,7 @@ TEST_CASE ("Convolver: Width 0 mischt auf Mono", "[fx][convolver]")
     setNeutralParams (*module);
     setParamById (*module, "stereo", 0.0f);
     module->loadImpulseFromBuffer (makeDiracIr (512), kSampleRate);
+    module->prepare (kSampleRate, kBlockSize);
 
     juce::AudioBuffer<float> buffer (2, kBlockSize);
 
@@ -383,6 +390,7 @@ TEST_CASE ("Convolver: True Stereo verarbeitet die Kreuzantworten", "[fx][convol
     auto module = makeModule();
     setNeutralParams (*module);
     module->loadImpulseFromBuffer (ir, kSampleRate);
+    module->prepare (kSampleRate, kBlockSize);
 
     REQUIRE (module->isTrueStereo());
 
@@ -413,9 +421,8 @@ TEST_CASE ("Convolver: True Stereo verarbeitet die Kreuzantworten", "[fx][convol
     REQUIRE_THAT (trueStereoResult.second, WithinAbs (1.0f, 2.0e-2f));  // L->R
 
     // True Stereo abschalten -> es bleiben nur die Kanaele 0/3 (hier leer).
-    module->reset();
     setParamById (*module, "trueStereo", 0.0f);
-    module->reset();
+    module->prepare (kSampleRate, kBlockSize);
 
     const auto stereoResult = renderImpulse();
 

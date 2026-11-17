@@ -87,9 +87,14 @@ IR-Datei (WAV/AIF, 1/2/4 Kanäle)
 * **True Stereo (4 Kanäle, L→L, L→R, R→L, R→R):** zwei parallele Stereo-
   Faltungen. Kanal A bekommt `(L, L)` mit IR `(L→L, L→R)`, Kanal B bekommt
   `(R, R)` mit IR `(R→L, R→R)`; die Ausgänge werden summiert.
-* IR-Wechsel/Parameter der IR-Aufbereitung laufen auf dem Message-Thread und
-  werden synchron per `prepare()` in die Engine übernommen (deterministisch,
-  kein asynchroner Crossfade-Artefakt).
+* IR-Aufbereitung (Resampling, Hüllkurven, Kurven, Normalisierung) läuft auf
+  dem Message-Thread. **Beim `prepare()`** wird das Kernel synchron in die
+  Engine übernommen (deterministisch, kein Crossfade-Artefakt beim Start).
+  **Bei Live-Änderungen** (Regler für Speed/Decay/Reverse/… während der
+  Wiedergabe) wird das fertige Kernel über einen atomaren Zeiger an den
+  Audio-Thread übergeben und dort über `loadImpulseResponse()` (laut JUCE
+  wait-free) eingespielt; JUCE blendet die alte und neue Engine selbst über.
+  Der Audio-Thread ruft dabei **kein** `prepare()` auf und allokiert nicht.
 
 ### 3.2 IR-Aufbereitung (Message-Thread)
 

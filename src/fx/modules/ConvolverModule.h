@@ -153,7 +153,7 @@ private:
     void createEngines();
     void deleteEngines();
     void reprepareEngines();
-    void rebuildKernel();
+    void rebuildKernel (bool synchronous);
     void loadKernelIntoEngines (IrKernel& kernel);
 
     bool loadImpulseFile (const juce::String& path);

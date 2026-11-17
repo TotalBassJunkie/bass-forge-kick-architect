@@ -118,7 +118,7 @@ void ConvolverModule::prepare (double newSampleRate, int newMaxBlockSize)
     if (rawIr.getNumSamples() > 0)
     {
         // Baut das Kernel neu und laedt es synchron in die frische Engine.
-        rebuildKernel();
+        rebuildKernel (true);
     }
     else if (auto* kernel = pendingKernel.exchange (nullptr))
     {
@@ -256,7 +256,7 @@ void ConvolverModule::setParam (int index, float value)
         case pEnvRelease:
         case pTrueStereo:
             if (rawIr.getNumSamples() > 0)
-                rebuildKernel();
+                rebuildKernel (false);
             break;
 
         default:
@@ -503,7 +503,7 @@ void ConvolverModule::applyDecayCurve (juce::AudioBuffer<float>& ir, double samp
     }
 }
 
-void ConvolverModule::rebuildKernel()
+void ConvolverModule::rebuildKernel (bool synchronous)
 {
     if (rawIr.getNumSamples() <= 0 || rawIr.getNumChannels() <= 0)
         return;
@@ -574,7 +574,7 @@ void ConvolverModule::rebuildKernel()
         kernel->a = makeStereoPair (ir, 0, 0, length);
     }
 
-    if (convolutionA != nullptr)
+    if (synchronous && convolutionA != nullptr)
     {
         loadKernelIntoEngines (*kernel);
         reprepareEngines();
@@ -616,7 +616,7 @@ bool ConvolverModule::loadImpulseFile (const juce::String& path)
     rawIrSampleRate  = reader->sampleRate;
     rawIrChannels    = numChannels;
 
-    rebuildKernel();
+    rebuildKernel (false);
     return true;
 }
 
@@ -636,7 +636,7 @@ void ConvolverModule::loadImpulseFromBuffer (const juce::AudioBuffer<float>& ir,
     rawIrSampleRate = (irSampleRate > 0.0) ? irSampleRate : sampleRate;
     rawIrChannels   = ir.getNumChannels();
 
-    rebuildKernel();
+    rebuildKernel (false);
 }
 
 void ConvolverModule::setImpulsePath (const juce::String& path)
@@ -674,7 +674,7 @@ void ConvolverModule::setDecayCurve (const float* values, int count)
         decayCurve[(size_t) i] = values[juce::jmin (i, count - 1)];
 
     if (rawIr.getNumSamples() > 0)
-        rebuildKernel();
+        rebuildKernel (false);
 }
 
 juce::ValueTree ConvolverModule::getState() const
@@ -909,6 +909,14 @@ void ConvolverModule::process (juce::AudioBuffer<float>& buffer)
 
     if (numSamples > maxBlockSize)
         return;
+
+    // Neues IR-Kernel wait-free uebernehmen (JUCE-Pfad fuer den Audio-Thread;
+    // die Ueberblendung zwischen alter und neuer Engine macht JUCE selbst).
+    if (auto* kernel = pendingKernel.exchange (nullptr))
+    {
+        loadKernelIntoEngines (*kernel);
+        delete kernel;
+    }
 
     // ---- 1. Parameter glaetten -------------------------------------------
     const double smoothing = smoothingCoefficient (numSamples, kParameterSmoothingMs);

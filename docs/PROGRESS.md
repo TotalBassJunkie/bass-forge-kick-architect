@@ -23,7 +23,8 @@ Laufendes Protokoll. Neueste Einträge oben. Format:
   (90°-Quadratur), Decay-Skalierung, Stretch (Resampling), Predelay,
   Width 0…200 %, Zero-Latency-Kopf oder feste 2048 Samples Latenz.
   Faltung über `juce::dsp::Convolution`; IR-Aufbereitung auf dem
-  Message-Thread, deterministisch per `prepare()` in die Engine übernommen.
+  Message-Thread, beim Start deterministisch per `prepare()` in die Engine
+  übernommen, Live-Änderungen wait-free über einen atomaren Kernel-Zeiger.
 * **Dynamic EQ (TDR Nova)** — `src/fx/modules/DynamicEqModule.*`, **neuer
   Modultyp `dynEq`**: 4 Bänder (Low-Shelf/Bell/High-Shelf) mit je
   Threshold/Ratio/Attack/Release, SPLIT/STICKY, HP/LP mit 6/12/24/72 dB/Okt,
