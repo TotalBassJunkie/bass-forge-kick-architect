@@ -278,32 +278,101 @@ TEST_CASE ("MIX blendet trocken und nass", "[fx]")
     chainProcessor.prepare (kSampleRate, kBlockSize);
     chainProcessor.setChain (chain);
 
-    const auto render = [&chainProcessor, input] (float mix)
+    const auto renderBlock = [&chainProcessor, input] ()
     {
-        chainProcessor.setModuleMix (0, mix);
-
         juce::AudioBuffer<float> buffer (2, kBlockSize);
         fillBuffer (buffer, input);
         chainProcessor.process (buffer);
-        return buffer.getSample (0, 0);
+        return buffer;
     };
 
     const auto wet = input * 2.0f;
 
-    // mix = 0 -> reines Trockensignal.
-    REQUIRE_THAT (render (0.0f), WithinAbs (input, 1.0e-6f));
-    // mix = 1 -> reines Nassignal.
-    REQUIRE_THAT (render (1.0f), WithinAbs (wet, 1.0e-6f));
-    // mix = 0.5 -> lineare Blende.
-    REQUIRE_THAT (render (0.5f), WithinAbs (input * 0.5f + wet * 0.5f, 1.0e-6f));
+    // Werkszustand (mix = 1): reines Nassignal.
+    {
+        const auto buffer = renderBlock();
+        REQUIRE_THAT (buffer.getSample (0, 0), WithinAbs (wet, 1.0e-6f));
+    }
 
-    // Ueber den Kettenzustand derselbe Effekt.
-    chainProcessor.setChain (chain);
-    juce::AudioBuffer<float> dryBuffer (2, kBlockSize);
-    fillBuffer (dryBuffer, input);
+    // mix = 0: der erste Block rampt von 1 auf 0 (B-148) ...
     chainProcessor.setModuleMix (0, 0.0f);
-    chainProcessor.process (dryBuffer);
-    REQUIRE_THAT (dryBuffer.getSample (0, 0), WithinAbs (input, 1.0e-6f));
+    {
+        const auto buffer = renderBlock();
+        // Der erste Sample liegt einen Rampenschritt unter dem Startwert.
+        REQUIRE_THAT (buffer.getSample (0, 0), WithinAbs (wet, 5.0e-3f));
+        REQUIRE_THAT (buffer.getSample (0, kBlockSize - 1), WithinAbs (input, 5.0e-3f));
+
+        for (int s = 1; s < kBlockSize; ++s)
+            REQUIRE (buffer.getSample (0, s) <= buffer.getSample (0, s - 1) + 1.0e-6f);
+    }
+
+    // ... danach steht der Wert exakt.
+    {
+        const auto buffer = renderBlock();
+        REQUIRE_THAT (buffer.getSample (0, 0), WithinAbs (input, 1.0e-6f));
+        REQUIRE_THAT (buffer.getSample (0, kBlockSize - 1), WithinAbs (input, 1.0e-6f));
+    }
+
+    // mix = 0.5: nach der Rampe lineare Blende.
+    chainProcessor.setModuleMix (0, 0.5f);
+    renderBlock();
+    {
+        const auto buffer = renderBlock();
+        REQUIRE_THAT (buffer.getSample (0, 0), WithinAbs (input * 0.5f + wet * 0.5f, 1.0e-6f));
+        REQUIRE_THAT (buffer.getSample (0, kBlockSize - 1), WithinAbs (input * 0.5f + wet * 0.5f, 1.0e-6f));
+    }
+}
+
+TEST_CASE ("OUT GAIN rampt statt zu springen", "[fx]")
+{
+    const ScopedTypeOverride neutralPlaceholder (FxType::finalizer,
+                                               [] { return std::make_unique<PassThroughModule> (FxType::finalizer); });
+    constexpr float input = 0.25f;
+
+    FxChain chain;
+    chain.modules.push_back (makeModule ("final", 1.0f, 1.0f));
+
+    FxChainProcessor chainProcessor;
+    chainProcessor.prepare (kSampleRate, kBlockSize);
+    chainProcessor.setChain (chain);
+
+    {
+        juce::AudioBuffer<float> buffer (2, kBlockSize);
+        fillBuffer (buffer, input);
+        chainProcessor.process (buffer);
+        REQUIRE_THAT (buffer.getSample (0, 0), WithinAbs (input, 1.0e-6f));
+    }
+
+    // Sprung auf 2: der erste Block faehrt die Rampe, der zweite ist exakt.
+    chainProcessor.setModuleOutGain (0, 2.0f);
+
+    {
+        juce::AudioBuffer<float> buffer (2, kBlockSize);
+        fillBuffer (buffer, input);
+        chainProcessor.process (buffer);
+
+        REQUIRE_THAT (buffer.getSample (0, 0), WithinAbs (input, 5.0e-3f));
+        REQUIRE_THAT (buffer.getSample (0, kBlockSize - 1), WithinAbs (input * 2.0f, 5.0e-3f));
+    }
+
+    {
+        juce::AudioBuffer<float> buffer (2, kBlockSize);
+        fillBuffer (buffer, input);
+        chainProcessor.process (buffer);
+
+        REQUIRE_THAT (buffer.getSample (0, 0), WithinAbs (input * 2.0f, 1.0e-6f));
+        REQUIRE_THAT (buffer.getSample (0, kBlockSize - 1), WithinAbs (input * 2.0f, 1.0e-6f));
+    }
+
+    // Ein neues setChain() setzt die Rampe auf den gesetzten Wert zurueck.
+    chainProcessor.setChain (chain);
+    {
+        juce::AudioBuffer<float> buffer (2, kBlockSize);
+        fillBuffer (buffer, input);
+        chainProcessor.process (buffer);
+
+        REQUIRE_THAT (buffer.getSample (0, 0), WithinAbs (input, 1.0e-6f));
+    }
 }
 
 // ---------------------------------------------------------------------------

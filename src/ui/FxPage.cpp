@@ -507,8 +507,15 @@ juce::Rectangle<int> FxPage::chainListArea() const
 
 void FxPage::resizedSidebar()
 {
-    const int buttonCount = addButtons.size();
-    const int addHeight   = buttonCount * (kButtonHeight + kButtonGap);
+    // Die Modulliste hat 12 Eintraege; die "+ ADD MODULE"-Knoepfe brauchen
+    // deshalb einen eigenen, kompakteren Rhythmus als die Leiste oben.
+    constexpr int kAddButtonHeight = 20;
+    constexpr int kAddButtonGap    = 2;
+    constexpr int kLabelHeight     = 14;
+    constexpr int kStatusHeight    = 26;
+
+    const int buttonCount  = addButtons.size();
+    const int addHeight    = buttonCount * (kAddButtonHeight + kAddButtonGap);
     const int moduleHeight = 2 * (kButtonHeight + kButtonGap);
 
     const int contentTop = sidebarBounds.getY() + 26;
@@ -518,15 +525,18 @@ void FxPage::resizedSidebar()
     int bottom = sidebarBounds.getBottom() - 8;
 
     // unten: "+ ADD MODULE"
-    addArea = { left, bottom - addHeight, width, addHeight };
-    bottom -= addHeight + 4;
+    addArea      = { left, bottom - addHeight, width, addHeight };
+    addLabelArea = { left, addArea.getY() - kLabelHeight, width, kLabelHeight };
+    bottom       = addLabelArea.getY() - 4;
 
-    // darueber: Modul-Presets (SAVE/LOAD) und die Statuszeile
+    // darueber: Modul-Presets (SAVE/LOAD)
     modulePresetArea = { left, bottom - moduleHeight, width, moduleHeight };
-    bottom -= moduleHeight + 4;
+    moduleLabelArea  = { left, modulePresetArea.getY() - kLabelHeight, width, kLabelHeight };
+    bottom           = moduleLabelArea.getY() - 4;
 
-    statusArea = { left, bottom - 30, width, 30 };
-    bottom -= 34;
+    // darueber: Statuszeile der Preset-Aktionen
+    statusArea = { left, bottom - kStatusHeight, width, kStatusHeight };
+    bottom     = statusArea.getY() - 4;
 
     listArea = { left, contentTop, width, juce::jmax (0, bottom - contentTop) };
 
@@ -534,8 +544,8 @@ void FxPage::resizedSidebar()
 
     for (auto* button : addButtons)
     {
-        button->setBounds (addArea.getX(), y, addArea.getWidth(), kButtonHeight);
-        y += kButtonHeight + kButtonGap;
+        button->setBounds (addArea.getX(), y, addArea.getWidth(), kAddButtonHeight);
+        y += kAddButtonHeight + kAddButtonGap;
     }
 
     saveModuleButton.setBounds (modulePresetArea.getX(), modulePresetArea.getY(),
@@ -597,12 +607,10 @@ void FxPage::paintSidebar (juce::Graphics& g)
 
     g.setFont (ui::theme::sectionFont());
     g.setColour (ui::theme::textDim);
-    g.drawText ("+ ADD MODULE", addArea.withY (addArea.getY() - 18).withHeight (16),
-                juce::Justification::centredLeft, false);
+    g.drawText ("+ ADD MODULE", addLabelArea, juce::Justification::centredLeft, false);
 
     // Modul-Preset-Knoepfe: Beschriftung steht darueber.
-    g.drawText ("MODULE PRESET", modulePresetArea.withY (modulePresetArea.getY() - 16).withHeight (14),
-                juce::Justification::centredLeft, false);
+    g.drawText ("MODULE PRESET", moduleLabelArea, juce::Justification::centredLeft, false);
 
     // Statuszeile der Preset-Aktionen (zwei Zeilen, gekuerzt).
     if (statusText.isNotEmpty())

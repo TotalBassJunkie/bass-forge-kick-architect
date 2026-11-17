@@ -166,6 +166,16 @@ public:
     /** Startet den aktuellen Kick (wie eine Note). */
     void triggerKick();
 
+    /**
+     * Setzt die aktuelle Kick-Laenge (`KickRenderer::kickLengthSeconds()`) an
+     * alle `shaper`-Module der Engine (B-147).
+     *
+     * Die Laenge haengt an BPM und KICK LENGTH, nicht an der Kette; nach jedem
+     * Ketten-Rebuild, nach einem neuen Kick und nach `setFxChain()` neu setzen.
+     * Nur vom Message-Thread aufrufen.
+     */
+    void updateModuleRenderLength();
+
     /** Meldungen des letzten Ladevorgangs. */
     juce::String getLastLoadReport() const { return lastLoadReport; }
 

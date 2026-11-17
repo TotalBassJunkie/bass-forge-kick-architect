@@ -101,6 +101,12 @@ void ConvolverModule::prepare (double newSampleRate, int newMaxBlockSize)
 
     prepared = true;
 
+    // Rampen-Zustand auf die aktuellen Werte setzen, damit nach dem Start kein
+    // Einblenden von 0 auf den Zielwert noetig ist (B-148).
+    appliedWetGain = juce::jlimit (0.0, 1.0, (double) paramValues[pWet] / 100.0)
+                     * dsp::dbToGain ((double) paramValues[pIrGain]);
+    appliedWidth   = juce::jlimit (0.0, 2.0, (double) paramValues[pStereo] / 100.0);
+
     createEngines();
 
     for (auto& filter : toneLow)
@@ -881,16 +887,25 @@ void ConvolverModule::applyModulation (juce::AudioBuffer<float>& buffer, int num
 
 void ConvolverModule::applyWidth (juce::AudioBuffer<float>& buffer, int numSamples)
 {
-    const double width = juce::jlimit (0.0, 2.0, (double) paramValues[pStereo] / 100.0);
+    const double target = juce::jlimit (0.0, 2.0, (double) paramValues[pStereo] / 100.0);
+    const double start  = appliedWidth;
 
-    if (std::abs (width - 1.0) < 1.0e-4)
+    appliedWidth = target;
+
+    if (std::abs (target - 1.0) < 1.0e-4 && std::abs (start - 1.0) < 1.0e-4)
         return;
 
     auto* left  = buffer.getWritePointer (0);
     auto* right = buffer.getWritePointer (1);
 
+    // Sampleweise Rampe vom zuletzt angewendeten Wert (B-148).
+    const double increment = (target - start) / (double) juce::jmax (1, numSamples);
+    double width = start;
+
     for (int i = 0; i < numSamples; ++i)
     {
+        width += increment;
+
         const double mid  = 0.5 * ((double) left[i] + (double) right[i]);
         const double side = 0.5 * ((double) left[i] - (double) right[i]);
 
@@ -1040,13 +1055,25 @@ void ConvolverModule::process (juce::AudioBuffer<float>& buffer)
     const double wetGain = juce::jlimit (0.0, 1.0, (double) paramValues[pWet] / 100.0)
                            * dsp::dbToGain ((double) paramValues[pIrGain]);
 
+    // Sampleweise Rampe vom zuletzt angewendeten Wert (B-148): ein Sprung von
+    // WET 100 % auf 0 % waere sonst ein Klick pro Blockgrenze.
+    const double wetStart     = appliedWetGain;
+    const double wetIncrement = (wetGain - wetStart) / (double) juce::jmax (1, numSamples);
+
+    appliedWetGain = wetGain;
+
     for (int ch = 0; ch < juce::jmin (numChannels, maxChannels); ++ch)
     {
         auto* source = wetBuffer.getReadPointer (ch);
         auto* target = buffer.getWritePointer (ch);
 
+        double gain = wetStart;
+
         for (int i = 0; i < numSamples; ++i)
-            target[i] = (float) ((double) source[i] * wetGain);
+        {
+            gain += wetIncrement;
+            target[i] = (float) ((double) source[i] * gain);
+        }
     }
 }
 

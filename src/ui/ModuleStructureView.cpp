@@ -7,6 +7,9 @@
 #include "ui/UiTheme.h"
 #include "ui/editors/ConvolverView.h"
 #include "ui/editors/DynamicEqView.h"
+#include "ui/editors/FinalizerView.h"
+#include "ui/editors/KickShaperView.h"
+#include "ui/editors/MidSideEqView.h"
 #include "ui/editors/MultibandView.h"
 
 namespace bfka
@@ -90,6 +93,15 @@ std::unique_ptr<ModuleStructureView> createStructureView (PluginProcessor& proce
 
         case FxType::dynamicEq:
             return std::make_unique<DynamicEqView> (processor, slotIndex);
+
+        case FxType::midSideEq:
+            return std::make_unique<MidSideEqView> (processor, slotIndex);
+
+        case FxType::kickShaper:
+            return std::make_unique<KickShaperView> (processor, slotIndex);
+
+        case FxType::finalizer:
+            return std::make_unique<FinalizerView> (processor, slotIndex);
 
         default:
             break;

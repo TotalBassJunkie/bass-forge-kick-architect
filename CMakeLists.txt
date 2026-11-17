@@ -93,6 +93,9 @@ set(BFKA_UI_SOURCES
     src/ui/editors/MultibandView.cpp
     src/ui/editors/ConvolverView.cpp
     src/ui/editors/DynamicEqView.cpp
+    src/ui/editors/MidSideEqView.cpp
+    src/ui/editors/KickShaperView.cpp
+    src/ui/editors/FinalizerView.cpp
     )
 
 set(BFKA_PLUGIN_SOURCES
@@ -140,6 +143,9 @@ set(BFKA_HEADERS
     src/ui/editors/MultibandView.h
     src/ui/editors/ConvolverView.h
     src/ui/editors/DynamicEqView.h
+    src/ui/editors/MidSideEqView.h
+    src/ui/editors/KickShaperView.h
+    src/ui/editors/FinalizerView.h
     )
 
 # ---------------------------------------------------------------------------

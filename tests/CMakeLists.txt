@@ -36,7 +36,10 @@ target_sources(BFKA_Tests PRIVATE
     FxPageTests.cpp
     FxDemoChainTests.cpp
     SidechainTests.cpp
+    RenderLengthTests.cpp
+    SmoothingTests.cpp
     PresetIOTests.cpp
+    StructureViewTests.cpp
     TestMain.cpp
     ../src/core/Version.cpp
     ../src/core/Log.cpp
@@ -51,6 +54,9 @@ target_sources(BFKA_Tests PRIVATE
     ../src/ui/editors/MultibandView.cpp
     ../src/ui/editors/ConvolverView.cpp
     ../src/ui/editors/DynamicEqView.cpp
+    ../src/ui/editors/MidSideEqView.cpp
+    ../src/ui/editors/KickShaperView.cpp
+    ../src/ui/editors/FinalizerView.cpp
     ../src/fx/FxFactory.cpp
     ../src/fx/FxChainProcessor.cpp
     ../src/fx/modules/ConvolverModule.cpp

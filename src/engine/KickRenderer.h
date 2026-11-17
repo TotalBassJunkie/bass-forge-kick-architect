@@ -131,6 +131,15 @@ public:
     /** Beat-Laenge in Sekunden (60/bpm), geklemmt auf [kMinBpm, kMaxBpm]. */
     double beatLengthSeconds() const noexcept;
 
+    /**
+     * Laenge des Kicks in Sekunden, wie er gerade klingt (B-147).
+     *
+     * Bei `cutToOneBeat` ist das die Beat-Laenge; bei KICK LENGTH = FULL SAMPLE
+     * die laengste belegte Voice (mindestens die Beat-Laenge, damit die
+     * Hüllkurven von `shaper` nicht in die Stille laufen).
+     */
+    double kickLengthSeconds() const noexcept;
+
     /** Beat-Laenge in Ausgabe-Samples. */
     juce::int64 beatLengthSamples() const noexcept { return beatSamples; }
 

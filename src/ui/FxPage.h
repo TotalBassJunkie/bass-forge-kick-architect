@@ -112,7 +112,9 @@ private:
     juce::Rectangle<int> sidebarBounds;
     juce::Rectangle<int> listArea;
     juce::Rectangle<int> addArea;
+    juce::Rectangle<int> addLabelArea;
     juce::Rectangle<int> modulePresetArea;
+    juce::Rectangle<int> moduleLabelArea;
     juce::Rectangle<int> statusArea;
 
     int selectedSlot = -1;

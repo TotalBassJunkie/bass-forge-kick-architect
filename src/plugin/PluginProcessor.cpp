@@ -5,6 +5,7 @@
 #include "core/ParameterRegistry.h"
 #include "core/Version.h"
 #include "core/Log.h"
+#include "fx/modules/KickShaperModule.h"
 #include "library/SampleLibrary.h"
 
 namespace bfka
@@ -232,6 +233,17 @@ void PluginProcessor::triggerKick()
     renderer.noteOn();
 }
 
+void PluginProcessor::updateModuleRenderLength()
+{
+    const auto seconds = renderer.kickLengthSeconds();
+
+    for (int slot = 0; slot < fxChain.numModules(); ++slot)
+    {
+        if (auto* shaper = dynamic_cast<KickShaperModule*> (fxChain.moduleAt (slot)))
+            shaper->setRenderLength (seconds);
+    }
+}
+
 namespace
 {
     /** Neuer Kettenplatz mit Werkswerten (kein `data`: Modul-Defaults gelten). */
@@ -355,6 +367,10 @@ bool PluginProcessor::startDemoKick()
     juce::StringArray warnings;
     const auto ok = assembler.buildDemoKick (contentRoot, renderer, warnings);
 
+    // Ein neuer Kick bringt ein neues Tempo - die Shaper-Huellkurve laeuft
+    // ueber die Kick-Laenge (B-147).
+    updateModuleRenderLength();
+
     lastLoadReport = ok ? ("Demo-Kick aus " + contentRoot.getFileName())
                         : "Demo-Kick konnte nicht gebaut werden.";
 
@@ -409,7 +425,15 @@ void PluginProcessor::applyState (const KickState& state)
     // Der komplette Zustand inklusive `<FxChain>`; danach die Engine bauen.
     extraState = state.toValueTree();
 
+    // Tempo aus dem Zustand an den Renderer: daraus ergibt sich die Kick-Laenge
+    // fuer die Shaper-Huellkurve (B-147).
+    auto renderSettings = renderer.renderSettings();
+    renderSettings.bpm = state.getBpm();
+    renderer.setRenderSettings (renderSettings);
+
     setFxChain (state.fxChain());
+
+    updateModuleRenderLength();
 }
 
 void PluginProcessor::rebuildEngineChain()
@@ -428,6 +452,9 @@ void PluginProcessor::rebuildEngineChain()
     // Nach jedem Rebuild neu melden: Modullatenzen koennen sich mit der
     // Sample-Rate (Multiband-FIR) oder dem Modus (Convolver) aendern.
     setLatencySamples (fxChain.totalLatencySamples());
+
+    // Neue Modulinstanzen kennen die Kick-Laenge noch nicht (B-147).
+    updateModuleRenderLength();
 }
 
 void PluginProcessor::setFxChain (const FxChain& chain)
@@ -441,6 +468,7 @@ void PluginProcessor::setFxChain (const FxChain& chain)
     {
         fxChain.setChain (chain);
         setLatencySamples (fxChain.totalLatencySamples());
+        updateModuleRenderLength();
     }
 }
 
@@ -591,6 +619,28 @@ void PluginProcessor::setModuleEnabled (int slot, bool shouldBeEnabled)
 
 void PluginProcessor::writeBackModuleStates()
 {
+    // Struktur-Kinder, die ein Modul selbst besitzt. Sie werden **immer**
+    // entfernt und danach neu geschrieben: liefert `getState()` bei leerer
+    // Struktur (z. B. alle Baender geloescht) gar kein `<Band>` mehr, bliebe
+    // sonst die alte Liste im Zustand und im Preset stehen.
+    static const juce::Identifier structureNames[]
+    {
+        juce::Identifier ("Band"),   // eq, mseq
+        juce::Identifier ("WNode"),  // dist
+        juce::Identifier ("Pt"),     // shaper
+        juce::Identifier ("Eq"),     // reverb: EQ-Kurve
+        juce::Identifier ("Dc")      // reverb: Decay-Kurve
+    };
+
+    const auto isStructureChild = [] (const juce::ValueTree& child)
+    {
+        for (const auto& name : structureNames)
+            if (child.hasType (name))
+                return true;
+
+        return false;
+    };
+
     const auto& modules = fxChain.modules();
 
     for (size_t i = 0; i < modules.size() && i < currentChain.modules.size(); ++i)
@@ -611,15 +661,11 @@ void PluginProcessor::writeBackModuleStates()
         if (! data.isValid())
             data = juce::ValueTree (juce::Identifier ("Module"));
 
-        // Kinder, die das Modul selbst liefert, ersetzen; alles andere (die
-        // skalaren Attribute) bleibt.
+        // Kinder, die das Modul selbst liefert, ersetzen; die skalaren
+        // Attribute bleiben.
         for (int c = data.getNumChildren(); --c >= 0;)
-        {
-            const auto child = data.getChild (c);
-
-            if (state.getChildWithName (child.getType()).isValid())
+            if (isStructureChild (data.getChild (c)))
                 data.removeChild (c, nullptr);
-        }
 
         for (int c = 0; c < state.getNumChildren(); ++c)
             data.appendChild (state.getChild (c).createCopy(), nullptr);

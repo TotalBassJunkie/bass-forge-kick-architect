@@ -229,6 +229,17 @@ private:
 
     double toneGainDb = 0.0;
 
+    /**
+     * Zuletzt angewendete Pegel/Matrix-Werte (B-148).
+     *
+     * `wet` und `width` werden sampleweise von `applied*` auf den neuen Wert
+     * gerampt, statt pro Block zu springen. `tone` bleibt eine blockweise
+     * Koeffizienten-Aktualisierung (Filterzustand ist stetig, ein Sprung der
+     * Koeffizienten erzeugt kein Zipper).
+     */
+    double appliedWetGain = 1.0;
+    double appliedWidth   = 1.0;
+
     bool  prepared       = false;
     int   reportedLatency = 0;
     bool  engineIsZeroLatency = true;

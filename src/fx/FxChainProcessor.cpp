@@ -106,24 +106,36 @@ namespace
             dest.copyFrom (ch, 0, source, ch, 0, samples);
     }
 
-    /** out = trocken * (1 - mix) + nass * mix, in-place auf `wet`. */
-    void blendInPlace (juce::AudioBuffer<float>& wet,
-                       const juce::AudioBuffer<float>& dry,
-                       int numChannels,
-                       int numSamples,
-                       float mix) noexcept
+    /**
+     * out = trocken * (1 - mix) + nass * mix, wobei `mix` sampleweise von
+     * `startMix` auf `endMix` laeuft (B-148, schliesst O4).
+     *
+     * Ein Sprung pro Block (frueher: konstanter Blockwert) hoert man bei
+     * Automation als Zipper; die Rampe ist ein Sample lang linear.
+     */
+    void blendInPlaceRamp (juce::AudioBuffer<float>& wet,
+                           const juce::AudioBuffer<float>& dry,
+                           int numChannels,
+                           int numSamples,
+                           float startMix,
+                           float endMix) noexcept
     {
-        const auto dryGain  = 1.0f - mix;
-        const auto channels = juce::jmin (numChannels, wet.getNumChannels(), dry.getNumChannels());
-        const auto samples  = juce::jmin (numSamples, wet.getNumSamples(), dry.getNumSamples());
+        const auto channels  = juce::jmin (numChannels, wet.getNumChannels(), dry.getNumChannels());
+        const auto samples   = juce::jmin (numSamples, wet.getNumSamples(), dry.getNumSamples());
+        const auto increment = (endMix - startMix) / (float) juce::jmax (1, samples);
 
         for (int ch = 0; ch < channels; ++ch)
         {
             auto* w = wet.getWritePointer (ch);
             const auto* d = dry.getReadPointer (ch);
 
+            float mix = startMix;
+
             for (int n = 0; n < samples; ++n)
-                w[n] = d[n] * dryGain + w[n] * mix;
+            {
+                mix += increment;
+                w[n] = d[n] * (1.0f - mix) + w[n] * mix;
+            }
         }
     }
 
@@ -201,6 +213,10 @@ struct FxChainProcessor::SlotState
     std::atomic<bool>  enabled { true };
     std::atomic<float> mix     { 1.0f };
     std::atomic<float> outGain { 1.0f };
+
+    /** Zuletzt angewendete Werte (Audio-Thread); Ziel sind die Atomics (B-148). */
+    float mixCurrent  = 1.0f;
+    float gainCurrent = 1.0f;
 
     int         latency = 0;      ///< Latenz des Moduls in Samples (0 = keine)
     LatencyLine latencyLine;      ///< Latenzausgleich fuer den Trockenpfad
@@ -290,6 +306,10 @@ void FxChainProcessor::reset()
         slot->latencyLine.reset();
         slot->sidechainLine.reset();
         slot->dry.clear();
+
+        // Kein Rampen aus einem alten Stand nach einem Reset (B-148).
+        slot->mixCurrent  = juce::jlimit (0.0f, 1.0f, slot->mix.load (std::memory_order_relaxed));
+        slot->gainCurrent = slot->outGain.load (std::memory_order_relaxed);
         slot->display.pre.clear();
         slot->display.post.clear();
         slot->display.valid = false;
@@ -316,6 +336,11 @@ void FxChainProcessor::setChain (const FxChain& chain)
         slot->enabled.store (state.enabled, std::memory_order_relaxed);
         slot->mix.store (juce::jlimit (0.0f, 1.0f, state.mix), std::memory_order_relaxed);
         slot->outGain.store (juce::jmax (0.0f, state.outGain), std::memory_order_relaxed);
+
+        // Der erste Block soll exakt den gesetzten Wert haben, nicht von einem
+        // alten Stand hochrampen (B-148).
+        slot->mixCurrent  = juce::jlimit (0.0f, 1.0f, state.mix);
+        slot->gainCurrent = juce::jmax (0.0f, state.outGain);
 
         auto module = FxFactory::get().create (state.type);
 
@@ -404,22 +429,33 @@ void FxChainProcessor::process (juce::AudioBuffer<float>& buffer,
         captureDisplay (slot->display.pre, buffer, numChannels, numSamples);
         slot->display.valid = true;
 
-        const auto active = (! chainBypassed) && slot->enabled.load (std::memory_order_relaxed);
-        const auto mix    = juce::jlimit (0.0f, 1.0f, slot->mix.load (std::memory_order_relaxed));
-        const auto gain   = slot->outGain.load (std::memory_order_relaxed);
+        const auto active     = (! chainBypassed) && slot->enabled.load (std::memory_order_relaxed);
+        const auto targetMix  = juce::jlimit (0.0f, 1.0f, slot->mix.load (std::memory_order_relaxed));
+        const auto targetGain = slot->outGain.load (std::memory_order_relaxed);
 
-        if (! active || mix <= 0.0f)
+        // Ein ausgeschaltetes Modul oder ein Platz, der schon vollstaendig
+        // trocken ist, wird uebersprungen (die Rampe ist dann zu Ende).
+        if (! active || (slot->mixCurrent <= 0.0f && targetMix <= 0.0f))
         {
             // Modul uebersprungen: keine Bearbeitung, kein OUT GAIN — aber die
             // Latenz bleibt erhalten, damit die Kette nicht springt.
             slot->latencyLine.process (buffer, numChannels, numSamples);
             module->setSidechainBuffer (nullptr);
 
+            slot->mixCurrent  = targetMix;
+            slot->gainCurrent = targetGain;
+
             captureDisplay (slot->display.post, buffer, numChannels, numSamples);
             continue;
         }
 
-        const auto needDry = (mix < 1.0f) || (slot->latency > 0);
+        const float startMix  = slot->mixCurrent;
+        const float startGain = slot->gainCurrent;
+
+        slot->mixCurrent  = targetMix;
+        slot->gainCurrent = targetGain;
+
+        const auto needDry = (startMix < 1.0f) || (targetMix < 1.0f) || (slot->latency > 0);
 
         if (needDry)
             copyInto (slot->dry, buffer, numChannels, numSamples);
@@ -431,12 +467,12 @@ void FxChainProcessor::process (juce::AudioBuffer<float>& buffer,
         module->process (buffer);
         module->setSidechainBuffer (nullptr);
 
-        if (mix < 1.0f)
-            blendInPlace (buffer, slot->dry, numChannels, numSamples, mix);
+        if (needDry && (startMix < 1.0f || targetMix < 1.0f))
+            blendInPlaceRamp (buffer, slot->dry, numChannels, numSamples, startMix, targetMix);
 
-        if (gain != 1.0f)
+        if (startGain != 1.0f || targetGain != 1.0f)
             for (int ch = 0; ch < numChannels; ++ch)
-                buffer.applyGain (ch, 0, numSamples, gain);
+                buffer.applyGainRamp (ch, 0, numSamples, startGain, targetGain);
 
         captureDisplay (slot->display.post, buffer, numChannels, numSamples);
     }

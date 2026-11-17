@@ -180,6 +180,21 @@ double KickRenderer::beatLengthSeconds() const noexcept
     return 60.0 / tempo;
 }
 
+double KickRenderer::kickLengthSeconds() const noexcept
+{
+    if (settings.cutToOneBeat)
+        return beatLengthSeconds();
+
+    // KICK LENGTH = FULL SAMPLE: die laengste belegte Voice bestimmt die Laenge.
+    double longest = 0.0;
+
+    for (size_t i = 0; i < voices.size(); ++i)
+        if (slotHasSample[i] && voices[i].hasPlayableWindow())
+            longest = juce::jmax (longest, voices[i].lengthSeconds());
+
+    return longest > 0.0 ? longest : beatLengthSeconds();
+}
+
 // ---------------------------------------------------------------------------
 // Wiedergabe
 // ---------------------------------------------------------------------------
