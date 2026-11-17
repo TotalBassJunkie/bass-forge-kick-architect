@@ -213,7 +213,7 @@ ParameterRegistry::ParameterRegistry()
         { "reverb_mix",   "Reverb Mix",    ParamCurve::percent,   0.0f, 100.0f,  0.0f, 1, "%" },
         { "hollow_amt",   "Hollow",        ParamCurve::percent,   0.0f, 100.0f,  0.0f, 1, "%" },
         { "max_amount",   "Maximizer",     ParamCurve::percent,   0.0f, 100.0f,  0.0f, 1, "%" },
-        { "master_vol",   "Master",        ParamCurve::decibel, -60.0f,   6.0f,  0.0f, 2, "dB" },
+        { "master_vol",   "Master",        ParamCurve::linear,     0.0f,   1.0f,  0.8333333f, 3, nullptr },
         { "midi_mode",    "MIDI Mode",     ParamCurve::linear,    0.0f,   3.0f,  0.0f, 0, nullptr },
         { "root_note",    "Root Note",     ParamCurve::linear,    0.0f, 127.0f, 36.0f, 0, nullptr },
         { "gspare1",      "Global Reserve 1", ParamCurve::percent, 0.0f, 100.0f, 0.0f, 1, "%" },

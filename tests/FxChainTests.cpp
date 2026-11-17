@@ -157,7 +157,7 @@ TEST_CASE ("Drei Module mit OUT GAIN 0.5 ergeben 0.125", "[fx]")
     FxChain chain;
 
     for (int i = 0; i < 3; ++i)
-        chain.modules.push_back (makeModule ("filt", 1.0f, 0.5f));
+        chain.modules.push_back (makeModule ("ott", 1.0f, 0.5f));
 
     FxChainProcessor chainProcessor;
     chainProcessor.prepare (kSampleRate, kBlockSize);
@@ -182,7 +182,7 @@ TEST_CASE ("Drei Module mit OUT GAIN 0.5 ergeben 0.125", "[fx]")
 TEST_CASE ("setChain vor prepare funktioniert ebenfalls", "[fx]")
 {
     FxChain chain;
-    chain.modules.push_back (makeModule ("filt", 1.0f, 0.5f));
+    chain.modules.push_back (makeModule ("ott", 1.0f, 0.5f));
 
     FxChainProcessor chainProcessor;
     chainProcessor.setChain (chain);          // noch ohne prepare()
@@ -207,9 +207,9 @@ TEST_CASE ("setChain vor prepare funktioniert ebenfalls", "[fx]")
 TEST_CASE ("Abschaltetes Modul wird uebersprungen", "[fx]")
 {
     FxChain chain;
-    chain.modules.push_back (makeModule ("filt", 1.0f, 1.0f,  true));
-    chain.modules.push_back (makeModule ("filt", 1.0f, 0.25f, false));   // aus
-    chain.modules.push_back (makeModule ("filt", 1.0f, 0.5f,  true));
+    chain.modules.push_back (makeModule ("ott", 1.0f, 1.0f,  true));
+    chain.modules.push_back (makeModule ("ott", 1.0f, 0.25f, false));   // aus
+    chain.modules.push_back (makeModule ("ott", 1.0f, 0.5f,  true));
 
     FxChainProcessor chainProcessor;
     chainProcessor.prepare (kSampleRate, kBlockSize);
@@ -226,7 +226,7 @@ TEST_CASE ("Abschaltetes Modul wird uebersprungen", "[fx]")
 TEST_CASE ("Ketten-Bypass rechnet kein Modul", "[fx]")
 {
     FxChain chain;
-    chain.modules.push_back (makeModule ("filt", 1.0f, 0.25f));
+    chain.modules.push_back (makeModule ("ott", 1.0f, 0.25f));
     chain.bypassAll = true;
 
     FxChainProcessor chainProcessor;
@@ -251,7 +251,7 @@ TEST_CASE ("MIX blendet trocken und nass", "[fx]")
 {
     constexpr float input = 0.25f;
 
-    auto state = makeModule ("filt", 1.0f, 1.0f);
+    auto state = makeModule ("ott", 1.0f, 1.0f);
     setAttribute (state, "amount", 200.0);      // nass = 2x Eingang
 
     FxChain chain;
@@ -295,9 +295,9 @@ TEST_CASE ("MIX blendet trocken und nass", "[fx]")
 TEST_CASE ("Unbekannter Modultyp wird uebersprungen", "[fx]")
 {
     FxChain chain;
-    chain.modules.push_back (makeModule ("filt", 1.0f, 0.5f));
+    chain.modules.push_back (makeModule ("ott", 1.0f, 0.5f));
     chain.modules.push_back (makeModule ("quatsch", 1.0f, 0.1f));
-    chain.modules.push_back (makeModule ("filt", 1.0f, 0.5f));
+    chain.modules.push_back (makeModule ("ott", 1.0f, 0.5f));
 
     FxChainProcessor chainProcessor;
     chainProcessor.prepare (kSampleRate, kBlockSize);
@@ -324,9 +324,9 @@ TEST_CASE ("Unbekannter Modultyp wird uebersprungen", "[fx]")
 // ---------------------------------------------------------------------------
 TEST_CASE ("Modulattribute aus dem Zustand landen im Modul", "[fx]")
 {
-    // "filt" ist noch mit dem Platzhalter belegt; hier geht es nur um den Weg
+    // "ott" ist noch mit dem Platzhalter belegt; hier geht es nur um den Weg
     // Zustand -> Modul, nicht um DSP.
-    auto state = makeModule ("filt", 1.0f, 1.0f);
+    auto state = makeModule ("ott", 1.0f, 1.0f);
     setAttribute (state, "amount", 50.0);     // 50 % Pegel
 
     FxChain chain;
@@ -338,7 +338,7 @@ TEST_CASE ("Modulattribute aus dem Zustand landen im Modul", "[fx]")
 
     REQUIRE (chainProcessor.modules().size() == 1);
     REQUIRE (chainProcessor.modules()[0] != nullptr);
-    REQUIRE (chainProcessor.modules()[0]->type() == FxType::filters);
+    REQUIRE (chainProcessor.modules()[0]->type() == FxType::multiband);
     REQUIRE_FALSE (chainProcessor.modules()[0]->params().empty());
     REQUIRE (chainProcessor.modules()[0]->params()[0].id == "amount");
     REQUIRE_THAT (chainProcessor.modules()[0]->getParam (0), WithinAbs (50.0f, 1.0e-4f));
@@ -352,7 +352,7 @@ TEST_CASE ("Modulattribute aus dem Zustand landen im Modul", "[fx]")
 
 TEST_CASE ("Modulattribute werden auf den deklarierten Bereich geklemmt", "[fx]")
 {
-    auto state = makeModule ("filt", 1.0f, 1.0f);
+    auto state = makeModule ("ott", 1.0f, 1.0f);
     setAttribute (state, "amount", 900.0);    // ueber dem Maximum (400)
 
     FxChain chain;
@@ -369,13 +369,14 @@ TEST_CASE ("Modulattribute werden auf den deklarierten Bereich geklemmt", "[fx]"
 
 TEST_CASE ("Echte Module ersetzen die Platzhalter", "[fx]")
 {
-    // Ab hier sind Equalizer, Distortion und Transient Shaper echte Module.
-    // Geprueft wird ueber den ersten Parameternamen, den nur das echte Modul hat.
+    // Gebaut und in der Factory registriert sind inzwischen vier Module; die
+    // uebrigen fuenf laufen weiter als Platzhalter.
     struct Expectation { const char* typeString; const char* firstParam; };
 
     for (const auto& expected : { Expectation { "eq",    "lowgain" },
                                   Expectation { "dist",  "drive"   },
-                                  Expectation { "trans", "amount"  } })
+                                  Expectation { "trans", "amount"  },
+                                  Expectation { "filt",  "type"    } })
     {
         const auto module = FxFactory::get().create (expected.typeString);
         INFO ("Typ " << expected.typeString);
@@ -385,7 +386,13 @@ TEST_CASE ("Echte Module ersetzen die Platzhalter", "[fx]")
     }
 
     // Noch nicht gebaute Module fallen weiterhin auf den Platzhalter zurueck.
-    REQUIRE (FxFactory::get().create ("filt") != nullptr);
+    for (const auto& stillStub : { "mseq", "shaper", "reverb", "final", "ott" })
+    {
+        const auto module = FxFactory::get().create (stillStub);
+        INFO ("Typ " << stillStub);
+        REQUIRE (module != nullptr);
+        REQUIRE (module->params()[0].id == "amount");
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -445,7 +452,7 @@ TEST_CASE ("Latenz wird summiert und beim Ueberspringen gehalten", "[fx]")
 TEST_CASE ("Display liefert Ein- und Ausgang je Modul", "[fx]")
 {
     FxChain chain;
-    chain.modules.push_back (makeModule ("filt", 1.0f, 0.5f));
+    chain.modules.push_back (makeModule ("ott", 1.0f, 0.5f));
 
     FxChainProcessor chainProcessor;
     chainProcessor.prepare (kSampleRate, kBlockSize);

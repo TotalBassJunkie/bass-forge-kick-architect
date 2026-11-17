@@ -18,7 +18,12 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$buildDir = Join-Path $root ("build\" + $Config)
+
+if (-not $env:BFKA_BUILD_ROOT) {
+    . (Join-Path $PSScriptRoot 'dev-env.ps1') | Out-Null
+}
+
+$buildDir = Join-Path $env:BFKA_BUILD_ROOT $Config
 
 if (-not (Test-Path $buildDir)) {
     throw "Nicht konfiguriert: $buildDir. Zuerst .\tools\configure.ps1 -Config $Config"

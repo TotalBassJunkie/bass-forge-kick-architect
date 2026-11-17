@@ -13,11 +13,12 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$buildDir = Join-Path $root ("build\" + $Config)
 
-if (-not $env:BFKA_CMAKE) {
+if (-not $env:BFKA_BUILD_ROOT) {
     . (Join-Path $PSScriptRoot 'dev-env.ps1') | Out-Null
 }
+
+$buildDir = Join-Path $env:BFKA_BUILD_ROOT $Config
 
 $prev = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'

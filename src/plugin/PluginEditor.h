@@ -37,6 +37,10 @@ private:
     juce::Label      masterLabel;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> masterAttachment;
 
+    juce::TextButton demoButton { "Demo-Kick laden" };
+    juce::TextButton playButton { "Play" };
+    juce::Label      statusLabel;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginEditor)
 };
 

@@ -20,7 +20,9 @@ target_sources(BFKA_Tests PRIVATE
     WsolaTests.cpp
     DistortionModuleTests.cpp
     EqualizerModuleTests.cpp
+    FiltersModuleTests.cpp
     TransientShaperModuleTests.cpp
+    KickAssemblerTests.cpp
     TestMain.cpp
     ../src/core/Version.cpp
     ../src/core/Log.cpp
@@ -30,12 +32,14 @@ target_sources(BFKA_Tests PRIVATE
     ../src/fx/FxChainProcessor.cpp
     ../src/fx/modules/DistortionModule.cpp
     ../src/fx/modules/EqualizerModule.cpp
+    ../src/fx/modules/FiltersModule.cpp
     ../src/fx/modules/TransientShaperModule.cpp
     ../src/library/SampleLibrary.cpp
     ../src/library/StyleModel.cpp
     ../src/library/RandomizerEngine.cpp
     ../src/engine/SampleVoice.cpp
     ../src/engine/KickRenderer.cpp
+    ../src/engine/KickAssembler.cpp
     ../src/engine/WsolaStretcher.cpp
     )
 

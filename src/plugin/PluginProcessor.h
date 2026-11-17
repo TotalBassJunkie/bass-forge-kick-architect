@@ -4,6 +4,9 @@
 #include <juce_audio_utils/juce_audio_utils.h>
 
 #include "core/KickState.h"
+#include "engine/KickAssembler.h"
+#include "engine/KickRenderer.h"
+#include "fx/FxChainProcessor.h"
 
 namespace bfka
 {
@@ -58,6 +61,21 @@ public:
     /** Letzte gespielte MIDI-Note (Anzeige/Test). */
     int getLastNote() const noexcept { return lastNote.load(); }
 
+    /**
+     * Baut einen hoerbaren Test-Kick aus der Sample-Library und startet ihn.
+
+     * Entwicklungsweg fuer den A/B-Vergleich; die vollstaendige Preset- und
+     * Library-Verwaltung kommt mit der UI (P8/P10).
+     * @returns false, wenn keine Library gefunden wurde.
+     */
+    bool startDemoKick();
+
+    /** Startet den aktuellen Kick (wie eine Note). */
+    void triggerKick();
+
+    /** Meldungen des letzten Ladevorgangs. */
+    juce::String getLastLoadReport() const { return lastLoadReport; }
+
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createLayout();
 
@@ -66,9 +84,16 @@ private:
     /** Nicht-Parameter-Zustand: Samples, Rollen, Locks, FX-Kette, Metadaten. */
     juce::ValueTree extraState;
 
+    KickRenderer     renderer;
+    FxChainProcessor fxChain;
+    KickAssembler    assembler;
+    juce::File       contentRoot;
+    juce::String     lastLoadReport;
+
     double currentSampleRate = 48000.0;
     int    currentBlockSize  = 512;
     std::atomic<int> lastNote { -1 };
+    std::atomic<float> masterGain { 0.8333333f };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginProcessor)
 };

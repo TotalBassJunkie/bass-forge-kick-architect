@@ -44,6 +44,12 @@ $env:BFKA_CMAKE   = $cmake
 $env:BFKA_NINJA   = $ninja
 $env:BFKA_VCVARS  = $vcvars
 
+# Build-Verzeichnis ausserhalb von Dropbox: der Sync sperrt sonst regelmaessig
+# Dateien mitten im Linken (LNK1104/LNK1201) und laedt mehrere GB hoch.
+if (-not $env:BFKA_BUILD_ROOT) {
+    $env:BFKA_BUILD_ROOT = 'C:\bfka-build'
+}
+
 $env:PATH = (Join-Path $vsPath 'Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin') + ';' +
             (Join-Path $vsPath 'Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja') + ';' +
             $env:PATH

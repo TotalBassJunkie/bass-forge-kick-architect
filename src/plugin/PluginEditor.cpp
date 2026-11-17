@@ -56,6 +56,28 @@ PluginEditor::PluginEditor (PluginProcessor& processor)
         juce::ignoreUnused (param);
     }
 
+    demoButton.setColour (juce::TextButton::buttonColourId, kPanel.brighter (0.15f));
+    demoButton.setColour (juce::TextButton::textColourOffId, kText);
+    demoButton.onClick = [this]
+    {
+        const auto ok = proc.startDemoKick();
+        statusLabel.setText (proc.getLastLoadReport(),
+                             juce::dontSendNotification);
+        statusLabel.setColour (juce::Label::textColourId, ok ? kTextDim : juce::Colours::orange);
+    };
+    addAndMakeVisible (demoButton);
+
+    playButton.setColour (juce::TextButton::buttonColourId, kAccent.withAlpha (0.25f));
+    playButton.setColour (juce::TextButton::textColourOffId, kText);
+    playButton.onClick = [this] { proc.triggerKick(); };
+    addAndMakeVisible (playButton);
+
+    statusLabel.setFont (juce::Font (juce::FontOptions (12.0f)));
+    statusLabel.setColour (juce::Label::textColourId, kTextDim);
+    statusLabel.setText ("Noch kein Kick geladen — 'Demo-Kick laden' holt Punch, Rumble und Click aus der Library.",
+                         juce::dontSendNotification);
+    addAndMakeVisible (statusLabel);
+
     startTimerHz (8);
 }
 
@@ -93,7 +115,12 @@ void PluginEditor::resized()
     masterLabel.setBounds (left.removeFromTop (16));
     masterSlider.setBounds (left.removeFromTop (120).withSizeKeepingCentre (120, 110));
 
+    auto buttons = body.removeFromTop (40).removeFromLeft (320);
+    demoButton.setBounds (buttons.removeFromLeft (160).reduced (2));
+    playButton.setBounds (buttons.removeFromLeft (100).reduced (2));
+
     noteLabel.setBounds (body.removeFromBottom (24));
+    statusLabel.setBounds (body.removeFromTop (40));
 }
 
 } // namespace bfka

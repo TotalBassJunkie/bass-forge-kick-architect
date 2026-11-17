@@ -3,6 +3,7 @@
 #include "fx/PassThroughModule.h"
 #include "fx/modules/DistortionModule.h"
 #include "fx/modules/EqualizerModule.h"
+#include "fx/modules/FiltersModule.h"
 #include "fx/modules/TransientShaperModule.h"
 
 namespace bfka
@@ -19,7 +20,7 @@ FxFactory::FxFactory()
     // Platzhalter-Registrierung aller neun Typen. Die echten Module ersetzen
     // diese Eintraege per registerType(); die Reihenfolge hier ist die
     // Anzeige-Reihenfolge in availableTypes().
-    registerType (FxType::filters,         [] { return std::make_unique<PassThroughModule> (FxType::filters); });
+    registerType (FxType::filters,         [] { return std::make_unique<FiltersModule>(); });
     registerType (FxType::equalizer,       [] { return std::make_unique<EqualizerModule>(); });
     registerType (FxType::midSideEq,       [] { return std::make_unique<PassThroughModule> (FxType::midSideEq); });
     registerType (FxType::distortion,      [] { return std::make_unique<DistortionModule>(); });

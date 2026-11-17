@@ -1,9 +1,10 @@
-#include "plugin/PluginProcessor.h"
+﻿#include "plugin/PluginProcessor.h"
 #include "plugin/PluginEditor.h"
 
 #include "core/ParameterRegistry.h"
 #include "core/Version.h"
 #include "core/Log.h"
+#include "library/SampleLibrary.h"
 
 namespace bfka
 {
@@ -48,15 +49,24 @@ void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     currentSampleRate = sampleRate;
     currentBlockSize  = samplesPerBlock;
 
+    renderer.prepare (sampleRate, samplesPerBlock);
+    fxChain.prepare (sampleRate, samplesPerBlock);
+
+    if (contentRoot == juce::File())
+    {
+        contentRoot = defaultContentRoot();
+        log::i ("Content-Root: " + contentRoot.getFullPathName()
+                + (contentRoot.isDirectory() ? " (vorhanden)" : " (fehlt)"));
+    }
+
     log::d ("prepareToPlay: " + juce::String (sampleRate) + " Hz, "
             + juce::String (samplesPerBlock) + " Samples");
-
-    // TODO(B-30): Kick-Engine vorbereiten, sobald die Voices existieren.
 }
 
 void PluginProcessor::releaseResources()
 {
-    // TODO(B-30): Engine-Ressourcen freigeben.
+    renderer.reset();
+    fxChain.reset();
 }
 
 bool PluginProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -72,19 +82,77 @@ bool PluginProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
 {
     juce::ScopedNoDenormals noDenormals;
+    juce::ignoreUnused (midi);
 
-    // Phase P0: stille Ausgabe. Die Engine uebernimmt in P3.
+    const auto numSamples = buffer.getNumSamples();
     buffer.clear();
 
+    if (auto* masterParam = apvts.getRawParameterValue ("master_vol"))
+        masterGain.store (masterParam->load (std::memory_order_relaxed),
+                          std::memory_order_relaxed);
+
+    // 1) Kick rendern (additiv).
+    renderer.renderNextBlock (buffer, 0, numSamples);
+
+    // 2) FX-Kette (in-place, Module in Reihenfolge).
+    if (fxChain.numModules() > 0)
+        fxChain.process (buffer);
+
+    // 3) Master-Fader.
+    const auto gain = juce::jlimit (0.0f, 2.0f, masterGain.load (std::memory_order_relaxed));
+
+    if (! juce::approximatelyEqual (gain, 1.0f))
+        buffer.applyGain (0, numSamples, gain);
+
+    // 4) MIDI: jede Note-On startet den Kick neu.
     for (const auto meta : midi)
     {
         const auto message = meta.getMessage();
 
         if (message.isNoteOn())
+        {
             lastNote.store (message.getNoteNumber());
+            renderer.noteOn();
+        }
         else if (message.isAllNotesOff() || message.isAllSoundOff())
+        {
             lastNote.store (-1);
+        }
     }
+}
+
+void PluginProcessor::triggerKick()
+{
+    renderer.noteOn();
+}
+
+bool PluginProcessor::startDemoKick()
+{
+    if (! contentRoot.isDirectory())
+        contentRoot = defaultContentRoot();
+
+    if (! contentRoot.isDirectory())
+    {
+        lastLoadReport = "Keine Sample-Library gefunden.";
+        log::w (lastLoadReport);
+        return false;
+    }
+
+    juce::StringArray warnings;
+    const auto ok = assembler.buildDemoKick (contentRoot, renderer, warnings);
+
+    lastLoadReport = ok ? ("Demo-Kick aus " + contentRoot.getFileName())
+                        : "Demo-Kick konnte nicht gebaut werden.";
+
+    if (! warnings.isEmpty())
+        lastLoadReport << " | " << warnings.joinIntoString ("; ");
+
+    log::i (lastLoadReport);
+
+    if (ok)
+        renderer.noteOn();
+
+    return ok;
 }
 
 juce::AudioProcessorEditor* PluginProcessor::createEditor()

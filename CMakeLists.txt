@@ -58,6 +58,7 @@ set(BFKA_CORE_SOURCES
 set(BFKA_ENGINE_SOURCES
     src/engine/SampleVoice.cpp
     src/engine/KickRenderer.cpp
+    src/engine/KickAssembler.cpp
     src/engine/WsolaStretcher.cpp
     )
 
@@ -66,6 +67,7 @@ set(BFKA_FX_SOURCES
     src/fx/FxChainProcessor.cpp
     src/fx/modules/DistortionModule.cpp
     src/fx/modules/EqualizerModule.cpp
+    src/fx/modules/FiltersModule.cpp
     src/fx/modules/TransientShaperModule.cpp
     )
 
@@ -94,9 +96,11 @@ set(BFKA_HEADERS
     src/fx/FxChainProcessor.h
     src/fx/modules/DistortionModule.h
     src/fx/modules/EqualizerModule.h
+    src/fx/modules/FiltersModule.h
     src/fx/modules/TransientShaperModule.h
     src/engine/SampleVoice.h
     src/engine/KickRenderer.h
+    src/engine/KickAssembler.h
     src/engine/WsolaStretcher.h
     src/engine/Resampler.h
     src/library/SampleLibrary.h
