@@ -278,8 +278,10 @@ void WsolaStretcher::process (const juce::AudioBuffer<float>& input,
         resampler_.reset (numCh);
         resampler_.processToLength (input, output, outLen);
 
-        log::d ("WsolaStretcher: REPITCH x" + juce::String (stretched, 3)
-                + ", " + juce::String (numIn) + " -> " + juce::String (outLen) + " Samples");
+        if (log::isDebugEnabled())
+            log::d ("WsolaStretcher: REPITCH x" + juce::String (stretched, 3)
+                    + ", " + juce::String (numIn) + " -> " + juce::String (outLen) + " Samples");
+
         return;
     }
 
@@ -290,7 +292,9 @@ void WsolaStretcher::process (const juce::AudioBuffer<float>& input,
         resampler_.reset (numCh);
         resampler_.processToLength (input, output, outLen);
 
-        log::d ("WsolaStretcher: Notpfad (nur " + juce::String (numIn) + " Samples)");
+        if (log::isDebugEnabled())
+            log::d ("WsolaStretcher: Notpfad (nur " + juce::String (numIn) + " Samples)");
+
         return;
     }
 
@@ -444,11 +448,12 @@ void WsolaStretcher::process (const juce::AudioBuffer<float>& input,
                         ? (float) (similaritySum / (double) similarityCount)
                         : 0.0f;
 
-    log::d ("WsolaStretcher: KEEP PITCH x" + juce::String (stretched, 3)
-            + ", " + juce::String (numIn) + " -> " + juce::String (outLen) + " Samples"
-            + ", Frame " + juce::String (frame) + ", Hop " + juce::String (hop)
-            + ", Fenster " + juce::String (searchRadius > 0 ? "Suche" : "ohne Suche")
-            + ", Aehnlichkeit " + juce::String ((double) meanSimilarity_, 3));
+    if (log::isDebugEnabled())
+        log::d ("WsolaStretcher: KEEP PITCH x" + juce::String (stretched, 3)
+                + ", " + juce::String (numIn) + " -> " + juce::String (outLen) + " Samples"
+                + ", Frame " + juce::String (frame) + ", Hop " + juce::String (hop)
+                + ", Suche " + (searchRadius > 0 ? "an" : "aus")
+                + ", Aehnlichkeit " + juce::String ((double) meanSimilarity_, 3));
 }
 
 } // namespace bfka

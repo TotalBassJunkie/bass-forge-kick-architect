@@ -4,8 +4,10 @@
 B-34 (Auto-Gain), B-35 (Kick-Länge) — Phase 3 „Engine-Core"
 **Code:** `src/engine/SampleVoice.h/.cpp`, `src/engine/KickRenderer.h/.cpp`
 **Tests:** `tests/VoiceAndRenderTests.cpp` (Catch2 v3, Tag `[engine]`)
-**Stand:** 2026-11-17 — Pitch und Stretch sind **nicht** Teil dieser Stufe (Ticket B-44);
-die Voice spielt mit Pitch 1,0 und Stretch 1,0, also Originalwiedergabe.
+**Stand:** 2026-11-17 — mit MSVC 19.51 (`/std:c++20 /W4`) warnungsfrei übersetzt;
+Testsuite grün: **29 Testfälle, 153.780 Assertions**. Pitch und Stretch sind **nicht**
+Teil dieser Stufe (Ticket B-44); die Voice spielt mit Pitch 1,0 und Stretch 1,0, also
+Originalwiedergabe.
 
 ---
 
@@ -450,5 +452,5 @@ gleichzeitig mit `renderNextBlock` laufen. Wie der Plugin-Prozessor das absicher
 |---|---|
 | Fade-Kurven | Endpunkte linear, Monotonie aller Kurven × 5 `amount`-Werte, `sCurve`-Symmetrie, `curve` konvex/konkav, Ordnung `fast > slow > linear` |
 | Voice | Gleichspannung = 1,0 (inkl. Declick 1/32 … 1,0 … 0), additive Addition, Declick-Rampe, Trim-Fenster, `trimEnd = 0`, Position/Verschiebung, Fade-In 50 %, Fade-Out mit Kurvenvergleich, Mono/Stereo-Matrix, 44,1 → 48 kHz, Mute |
-| Renderer | `beatLengthSeconds` (150/120/160 BPM, Klemmung), 1 BEAT schneidet bei 0,4 s, FULL SAMPLE klingt weiter, Summe zweier Slots, additive Addition, Solo/Mute (4 Fälle), `clearSlot`, ungültige Indizes, Aufruf ohne `prepare`/`noteOn`, `reset`, zweiter `noteOn` |
+| Renderer | `beatLengthSeconds` (150/120/160 BPM, Klemmung), 1 BEAT schneidet bei 0,4 s, Schnitt bei ungerader Blockgröße (7 Samples), FULL SAMPLE klingt weiter, Summe zweier Slots, additive Addition, Solo/Mute (4 Fälle), `clearSlot`, ungültige Indizes, Aufruf ohne `prepare`/`noteOn`, `reset`, zweiter `noteOn` |
 | Auto-Gain | Messwert −6,02 dBFS → Faktor 2,0; zweiter Kick mit Body 0 dBFS; abgeschaltete Regelung; Klemmung auf +24 dB |

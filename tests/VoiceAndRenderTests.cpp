@@ -602,6 +602,41 @@ TEST_CASE ("KICK LENGTH 1 BEAT schneidet bei 60/bpm ab", "[engine][render]")
     REQUIRE_FALSE (renderer.isPlaying());
 }
 
+TEST_CASE ("KICK LENGTH schneidet auch bei ungeraden Blockgroessen exakt", "[engine][render]")
+{
+    auto source = makeConstantSource (1, kSampleRate, 1.0, 1.0f);
+
+    KickRenderer renderer;
+    prepareRenderer (renderer, true, false);
+    renderer.setSlot (0, &source, kSampleRate, VoiceSettings());
+    renderer.noteOn();
+
+    juce::AudioBuffer<float> target (2, 28800);
+    target.clear();
+
+    // 7 Samples je Block: 19200 (= 0,4 s) ist nicht durch 7 teilbar, der Schnitt
+    // faellt also mitten in einen Block.
+    int done = 0;
+
+    while (done < 28800)
+    {
+        const auto blockSize = juce::jmin (7, 28800 - done);
+        renderer.renderNextBlock (target, done, blockSize);
+        done += blockSize;
+    }
+
+    // Vor dem Fade liegt voller Pegel an ...
+    REQUIRE_THAT (target.getSample (0, 18000), WithinAbs (1.0f, 1.0e-6f));
+    // ... das letzte Sample vor dem Beat ist exakt 0 ...
+    REQUIRE_THAT (target.getSample (0, 19199), WithinAbs (0.0f, 1.0e-6f));
+    // ... und ab dem Beat bleibt es still (auch ueber Blockgrenzen hinweg).
+    REQUIRE_THAT (target.getSample (0, 19200), WithinAbs (0.0f, 1.0e-9f));
+    REQUIRE_THAT (target.getSample (0, 20000), WithinAbs (0.0f, 1.0e-9f));
+    REQUIRE_THAT (target.getSample (0, 28799), WithinAbs (0.0f, 1.0e-9f));
+
+    REQUIRE_FALSE (renderer.isPlaying());
+}
+
 TEST_CASE ("FULL SAMPLE laesst die Voice ueber den Beat hinaus klingen", "[engine][render]")
 {
     auto source = makeConstantSource (1, kSampleRate, 0.6, 1.0f);
