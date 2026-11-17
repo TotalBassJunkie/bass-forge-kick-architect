@@ -3,9 +3,10 @@
 Ein eigenständiger Techno-Kick-Builder für Windows (VST3 + Standalone), gebaut mit
 C++20 und JUCE 8.
 
-> **Status: Pre-Alpha.** Dieses Repository startet gerade. Der aktuelle Stand ist die
-> vollständige Bestandsaufnahme und der Bauplan; der Code wächst danach in kleinen,
-> nachvollziehbaren Schritten. Siehe [Roadmap](#roadmap) und
+> **Status: Alpha-Vorstufe.** Build läuft (VST3 + Standalone), die KICK-Seite mit
+> zwölf Slot-Karten und Visualiser ist bedienbar, das FX-Rack mit zehn Modulen steht.
+> Noch offen: Pitch/Stretch in der Voice, ALIGN, Style-Sidebar, Overlays und Export.
+> Siehe [Roadmap](#roadmap), [`docs/PROGRESS.md`](docs/PROGRESS.md) und
 > [`docs/02-MASTERPLAN.md`](docs/02-MASTERPLAN.md).
 
 ---
@@ -127,15 +128,15 @@ resources/      Eigene Icons, Theme-Daten, Demo-Paket
 
 | Meilenstein | Inhalt | Status |
 |---|---|---|
-| **P0** | Fundament: Repo, Build, Plugin-Skelett, CI | in Arbeit |
-| **P1** | Datenmodell & IO (Presets, FX-Chains) | geplant |
-| **P2** | Library & Sample-Analyse | geplant |
-| **P3** | Engine-Core (Voices, Summe, Auto-Gain) | geplant |
-| **P4** | Stretch & Pitch (eigene WSOLA-Engine) | geplant |
+| **P0** | Fundament: Repo, Build, Plugin-Skelett, CI | fertig |
+| **P1** | Datenmodell & IO (Presets, FX-Chains) | fertig (`.bfkapreset`, Modul-Presets, A/B) |
+| **P2** | Library & Sample-Analyse | teilweise (Index/Scan; Analyse offen) |
+| **P3** | Engine-Core (Voices, Summe, Auto-Gain) | fertig (inkl. Anzeige-Huellen) |
+| **P4** | Stretch & Pitch (eigene WSOLA-Engine) | teilweise (WSOLA-Bausteine, noch nicht in der Voice) |
 | **P5** | ALIGN & PHASE ALIGN | geplant |
-| **P6** | FX-Module (9 Referenztypen + Dynamic EQ) | teilweise gebaut |
-| **P7** | Style-Randomizer | geplant |
-| **P8–P10** | KICK-UI, FX-UI, Overlays | geplant |
+| **P6** | FX-Module (9 Referenztypen + Dynamic EQ) | fertig (10 Typen, Karten + Graph-Editoren) |
+| **P7** | Style-Randomizer | teilweise (Regeln/Engine; UI offen) |
+| **P8–P10** | KICK-UI, FX-UI, Overlays | KICK-Seite und FX-Rack gebaut; Style-Sidebar und Overlays offen |
 | **P11** | Export & Drag and Drop | geplant |
 | **P12** | Key-Track & MIDI | geplant |
 | **P13** | Parity-Messung, Installer, Release | geplant |

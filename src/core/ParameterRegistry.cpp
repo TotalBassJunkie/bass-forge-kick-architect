@@ -111,7 +111,11 @@ float ParamDesc::toNormalised (float engineering) const noexcept
 
 juce::String ParamDesc::format (float normalised) const
 {
-    const auto v = toEngineering (normalised);
+    auto v = toEngineering (normalised);
+
+    // Rundungsrauschen der Kurvenumkehr nicht als "-0.00 dB" anzeigen.
+    if (std::abs (v) < 1.0e-4f)
+        v = 0.0f;
 
     if (curve == ParamCurve::boolean)
         return v >= (engMin + engMax) * 0.5f ? "ON" : "OFF";

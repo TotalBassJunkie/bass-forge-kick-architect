@@ -1,4 +1,4 @@
-﻿include(FetchContent)
+include(FetchContent)
 
 FetchContent_Declare(Catch2
     GIT_REPOSITORY https://github.com/catchorg/Catch2.git
@@ -41,6 +41,7 @@ target_sources(BFKA_Tests PRIVATE
     CpuProfileTests.cpp
     PresetIOTests.cpp
     StructureViewTests.cpp
+    KickPageTests.cpp
     TestMain.cpp
     ../src/core/Version.cpp
     ../src/core/Log.cpp
@@ -52,6 +53,8 @@ target_sources(BFKA_Tests PRIVATE
     ../src/ui/ModuleStructureView.cpp
     ../src/ui/ModuleCard.cpp
     ../src/ui/FxPage.cpp
+    ../src/ui/SlotCard.cpp
+    ../src/ui/KickPage.cpp
     ../src/ui/editors/MultibandView.cpp
     ../src/ui/editors/ConvolverView.cpp
     ../src/ui/editors/DynamicEqView.cpp

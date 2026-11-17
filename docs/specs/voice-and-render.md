@@ -106,6 +106,7 @@ public:
     void reset();
     void setSlot (int slotIndex, const juce::AudioBuffer<float>* sample,
                   double sourceSampleRate, const VoiceSettings& settings);
+    void setSlotSettings (int slotIndex, const VoiceSettings& settings);  // B-154: nur Einstellungen
     void clearSlot (int slotIndex);
     void setRenderSettings (const RenderSettings&);   // siehe Hinweis unten
     void noteOn();
@@ -425,6 +426,11 @@ gleichzeitig mit `renderNextBlock` laufen. Wie der Plugin-Prozessor das absicher
 
 * `mute` schlägt alles: ein stummer Slot klingt nicht, auch wenn er Solo hat.
 * Ist **irgendein belegter** Slot auf Solo, klingen nur Solo-Slots.
+* Beide Flags werden **beim `noteOn()`** ausgewertet. `setSlotSettings()` (B-154)
+  kann sie waehrend eines laufenden Kicks umschalten; das wirkt auf den
+  **naechsten** Kick. Eine laufende Voice wird nur dann angehalten, wenn sie
+  durch die neuen Einstellungen stumm oder unspielbar wird
+  (`SampleVoice::setSettings`).
 * Ein **leerer** Slot mit Solo schaltet den Kick **nicht** stumm (er kann nichts
   beitragen, also soll er auch nichts unterdrücken).
 * `mute` wird in der Voice selbst behandelt (die Voice wird gar nicht gestartet), Solo im

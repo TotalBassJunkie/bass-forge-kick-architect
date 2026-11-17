@@ -90,6 +90,8 @@ set(BFKA_UI_SOURCES
     src/ui/ModuleStructureView.cpp
     src/ui/ModuleCard.cpp
     src/ui/FxPage.cpp
+    src/ui/SlotCard.cpp
+    src/ui/KickPage.cpp
     src/ui/editors/MultibandView.cpp
     src/ui/editors/ConvolverView.cpp
     src/ui/editors/DynamicEqView.cpp
@@ -140,6 +142,8 @@ set(BFKA_HEADERS
     src/ui/ModuleStructureView.h
     src/ui/ModuleCard.h
     src/ui/FxPage.h
+    src/ui/SlotCard.h
+    src/ui/KickPage.h
     src/ui/editors/MultibandView.h
     src/ui/editors/ConvolverView.h
     src/ui/editors/DynamicEqView.h

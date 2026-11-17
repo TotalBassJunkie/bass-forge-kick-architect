@@ -1,9 +1,9 @@
 #include "plugin/PluginEditor.h"
 #include "plugin/PluginProcessor.h"
 
-#include "core/ParameterRegistry.h"
 #include "core/Version.h"
 #include "ui/FxPage.h"
+#include "ui/KickPage.h"
 #include "ui/UiTheme.h"
 
 namespace bfka
@@ -22,7 +22,7 @@ PluginEditor::PluginEditor (PluginProcessor& processor)
     titleLabel.setColour (juce::Label::textColourId, theme::text);
     addAndMakeVisible (titleLabel);
 
-    versionLabel.setText ("Version " + Version::get() + "  -  Phase P0 (Skelett)",
+    versionLabel.setText ("Version " + Version::get(),
                           juce::dontSendNotification);
     versionLabel.setFont (juce::Font (juce::FontOptions (13.0f)));
     versionLabel.setColour (juce::Label::textColourId, theme::textDim);
@@ -46,47 +46,12 @@ PluginEditor::PluginEditor (PluginProcessor& processor)
     noteLabel.setColour (juce::Label::textColourId, theme::textDim);
     addAndMakeVisible (noteLabel);
 
-    masterLabel.setText ("MASTER", juce::dontSendNotification);
-    masterLabel.setFont (juce::Font (juce::FontOptions (11.0f).withStyle ("Bold")));
-    masterLabel.setColour (juce::Label::textColourId, theme::textDim);
-    addAndMakeVisible (masterLabel);
+    // --- Seiten -----------------------------------------------------------
+    kickPageComponent = std::make_unique<KickPage> (proc);
+    addAndMakeVisible (*kickPageComponent);
 
-    masterSlider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
-    masterSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 80, 18);
-    masterSlider.setColour (juce::Slider::rotarySliderFillColourId, theme::accent);
-    masterSlider.setColour (juce::Slider::textBoxTextColourId, theme::text);
-    addAndMakeVisible (masterSlider);
-
-    if (proc.parameters().getParameter ("master_vol") != nullptr)
-    {
-        masterAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
-            proc.parameters(), "master_vol", masterSlider);
-    }
-
-    demoButton.setColour (juce::TextButton::buttonColourId, theme::panel.brighter (0.15f));
-    demoButton.setColour (juce::TextButton::textColourOffId, theme::text);
-    demoButton.onClick = [this]
-    {
-        const auto ok = proc.startDemoKick();
-        statusLabel.setText (proc.getLastLoadReport(), juce::dontSendNotification);
-        statusLabel.setColour (juce::Label::textColourId, ok ? theme::textDim : juce::Colours::orange);
-    };
-    addAndMakeVisible (demoButton);
-
-    playButton.setColour (juce::TextButton::buttonColourId, theme::accent.withAlpha (0.25f));
-    playButton.setColour (juce::TextButton::textColourOffId, theme::text);
-    playButton.onClick = [this] { proc.triggerKick(); };
-    addAndMakeVisible (playButton);
-
-    statusLabel.setFont (juce::Font (juce::FontOptions (12.0f)));
-    statusLabel.setColour (juce::Label::textColourId, theme::textDim);
-    statusLabel.setText ("Noch kein Kick geladen - 'Demo-Kick laden' holt Punch, Rumble und Click aus der Library.",
-                         juce::dontSendNotification);
-    addAndMakeVisible (statusLabel);
-
-    // --- FX-Seite ---------------------------------------------------------
-    fxPage = std::make_unique<FxPage> (proc);
-    addChildComponent (*fxPage);
+    fxPageComponent = std::make_unique<FxPage> (proc);
+    addChildComponent (*fxPageComponent);
 
     showPage (false);
     startTimerHz (8);
@@ -98,22 +63,20 @@ void PluginEditor::showPage (bool showFxPage)
 {
     fxPageVisible = showFxPage;
 
-    const auto setKickControlsVisible = [showFxPage] (juce::Array<juce::Component*> components)
+    if (kickPageComponent != nullptr)
     {
-        for (auto* component : components)
-            if (component != nullptr)
-                component->setVisible (! showFxPage);
-    };
+        kickPageComponent->setVisible (! showFxPage);
 
-    setKickControlsVisible ({ &noteLabel, &masterLabel, &masterSlider,
-                              &demoButton, &playButton, &statusLabel });
+        if (! showFxPage)
+            kickPageComponent->syncFromProcessor();
+    }
 
-    if (fxPage != nullptr)
+    if (fxPageComponent != nullptr)
     {
-        fxPage->setVisible (showFxPage);
+        fxPageComponent->setVisible (showFxPage);
 
         if (showFxPage)
-            fxPage->syncFromProcessor();
+            fxPageComponent->syncFromProcessor();
     }
 
     kickTabButton.setToggleState (! showFxPage, juce::dontSendNotification);
@@ -137,15 +100,6 @@ void PluginEditor::timerCallback()
 void PluginEditor::paint (juce::Graphics& g)
 {
     g.fillAll (theme::background);
-
-    if (! fxPageVisible)
-    {
-        auto panel = getLocalBounds().reduced (16).withTrimmedTop (100).toFloat();
-        g.setColour (theme::panel);
-        g.fillRoundedRectangle (panel, 10.0f);
-        g.setColour (theme::accent.withAlpha (0.35f));
-        g.drawRoundedRectangle (panel, 10.0f, 1.0f);
-    }
 }
 
 void PluginEditor::resizedTabButtons()
@@ -157,38 +111,26 @@ void PluginEditor::resizedTabButtons()
     fxTabButton.setBounds (tabs);
 }
 
-void PluginEditor::layoutKickPage (juce::Rectangle<int> body)
-{
-    auto left = body.removeFromLeft (180);
-
-    masterLabel.setBounds (left.removeFromTop (16));
-    masterSlider.setBounds (left.removeFromTop (120).withSizeKeepingCentre (120, 110));
-
-    auto buttons = body.removeFromTop (40).removeFromLeft (320);
-    demoButton.setBounds (buttons.removeFromLeft (160).reduced (2));
-    playButton.setBounds (buttons.removeFromLeft (100).reduced (2));
-
-    noteLabel.setBounds (body.removeFromBottom (24));
-    statusLabel.setBounds (body.removeFromTop (40));
-}
-
 void PluginEditor::resized()
 {
     auto area = getLocalBounds().reduced (16);
 
     auto header = area.removeFromTop (56);
     titleLabel.setBounds (header.removeFromTop (32));
-    versionLabel.setBounds (header);
+    versionLabel.setBounds (header.removeFromLeft (300).withTrimmedTop (30));
 
     resizedTabButtons();
 
+    noteLabel.setBounds (getLocalBounds().reduced (16).removeFromTop (56)
+                             .withTrimmedTop (34).removeFromLeft (160));
+
     auto body = area.withTrimmedTop (8);
 
-    if (fxPage != nullptr)
-        fxPage->setBounds (body);
+    if (fxPageComponent != nullptr)
+        fxPageComponent->setBounds (body);
 
-    if (! fxPageVisible)
-        layoutKickPage (body);
+    if (kickPageComponent != nullptr)
+        kickPageComponent->setBounds (body);
 }
 
 } // namespace bfka

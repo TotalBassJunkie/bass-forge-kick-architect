@@ -121,6 +121,9 @@ bool KickAssembler::loadSlotWithSettings (int slot,
     if (! juce::isPositiveAndBelow (slot, KickState::kNumSlots))
         return false;
 
+    // Ein fehlgeschlagener Ladevorgang darf keine alte Huelle stehen lassen.
+    envelopes[(size_t) slot] = {};
+
     std::unique_ptr<juce::AudioFormatReader> reader (formats.createReaderFor (file));
 
     if (reader == nullptr)
@@ -154,6 +157,8 @@ bool KickAssembler::loadSlotWithSettings (int slot,
         effective.trimEndSeconds = sampleLength;
 
     renderer.setSlot (slot, buffers[(size_t) slot].get(), sourceRates[(size_t) slot], effective);
+
+    buildEnvelope (*buffers[(size_t) slot], sourceRates[(size_t) slot], envelopes[(size_t) slot]);
     return true;
 }
 
@@ -193,8 +198,7 @@ int KickAssembler::loadFromState (const KickState& state,
 
         if (! ref.has_value() || ! ref->isValid())
         {
-            renderer.clearSlot (slot);
-            buffers[(size_t) slot].reset();
+            clearSlot (slot, renderer);
             continue;
         }
 
@@ -203,8 +207,7 @@ int KickAssembler::loadFromState (const KickState& state,
         if (! file.existsAsFile())
         {
             warnings.add ("Fehlt: " + ref->fileName);
-            renderer.clearSlot (slot);
-            buffers[(size_t) slot].reset();
+            clearSlot (slot, renderer);
             continue;
         }
 
@@ -219,6 +222,160 @@ int KickAssembler::loadFromState (const KickState& state,
     return loaded;
 }
 
+bool KickAssembler::loadOneSlot (int slot,
+                                 const KickState& state,
+                                 const juce::File& contentRoot,
+                                 KickRenderer& renderer,
+                                 juce::StringArray& warnings)
+{
+    if (! juce::isPositiveAndBelow (slot, KickState::kNumSlots))
+        return false;
+
+    const auto& ref = state.getSample (slot);
+
+    if (! ref.has_value() || ! ref->isValid())
+    {
+        clearSlot (slot, renderer);
+        return false;
+    }
+
+    const auto file = resolveSampleFile (*ref, contentRoot);
+
+    if (! file.existsAsFile())
+    {
+        warnings.add ("Fehlt: " + ref->fileName);
+        clearSlot (slot, renderer);
+        return false;
+    }
+
+    return loadSlot (slot, file, state, renderer, warnings);
+}
+
+void KickAssembler::clearSlot (int slot, KickRenderer& renderer)
+{
+    if (! juce::isPositiveAndBelow (slot, KickState::kNumSlots))
+        return;
+
+    buffers[(size_t) slot].reset();
+    envelopes[(size_t) slot] = {};
+
+    renderer.clearSlot (slot);
+}
+
+bool KickAssembler::applySlotSettings (int slot, const KickState& state, KickRenderer& renderer)
+{
+    if (! juce::isPositiveAndBelow (slot, KickState::kNumSlots))
+        return false;
+
+    if (buffers[(size_t) slot] == nullptr)
+        return false;
+
+    const auto length = slotLengthSeconds (slot);
+    const auto settings = voiceSettingsForSlot (state, slot, length);
+
+    // Trim-Ende 0 heisst "bis zum Ende" — dieselbe Regel wie beim Laden.
+    auto effective = settings;
+
+    if (effective.trimEndSeconds <= effective.trimStartSeconds)
+        effective.trimEndSeconds = length;
+
+    renderer.setSlotSettings (slot, effective);
+    return true;
+}
+
+double KickAssembler::slotLengthSeconds (int slot) const noexcept
+{
+    if (! juce::isPositiveAndBelow (slot, KickState::kNumSlots))
+        return 0.0;
+
+    const auto& buffer = buffers[(size_t) slot];
+
+    if (buffer == nullptr || buffer->getNumSamples() <= 0)
+        return 0.0;
+
+    const auto rate = sourceRates[(size_t) slot] > 0.0 ? sourceRates[(size_t) slot] : 48000.0;
+    return (double) buffer->getNumSamples() / rate;
+}
+
+const KickAssembler::SampleEnvelope& KickAssembler::envelope (int slot) const noexcept
+{
+    static const SampleEnvelope empty;
+
+    if (! juce::isPositiveAndBelow (slot, KickState::kNumSlots))
+        return empty;
+
+    return envelopes[(size_t) slot];
+}
+
+void KickAssembler::buildEnvelope (const juce::AudioBuffer<float>& buffer,
+                                   double sampleRate,
+                                   SampleEnvelope& target)
+{
+    target = {};
+
+    const auto numSamples  = buffer.getNumSamples();
+    const auto numChannels = buffer.getNumChannels();
+
+    if (numSamples <= 0 || numChannels <= 0)
+        return;
+
+    target.valid         = true;
+    target.lengthSeconds = (double) numSamples / (sampleRate > 0.0 ? sampleRate : 48000.0);
+
+    const auto buckets = (int) SampleEnvelope::kBuckets;
+    auto peak = 0.0f;
+
+    for (int b = 0; b < buckets; ++b)
+    {
+        const auto first = (juce::int64) b * numSamples / buckets;
+        const auto last  = (juce::int64) (b + 1) * numSamples / buckets;
+
+        auto lo = 0.0f;
+        auto hi = 0.0f;
+        auto seen = false;
+
+        for (auto i = first; i < last; ++i)
+        {
+            auto value = 0.0f;
+
+            for (int ch = 0; ch < numChannels; ++ch)
+                value += buffer.getSample (ch, (int) i);
+
+            value /= (float) numChannels;
+
+            if (! seen)
+            {
+                lo = hi = value;
+                seen = true;
+            }
+
+            lo = juce::jmin (lo, value);
+            hi = juce::jmax (hi, value);
+            peak = juce::jmax (peak, std::abs (value));
+            peak = juce::jmax (peak, juce::jmax (std::abs (lo), std::abs (hi)));
+        }
+
+        target.minimum[(size_t) b] = lo;
+        target.maximum[(size_t) b] = hi;
+    }
+
+    target.peak = peak;
+}
+
+void KickAssembler::findDemoSamples (const juce::File& contentRoot,
+                                     std::array<juce::File, 3>& files)
+{
+    // Bewusst schlicht: je ein Punch, ein Rumble und ein Click aus dem Techno-Umfeld.
+    static const char* const folders[] {
+        "Main - Punches/Techno",
+        "Main - Rumbles/Rumbles (Techno)",
+        "Transients (Clicks)"
+    };
+
+    for (size_t i = 0; i < files.size(); ++i)
+        files[i] = findFirstSample (contentRoot, folders[i]);
+}
+
 juce::File KickAssembler::findFirstSample (const juce::File& contentRoot, const juce::String& subFolder)
 {
     const auto folder = contentRoot.getChildFile (subFolder);
@@ -226,10 +383,19 @@ juce::File KickAssembler::findFirstSample (const juce::File& contentRoot, const 
     if (! folder.isDirectory())
         return {};
 
-    for (const auto& entry : juce::RangedDirectoryIterator (folder, true, "*.wav", juce::File::findFiles))
-        return entry.getFile();
+    juce::File found;
 
-    return {};
+    for (const auto& entry : juce::RangedDirectoryIterator (folder, true, "*.wav", juce::File::findFiles))
+    {
+        // Der erste Treffer genuegt; kein vollstaendiger Verzeichnis-Scan.
+        if (entry.getFile().existsAsFile())
+        {
+            found = entry.getFile();
+            break;
+        }
+    }
+
+    return found;
 }
 
 bool KickAssembler::buildDemoKick (const juce::File& contentRoot,

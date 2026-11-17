@@ -5,6 +5,83 @@ Laufendes Protokoll. Neueste Einträge oben. Format:
 
 ---
 
+## 2026-11-17 — Welle 9: Die KICK-Seite
+
+**Erledigt (P8, B-83, B-84, B-86, B-154, B-155, B-156, B-157)**
+
+* **B-86 — zwölf Slot-Karten.** Neu `src/ui/SlotCard.{h,cpp}`: Rollenband mit
+  Pegel-Strip, Sample-Name, `LOAD`/`X`, `MUTE`/`SOLO` (APVTS), `LOCK`/`P`
+  (`extraState`), Mini-Wellenform mit Trim-Fenster und Fade-Marken, drei große
+  Regler (VOL/PITCH/STRETCH) und vier Detailregler (TRIM START/END, FADE IN/OUT).
+  Die Regler sitzen direkt auf den APVTS-Parametern und rufen nach jeder
+  Änderung `applySlotSettings(slot)` — der Renderer übernimmt ohne Ketten-Rebuild.
+* **B-154 — Slot-IO im Prozessor.** `setSlotSample()` schreibt die Referenz in
+  den Zustand (relativ, wenn die Datei in der Library liegt) und lädt **nur**
+  diesen Slot (`KickAssembler::loadOneSlot`); `clearSlotSample()`,
+  `applySlotSettings()`, `applyAllSlotSettings()`, `isSlotFilled()`,
+  `getSlotVoiceSettings()`. Der `KickRenderer` hat dafür
+  `setSlotSettings()` (Einstellungen tauschen, Quelle behalten).
+* **B-155 — Rollen, Locks und KEY-TRACK aus der UI.** `setSlotRole`,
+  `setSlotLocked`, `setSlotKeyTracked` schreiben in `extraState`; der Zustand
+  ist die einzige Wahrheit, die Karte liest ihn im Timer.
+* **B-156 — Anzeige-Hüllen.** `KickAssembler::SampleEnvelope` (256 Min/Max-Paare
+  je Slot, beim Laden berechnet). Der Visualiser und die Mini-Wellenform der
+  Karte zeichnen daraus — ohne Audio-Thread-Zugriff, ohne Sample-genaue Daten.
+* **B-84 — Visualiser.** `KickVisualizer` in `src/ui/KickPage.{h,cpp}`:
+  **SHOW PARTS** (eine Zeile je belegtem Slot auf der Kick-Zeitachse, Farbe nach
+  Rolle) und **SUM** (Summe mit Vol/Position/Trims/Fades, 512 Stützpunkte,
+  Mute/Solo wie im Renderer). Dazu Viertelbeat-Raster und
+  „Kick-Länge ms | BPM“.
+* **B-83 — Transport.** `PLAY`, `LOOP` (1,5 s), `DEMO-KICK`, BPM-Leiste
+  (`getBpm`/`setBpm`: Zustand + Renderer + Shaper-Hüllkurve), MASTER-Leiste
+  (`master_vol`), `VIEW` zum Umschalten. Die beiden Leisten sind `ValueBar` —
+  `LinearBar` mit eigener Wertbeschriftung, weil JUCE bei `LinearBar` nur den
+  Balken zeichnet.
+* **B-157 — Editor umgebaut.** `PluginEditor` hält jetzt zwei Seiten-
+  Komponenten (`KickPage`, `FxPage`) statt einer handgelayouteten Skelett-Seite;
+  Titel, Versionszeile, Notenanzeige und Umschalter bleiben im Rahmen.
+  `kickPage()`/`fxPage()` sind für Tests erreichbar.
+* **`startDemoKick()` schreibt jetzt in den Zustand.** Vorher lud nur der
+  Renderer — die Slot-Karten waren leer, obwohl der Kick klang. Jetzt landen
+  Referenzen, Rollen (`punch`/`rumble`/`click`) und Startpegel (0/−6/−12 dB über
+  die Slot-Volumen-Parameter) im Zustand, danach lädt `loadFromState()`.
+  Nebeneffekt: das Demo-Preset lässt sich speichern und wieder laden.
+
+**Behobene Nebenbefunde**
+
+* `ParamDesc::format()` zeigte für Werte aus der Kurvenumkehr „-0.00 dB“;
+  Beträge unter 1e-4 werden jetzt auf 0 gesetzt.
+* `juce::Slider::setRange (0, 1, 0.0001)` rundete den normalisierten Wert
+  (0,85714286 → 0,8571) und damit die dB-Anzeige auf „-0.00 dB“. Slot- und
+  Transport-Regler laufen mit Intervall 0.
+* `KickPage` ruft am Ende des Konstruktors `resized()`: `setSize()` läuft dort
+  **vor** dem Anlegen der Kinder, sonst bleibt die Seite bis zur ersten
+  Größenänderung unausgelegt (Tests, die die Seite direkt rendern, sahen eine
+  leere Fläche).
+* `KickAssembler::findFirstSample()` hatte unerreichbaren Code (C4702);
+  jetzt mit `break` statt `return` im Schleifenkörper.
+* `PluginEditor` zeigte die KICK-Seite als Skelett; der Tab KICK ist jetzt die
+  echte Seite mit Karten und Visualiser.
+
+**Tests: 316 Testfälle, 540.097 Assertions, alle grün.** Neu:
+`tests/KickPageTests.cpp` mit 11 Testfällen (12 Karten, Sample laden/leeren,
+Live-Regler, BPM/Klemmung, Rollen/Sperren, Reglertexte, Visualiser PARTS/SUM,
+Demo-Kick gegen den Zustand, Editor mit beiden Seiten). Baseline: 305 / 539.977.
+
+**Gates:** Build grün (VST3 + Standalone, keine neuen Warnungen) · Suite grün ·
+UI-Renderings gesichtet (`C:\bfka-re\ui-kickpage-*.png`) · Doku aktualisiert.
+
+**Nächste Schritte**
+
+1. **B-95** — `<Samples>` im Preset (Base64-WAV), Größenlimit, Import-Rückweg.
+2. **B-150** — `getTailLengthSeconds()` aus Ketten- und Kick-Länge ableiten.
+3. **B-151** — Karten-Layout für `dynEq` & Co. gruppieren (Reiter/Aufklappen).
+4. **B-152** — IR-Browser mit User-Directories.
+5. **B-153** — Release-CPU-Messung gegen die 3-%-Budgets, Sidechain-Hosttest.
+6. **B-44** — Pitch/Stretch in `SampleVoice` (die Regler der Karten wirken erst dann).
+
+---
+
 ## 2026-11-17 — Welle 8: Sidechain, Presets, die letzten drei Editoren, Rampen, CPU-Profil
 
 **Erledigt (Phase 3, B-146, B-93/B-94, B-92b, B-147, B-148, B-149)**

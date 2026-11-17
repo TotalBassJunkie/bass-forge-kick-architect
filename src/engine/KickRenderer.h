@@ -107,6 +107,18 @@ public:
     /** Einstellungen eines Slots (ungueltiger Index liefert eine leere Vorlage). */
     const VoiceSettings& slotSettings (int slotIndex) const noexcept;
 
+    /**
+     * Aendert nur die Einstellungen eines belegten Slots (B-154).
+     *
+     * Fuer Regler-Aenderungen aus der KICK-Seite: die Quelle bleibt, nur Vol,
+     * Position, Trims, Fades und Mute/Solo werden uebernommen. Eine laufende
+     * Voice rechnet ab dem naechsten Sample mit dem neuen Fenster; `mute` und
+     * `solo` wirken beim naechsten `noteOn()`.
+     *
+     * Laeuft auf dem Message-Thread, allokiert nicht.
+     */
+    void setSlotSettings (int slotIndex, const VoiceSettings& newSettings);
+
     /** Ist der Slot belegt? */
     bool isSlotFilled (int slotIndex) const noexcept;
 

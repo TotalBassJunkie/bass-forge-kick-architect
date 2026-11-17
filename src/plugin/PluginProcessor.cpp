@@ -244,6 +244,158 @@ void PluginProcessor::updateModuleRenderLength()
     }
 }
 
+// ---------------------------------------------------------------------------
+// KICK-Seite: Slots (B-154)
+// ---------------------------------------------------------------------------
+bool PluginProcessor::setSlotSample (int slot, const juce::File& file, juce::String& error)
+{
+    if (! juce::isPositiveAndBelow (slot, KickState::kNumSlots))
+    {
+        error = "Slot " + juce::String (slot) + " liegt ausserhalb von 1..12.";
+        return false;
+    }
+
+    if (! file.existsAsFile())
+    {
+        error = "Datei nicht gefunden: " + file.getFileName();
+        return false;
+    }
+
+    if (! contentRoot.isDirectory())
+        contentRoot = defaultContentRoot();
+
+    SampleRef ref;
+    ref.fileName = file.getFileName();
+    ref.absPath  = file.getFullPathName();
+
+    // Innerhalb der Library relativ ablegen: nur so ueberlebt das Preset einen
+    // Umzug der Library.
+    if (contentRoot.isDirectory() && file.isAChildOf (contentRoot))
+        ref.relPath = file.getRelativePathFrom (contentRoot);
+
+    auto state = captureState();
+    state.setSample (slot, ref);
+    extraState = state.toValueTree();
+
+    juce::StringArray warnings;
+    const auto ok = assembler.loadOneSlot (slot, state, contentRoot, renderer, warnings);
+
+    if (! ok)
+    {
+        error = warnings.isEmpty() ? "Sample konnte nicht geladen werden: " + ref.fileName
+                                   : warnings.joinIntoString ("; ");
+        log::w ("setSlotSample(" + juce::String (slot) + "): " + error);
+        return false;
+    }
+
+    log::i ("Slot " + juce::String (slot) + " geladen: " + ref.fileName);
+    return true;
+}
+
+void PluginProcessor::clearSlotSample (int slot)
+{
+    if (! juce::isPositiveAndBelow (slot, KickState::kNumSlots))
+        return;
+
+    auto state = captureState();
+    state.clearSample (slot);
+    extraState = state.toValueTree();
+
+    assembler.clearSlot (slot, renderer);
+}
+
+void PluginProcessor::applySlotSettings (int slot)
+{
+    if (! juce::isPositiveAndBelow (slot, KickState::kNumSlots))
+        return;
+
+    // Der Zustand traegt die Parameterwerte (APVTS ist die Wahrheit).
+    assembler.applySlotSettings (slot, captureState(), renderer);
+}
+
+void PluginProcessor::applyAllSlotSettings()
+{
+    const auto state = captureState();
+
+    for (int slot = 0; slot < KickState::kNumSlots; ++slot)
+        assembler.applySlotSettings (slot, state, renderer);
+}
+
+bool PluginProcessor::isSlotFilled (int slot) const
+{
+    return renderer.isSlotFilled (slot);
+}
+
+const KickAssembler::SampleEnvelope& PluginProcessor::getSlotEnvelope (int slot) const
+{
+    return assembler.envelope (slot);
+}
+
+void PluginProcessor::setSlotRole (int slot, Role role)
+{
+    if (! juce::isPositiveAndBelow (slot, KickState::kNumSlots))
+        return;
+
+    auto state = captureState();
+    state.setRole (slot, role);
+    extraState = state.toValueTree();
+}
+
+void PluginProcessor::setSlotLocked (int slot, bool shouldBeLocked)
+{
+    if (! juce::isPositiveAndBelow (slot, KickState::kNumSlots))
+        return;
+
+    auto state = captureState();
+    state.setLocked (slot, shouldBeLocked);
+    extraState = state.toValueTree();
+}
+
+void PluginProcessor::setSlotKeyTracked (int slot, bool shouldTrack)
+{
+    if (! juce::isPositiveAndBelow (slot, KickState::kNumSlots))
+        return;
+
+    auto state = captureState();
+    state.setKeyTracked (slot, shouldTrack);
+    extraState = state.toValueTree();
+}
+
+int PluginProcessor::getNumFilledSlots() const
+{
+    auto count = 0;
+
+    for (int slot = 0; slot < KickState::kNumSlots; ++slot)
+        if (renderer.isSlotFilled (slot))
+            ++count;
+
+    return count;
+}
+
+double PluginProcessor::getBpm() const
+{
+    juce::String error;
+
+    if (auto stored = KickState::fromValueTree (extraState, error))
+        return stored->getBpm();
+
+    return 150.0;
+}
+
+void PluginProcessor::setBpm (double bpm)
+{
+    auto state = captureState();
+    state.setBpm (juce::jlimit (KickRenderer::kMinBpm, KickRenderer::kMaxBpm, bpm));
+    extraState = state.toValueTree();
+
+    auto settings = renderer.renderSettings();
+    settings.bpm = state.getBpm();
+    renderer.setRenderSettings (settings);
+
+    // Die Kick-Laenge haengt am Tempo (B-147).
+    updateModuleRenderLength();
+}
+
 namespace
 {
     /** Neuer Kettenplatz mit Werkswerten (kein `data`: Modul-Defaults gelten). */
@@ -364,25 +516,74 @@ bool PluginProcessor::startDemoKick()
         return false;
     }
 
+    // Erst die Referenzen in den Zustand schreiben, dann laden: so zeigen die
+    // Slot-Karten der KICK-Seite denselben Kick, den der Renderer spielt (B-154).
+    std::array<juce::File, 3> demoFiles;
+    KickAssembler::findDemoSamples (contentRoot, demoFiles);
+
+    // Startpegel der Demo (dB) landen in den Slot-Parametern, nicht im Renderer.
+    static const float demoGainDb[] { 0.0f, -6.0f, -12.0f };
+
+    // Rollen passend zu den Demo-Ordnern, damit die Slot-Karten sie zeigen.
+    static const Role demoRoles[] { Role::punch, Role::rumble, Role::click };
+
+    auto state = captureState();
     juce::StringArray warnings;
-    const auto ok = assembler.buildDemoKick (contentRoot, renderer, warnings);
+    auto found = 0;
+
+    for (size_t i = 0; i < demoFiles.size(); ++i)
+    {
+        if (! demoFiles[i].existsAsFile())
+        {
+            warnings.add ("Demo-Ordner " + juce::String ((int) i + 1) + " ist leer");
+            continue;
+        }
+
+        const auto slot = (int) i;
+
+        SampleRef ref;
+        ref.fileName = demoFiles[i].getFileName();
+        ref.absPath  = demoFiles[i].getFullPathName();
+
+        if (demoFiles[i].isAChildOf (contentRoot))
+            ref.relPath = demoFiles[i].getRelativePathFrom (contentRoot);
+
+        state.setSample (slot, ref);
+        state.setRole (slot, demoRoles[i]);
+
+        if (const auto* volume = ParameterRegistry::get().find ("l" + juce::String (slot) + "_vol"))
+            state.setParam (volume->id, volume->toNormalised (demoGainDb[i]));
+
+        ++found;
+    }
+
+    if (found == 0)
+    {
+        lastLoadReport = "Demo-Kick: keine Samples in der Library gefunden.";
+        log::w (lastLoadReport);
+        return false;
+    }
+
+    applyState (state);
+
+    const auto loaded = assembler.loadFromState (captureState(), contentRoot, renderer, warnings);
 
     // Ein neuer Kick bringt ein neues Tempo - die Shaper-Huellkurve laeuft
     // ueber die Kick-Laenge (B-147).
     updateModuleRenderLength();
 
-    lastLoadReport = ok ? ("Demo-Kick aus " + contentRoot.getFileName())
-                        : "Demo-Kick konnte nicht gebaut werden.";
+    lastLoadReport = loaded > 0 ? ("Demo-Kick aus " + contentRoot.getFileName())
+                                : "Demo-Kick konnte nicht gebaut werden.";
 
     if (! warnings.isEmpty())
         lastLoadReport << " | " << warnings.joinIntoString ("; ");
 
     log::i (lastLoadReport);
 
-    if (ok)
+    if (loaded > 0)
         renderer.noteOn();
 
-    return ok;
+    return loaded > 0;
 }
 
 juce::AudioProcessorEditor* PluginProcessor::createEditor()

@@ -479,7 +479,31 @@ Einzelheiten in docs/PROGRESS.md und im jeweiligen Handoff.
 | B-151 | Karten-Layout für Module mit vielen Parametern (dynEq, 64) gruppieren | offen |
 | B-152 | IR-Browser mit User-Directories | offen |
 | B-153 | Release-CPU-Messung und Sidechain-Hosttest in einer DAW | offen |
+| B-44 | Pitch/Stretch in SampleVoice (die Regler der Slot-Karten) | offen |
 
-**Getestete Eigenschaften:** siehe docs/specs/fx-chain-engine.md (Abschnitt 8
-und 9.1). **375 zusätzliche Assertions** seit Welle 6; aktueller Stand
-**305 Testfälle / 539.977 Assertions**.
+**Getestete Eigenschaften (Welle 7/8):** siehe docs/specs/fx-chain-engine.md
+(Abschnitt 8 und 9.1). Stand nach Welle 8: **305 Testfälle / 539.977 Assertions**.
+
+## 22. Nachtrag 2026-11-17 — Tickets der Welle 9 (KICK-Seite)
+
+Die P8-Tickets des Masterplans (B-83, B-84, B-86) sind jetzt umgesetzt; dazu
+kamen vier Tickets, die beim Bauen nötig wurden. Einzelheiten in
+`docs/specs/kick-page.md` und `docs/PROGRESS.md`.
+
+| Ticket | Inhalt | Status |
+|---|---|---|
+| B-83 | Transport: PLAY, LOOP, BPM (`getBpm`/`setBpm`), MASTER, VIEW | erledigt (Welle 9) |
+| B-84 | Visualiser: SHOW PARTS und SUM aus den Anzeige-Hüllen | erledigt (Welle 9) |
+| B-86 | Slot-Karten: Rollenband, LOAD/X, MUTE/SOLO/LOCK/P, 7 Regler, Mini-Wellenform | erledigt (Welle 9) |
+| B-154 | Slot-IO im Prozessor (`setSlotSample`, `clearSlotSample`, `applySlotSettings`) | erledigt (Welle 9) |
+| B-155 | Rolle/Sperre/KEY-TRACK je Slot aus der UI in den Zustand | erledigt (Welle 9) |
+| B-156 | Anzeige-Hüllen (SampleEnvelope) im KickAssembler | erledigt (Welle 9) |
+| B-157 | Editor auf zwei Seiten-Komponenten umgebaut | erledigt (Welle 9) |
+| B-83b | BPM FOLLOW DAW (Host-Sync statt fester Wert) | offen |
+| B-85 | Interaktion im Visualiser (Move/Trim/Fades, Rechtsklick) | offen |
+| B-87/B-88 | Regler-Rechtsklick, Undo, Tooltips, Tastaturkürzel | offen |
+| B-89 | Resize/UIScaler/HiDPI | offen |
+
+**Getestete Eigenschaften:** siehe docs/specs/kick-page.md (Abschnitt 7).
+Aktueller Stand **316 Testfälle / 540.097 Assertions** (+11 Testfälle / +120
+Assertions gegenüber Welle 8).

@@ -110,6 +110,19 @@ const VoiceSettings& KickRenderer::slotSettings (int slotIndex) const noexcept
     return voiceSettings[(size_t) slotIndex];
 }
 
+void KickRenderer::setSlotSettings (int slotIndex, const VoiceSettings& newSettings)
+{
+    if (slotIndex < 0 || slotIndex >= kNumSlots)
+        return;
+
+    const auto index = (size_t) slotIndex;
+
+    voiceSettings[index] = newSettings;
+    voices[index].setSettings (newSettings);
+
+    updateSoloState();
+}
+
 bool KickRenderer::isSlotFilled (int slotIndex) const noexcept
 {
     if (slotIndex < 0 || slotIndex >= kNumSlots)

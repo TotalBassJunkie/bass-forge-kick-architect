@@ -130,6 +130,65 @@ public:
     /** Letzte gespielte MIDI-Note (Anzeige/Test). */
     int getLastNote() const noexcept { return lastNote.load(); }
 
+    // --- KICK-Seite: Slots (B-154) -----------------------------------------
+    /**
+     * Belegt Slot `slot` mit einer Datei und laedt ihn in den Renderer.
+     *
+     * Die Referenz landet im Zustand (relativer Pfad, wenn die Datei in der
+     * Library liegt), damit Slot-Karte und Preset denselben Stand zeigen. Nur
+     * dieser Slot wird neu geladen; die anderen bleiben unangetastet.
+     *
+     * Nur vom Message-Thread aufrufen.
+     */
+    bool setSlotSample (int slot, const juce::File& file, juce::String& error);
+
+    /** Leert einen Slot (Zustand und Renderer). Nur vom Message-Thread. */
+    void clearSlotSample (int slot);
+
+    /**
+     * Uebernimmt die Slot-Parameter (Vol, Pitch, Trims, Fades, Mute/Solo) eines
+     * Slots live in den Renderer — ohne Rebuild und ohne neue Datei.
+     *
+     * Nur vom Message-Thread aufrufen (nach jeder Regler-Aenderung).
+     */
+    void applySlotSettings (int slot);
+
+    /** Wie `applySlotSettings()`, fuer alle zwoelf Slots. */
+    void applyAllSlotSettings();
+
+    /** Ist der Slot im Renderer belegt? */
+    bool isSlotFilled (int slot) const;
+
+    /** Anzeige-Wellenform eines Slots (B-156). */
+    const KickAssembler::SampleEnvelope& getSlotEnvelope (int slot) const;
+
+    /** Aktuelle Voice-Einstellungen eines Slots (Diagnose/Test, B-154). */
+    const VoiceSettings& getSlotVoiceSettings (int slot) const { return renderer.slotSettings (slot); }
+
+    /** Rolle, Sperre und KEY-TRACK-Teilnahme eines Slots (nicht-parametrisch). */
+    void setSlotRole (int slot, Role role);
+    void setSlotLocked (int slot, bool shouldBeLocked);
+    void setSlotKeyTracked (int slot, bool shouldTrack);
+
+    /** Laenge des aktuellen Kicks in Sekunden (Anzeige im Visualiser). */
+    double getKickLengthSeconds() const noexcept { return renderer.kickLengthSeconds(); }
+
+    /** Beat-Laenge in Sekunden (60/BPM) fuer das Raster im Visualiser. */
+    double getBeatLengthSeconds() const noexcept { return renderer.beatLengthSeconds(); }
+
+    /** Anzahl belegter Slots (Anzeige/Statuszeile). */
+    int getNumFilledSlots() const;
+
+    /** Tempo aus dem Zustand (FOLLOW DAW oder MANUAL, noch ohne Host-Sync). */
+    double getBpm() const;
+
+    /**
+     * Setzt das Tempo im Zustand, im Renderer und in der Shaper-Huellkurve.
+     *
+     * Nur vom Message-Thread aufrufen.
+     */
+    void setBpm (double bpm);
+
     // --- Externer Sidechain (B-146) ---------------------------------------
     /**
      * Lag im letzten Block ein Signal als Detektor an?
