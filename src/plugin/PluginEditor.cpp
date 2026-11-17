@@ -117,12 +117,14 @@ void PluginEditor::resized()
 
     auto header = area.removeFromTop (56);
     titleLabel.setBounds (header.removeFromTop (32));
-    versionLabel.setBounds (header.removeFromLeft (300).withTrimmedTop (30));
+
+    // Zweite Kopfzeile: Version links, zuletzt gespielte Note daneben.
+    auto infoRow = header;
+    versionLabel.setBounds (infoRow.removeFromLeft (200));
+    infoRow.removeFromLeft (12);
+    noteLabel.setBounds (infoRow.removeFromLeft (160));
 
     resizedTabButtons();
-
-    noteLabel.setBounds (getLocalBounds().reduced (16).removeFromTop (56)
-                             .withTrimmedTop (34).removeFromLeft (160));
 
     auto body = area.withTrimmedTop (8);
 
