@@ -1,4 +1,4 @@
-#include "ui/FxChainModel.h"
+﻿#include "ui/FxChainModel.h"
 
 #include <utility>
 
@@ -7,9 +7,31 @@
 namespace bfka
 {
 
+namespace
+{
+    /** Kettenplatz mit Werkswerten (kein `data`: Modul-Defaults gelten). */
+    FxModuleState makeSlot (const juce::String& type)
+    {
+        FxModuleState state;
+        state.type    = type;
+        state.enabled = true;
+        state.mix     = 1.0f;
+        state.outGain = 1.0f;
+        return state;
+    }
+} // namespace
+
 FxChainModel::FxChainModel (FxChain initialChain)
     : chainData (std::move (initialChain))
 {
+}
+
+FxChain FxChainModel::makeDefaultChain()
+{
+    FxChain chain;
+    chain.modules.push_back (makeSlot ("filt"));    // Hochpass gegen Subsonic
+    chain.modules.push_back (makeSlot ("final"));   // Finalizer fuer den Master
+    return chain;
 }
 
 bool FxChainModel::isValidIndex (int index) const noexcept
@@ -31,24 +53,18 @@ int FxChainModel::addModule (FxType type)
 {
     const auto typeString = toString (type);
 
-    if (typeString.isEmpty())
+    if (typeString.isEmpty() || locked)
         return -1;
 
-    FxModuleState state;
-    state.type    = typeString;
-    state.enabled = true;
-    state.mix     = 1.0f;
-    state.outGain = 1.0f;
-
     // Kein `data`: die Modul-Defaults gelten (Werkszustand des Moduls).
-    chainData.modules.push_back (std::move (state));
+    chainData.modules.push_back (makeSlot (typeString));
 
     return (int) chainData.modules.size() - 1;
 }
 
 bool FxChainModel::removeModule (int index)
 {
-    if (! isValidIndex (index))
+    if (! isValidIndex (index) || locked)
         return false;
 
     chainData.modules.erase (chainData.modules.begin() + index);
@@ -57,7 +73,7 @@ bool FxChainModel::removeModule (int index)
 
 bool FxChainModel::moveModule (int from, int to)
 {
-    if (! isValidIndex (from))
+    if (! isValidIndex (from) || locked)
         return false;
 
     const int last = (int) chainData.modules.size() - 1;
@@ -75,7 +91,7 @@ bool FxChainModel::moveModule (int from, int to)
 
 int FxChainModel::duplicateModule (int index)
 {
-    if (! isValidIndex (index))
+    if (! isValidIndex (index) || locked)
         return -1;
 
     FxModuleState copy = chainData.modules[(size_t) index];
@@ -91,6 +107,9 @@ int FxChainModel::duplicateModule (int index)
 
 void FxChainModel::clear()
 {
+    if (locked)
+        return;
+
     chainData.modules.clear();
 }
 

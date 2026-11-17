@@ -287,25 +287,34 @@ bool isRegistered (FxType) const;
 Bypass rechnet kein Modul, die Latenzen bleiben aber erhalten (gleiche Begründung wie
 in 4.1 Punkt 4).
 
-### 6.3 Andocken von Modul-Presets (B-93)
+### 6.3 Andocken von Modul-Presets (B-93) — umgesetzt
 
 Ein **Modul-Preset** ist genau ein `FxModuleState`:
 
 ```xml
-<Module type="dist" on="1" mix="1.0" outGain="1.0" drive="45" mode="3" …>
-  <WNode …/>
-</Module>
+<BFKAPreset version="1" kind="module" type="dist" name="Drive 45" created="…">
+  <Module type="dist" on="1" mix="1.0" outGain="1.0">
+    <WNode …/>
+  </Module>
+</BFKAPreset>
 ```
 
-* **Speichern:** `type` + `enabled`/`mix`/`outGain` + `data` (ValueTree) in eine Datei
-  schreiben (`.bfkamodule`, Schema wie `FxChainPreset`).
-* **Laden:** Der Zustand ersetzt `FxModuleState` an dieser Kettenposition; es genügt
-  `setChain()` erneut zu rufen — die Kette baut die Instanz neu und überträgt die
-  Attribute.
-* **Pfeile im Kartenkopf** („nächstes/vorheriges Modul-Preset“) sind reine
-  Dateiauswahl; kein Sonderpfad in der Engine nötig.
-* **Default je Typ:** `FxFactory::create(type)` ohne `data` liefert die Modul-Defaults
-  der Klasse — das ist der „Reset auf Werkszustand“.
+* **Speichern:** `PresetIO::saveModulePreset()` schreibt `type` +
+  `enabled`/`mix`/`outGain` + `data` in eine `.bfkapreset`-Datei (dasselbe
+  Wurzel-Element wie Kick-Presets, `kind="module"`).
+* **Laden:** `PluginProcessor::loadModulePreset(slot, …)` ersetzt den
+  `FxModuleState` an dieser Kettenposition und ruft `setFxChain()` — die Kette
+  baut die Instanz neu und überträgt die Attribute. Die **Kettenplatz-Werte
+  `enabled`/`mix`/`outGain` bleiben** erhalten (ein Preset ist ein Modul, kein
+  Pegel).
+* **UI:** Seitenleiste unten, `SAVE MODULE` / `LOAD MODULE` wirken auf den
+  gewählten Kettenplatz (`FxPage::selectedSlot`).
+* **Default je Typ:** `FxFactory::create(type)` ohne `data` liefert die
+  Modul-Defaults der Klasse — das ist der „Reset auf Werkszustand“.
+* **Ketten-Header (B-94):** `CLEAR`, `DEFAULT` (Werkskette
+  `FxChainModel::makeDefaultChain()` = `filt` + `final`), `LOCK` (sperrt
+  Add/Remove/Move/Duplicate/Clear; Regler und MIX/OUT bleiben bedienbar) und
+  `A`/`B` (zwei gemerkte Gesamtzustände, `storeComparisonState`/`restoreComparisonState`).
 
 ### 6.4 Duplizieren
 

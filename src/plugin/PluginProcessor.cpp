@@ -634,8 +634,140 @@ void PluginProcessor::writeBackModuleStates()
     storeFxChainInExtraState();
 }
 
-void PluginProcessor::getStateInformation (juce::MemoryBlock& destData)
+// ---------------------------------------------------------------------------
+// Presets (B-93) und A/B-Vergleich (B-94)
+// ---------------------------------------------------------------------------
+bool PluginProcessor::savePreset (const juce::File& file, const PresetInfo& info,
+                                  juce::String& error) const
 {
+    // Die Struktur der Module steht erst nach dem Rueckschreiben im Zustand;
+    // die UI ruft es nach jeder Struktur-Aenderung, hier nur zur Sicherheit
+    // beim Speichern eines frisch veraenderten Moduls.
+    return PresetIO::saveKickPreset (file, captureState(), info, error);
+}
+
+bool PluginProcessor::loadPreset (const juce::File& file, juce::String& error)
+{
+    auto data = PresetIO::loadKickPreset (file, error);
+
+    if (! data.has_value())
+        return false;
+
+    // Parameter + Kette uebernehmen; der Rebuild der Engine darf nicht mit dem
+    // Audio-Thread kollidieren.
+    suspendProcessing (true);
+    applyState (data->state);
+    suspendProcessing (false);
+
+    lastLoadReport = "Preset geladen: " + file.getFileName();
+    log::i (lastLoadReport);
+    return true;
+}
+
+std::optional<PresetInfo> PluginProcessor::readPresetInfo (const juce::File& file, juce::String& error)
+{
+    auto tree = juce::XmlDocument::parse (file);
+
+    if (tree == nullptr)
+    {
+        error = "Datei ist kein gueltiges XML: " + file.getFileName();
+        return std::nullopt;
+    }
+
+    auto data = PresetIO::fromValueTree (juce::ValueTree::fromXml (*tree), error);
+
+    if (! data.has_value())
+        return std::nullopt;
+
+    return data->info;
+}
+
+bool PluginProcessor::saveModulePreset (int slot, const juce::File& file,
+                                        const PresetInfo& info, juce::String& error) const
+{
+    if (! juce::isPositiveAndBelow (slot, (int) currentChain.modules.size()))
+    {
+        error = "Kein Modul an Kettenplatz " + juce::String (slot) + ".";
+        return false;
+    }
+
+    auto header = info;
+
+    if (header.name.isEmpty())
+        header.name = file.getFileNameWithoutExtension();
+
+    return PresetIO::saveModulePreset (file, currentChain.modules[(size_t) slot], header, error);
+}
+
+bool PluginProcessor::loadModulePreset (int slot, const juce::File& file, juce::String& error)
+{
+    if (! juce::isPositiveAndBelow (slot, (int) currentChain.modules.size()))
+    {
+        error = "Kein Modul an Kettenplatz " + juce::String (slot) + ".";
+        return false;
+    }
+
+    auto data = PresetIO::loadModulePreset (file, error);
+
+    if (! data.has_value())
+        return false;
+
+    auto loaded = data->module;
+    const auto& current = currentChain.modules[(size_t) slot];
+
+    // Kettenplatz-Werte bleiben: ein Modul-Preset beschreibt das Modul, nicht
+    // seinen Pegel in der Kette.
+    loaded.enabled = current.enabled;
+    loaded.mix     = current.mix;
+    loaded.outGain = current.outGain;
+
+    currentChain.modules[(size_t) slot] = std::move (loaded);
+
+    suspendProcessing (true);
+    setFxChain (currentChain);
+    suspendProcessing (false);
+
+    lastLoadReport = "Modul-Preset geladen: " + file.getFileName();
+    log::i (lastLoadReport);
+    return true;
+}
+
+void PluginProcessor::storeComparisonState (int index)
+{
+    if (! juce::isPositiveAndBelow (index, kNumComparisonSlots))
+        return;
+
+    comparisonStates[(size_t) index] = captureState();
+    activeComparison.store (index);
+}
+
+bool PluginProcessor::restoreComparisonState (int index)
+{
+    if (! juce::isPositiveAndBelow (index, kNumComparisonSlots))
+        return false;
+
+    const auto& stored = comparisonStates[(size_t) index];
+
+    if (! stored.has_value())
+        return false;
+
+    suspendProcessing (true);
+    applyState (*stored);
+    suspendProcessing (false);
+
+    activeComparison.store (index);
+    return true;
+}
+
+bool PluginProcessor::hasComparisonState (int index) const noexcept
+{
+    if (! juce::isPositiveAndBelow (index, kNumComparisonSlots))
+        return false;
+
+    return comparisonStates[(size_t) index].has_value();
+}
+
+void PluginProcessor::getStateInformation (juce::MemoryBlock& destData){
     auto state = captureState();
     auto tree = state.toValueTree();
 

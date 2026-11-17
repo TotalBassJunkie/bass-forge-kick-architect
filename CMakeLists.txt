@@ -54,6 +54,7 @@ set(BFKA_CORE_SOURCES
     src/core/ParameterRegistry.cpp
     src/core/KickState.cpp
     src/core/FxChainIO.cpp
+    src/core/PresetIO.cpp
     )
 
 set(BFKA_ENGINE_SOURCES
@@ -105,6 +106,7 @@ set(BFKA_HEADERS
     src/core/ParameterRegistry.h
     src/core/KickState.h
     src/core/FxChainIO.h
+    src/core/PresetIO.h
     src/fx/FxModule.h
     src/fx/FxFactory.h
     src/fx/PassThroughModule.h

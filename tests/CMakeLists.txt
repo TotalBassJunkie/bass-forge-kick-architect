@@ -36,12 +36,14 @@ target_sources(BFKA_Tests PRIVATE
     FxPageTests.cpp
     FxDemoChainTests.cpp
     SidechainTests.cpp
+    PresetIOTests.cpp
     TestMain.cpp
     ../src/core/Version.cpp
     ../src/core/Log.cpp
     ../src/core/ParameterRegistry.cpp
     ../src/core/KickState.cpp
     ../src/core/FxChainIO.cpp
+    ../src/core/PresetIO.cpp
     ../src/ui/FxChainModel.cpp
     ../src/ui/ModuleStructureView.cpp
     ../src/ui/ModuleCard.cpp

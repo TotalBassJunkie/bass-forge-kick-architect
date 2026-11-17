@@ -131,14 +131,33 @@ Regeln:
 
 ## 4. Unser Preset-Format `.bfkapreset`
 
-* Wurzel: `<BFKAPreset version="1" name="…" author="…" styleId="…" created="ISO-8601">`
-* Inhalt: derselbe Baum wie in Abschnitt 3, zusätzlich:
-  * `<Samples>` — optional eingebettete Audiodaten für User-Presets
-    (`<Sample slot="0" name="…" format="wav" bytes="…"/>` mit Base64-Payload,
-    damit ein Preset unabhängig von der Library klingt — wie beim Referenzprodukt).
-* Endung `.bfkapreset`, Wildcard `*.bfkapreset`.
+*Wurzel und Ablage sind umgesetzt (B-93, `src/core/PresetIO.{h,cpp}`); das
+optionale Einbetten von Audiodaten steht noch aus (B-95).*
+
+* Wurzel: `<BFKAPreset version="1" kind="kick|module" name="…" author="…"
+  styleId="…" created="ISO-8601" appVersion="…" type="…">`
+  — `type` nur bei Modul-Presets (Modultyp), `kind` fehlt in alten Dateien und
+  gilt dann als `kick`.
+* Inhalt: derselbe Baum wie in Abschnitt 3 (`<BFKAKick>` als Kind). Ein
+  Modul-Preset enthält stattdessen genau ein `<Module type on mix outGain>` mit
+  dem Struktur-Zustand als Kind (siehe `docs/specs/fx-chain-engine.md`, 6.3).
+* `<Samples>` — **noch offen (B-95)**: optional eingebettete Audiodaten für
+  User-Presets (`<Sample slot="0" name="…" format="wav" bytes="…"/>` mit
+  Base64-Payload, damit ein Preset unabhängig von der Library klingt — wie beim
+  Referenzprodukt). Der Leser ignoriert das Element derzeit.
+* Endung `.bfkapreset`, Wildcard `*.bfkapreset`; fehlt die Endung beim
+  Speichern, wird sie ergänzt.
 * **Werk-Presets sind schreibgeschützt** (Ordner `Presets/Factory`), User-Presets
-  liegen unter `Presets/User`.
+  liegen unter `Presets/User` (derzeit schreibt die UI direkt nach
+  `Dokumente/BassForge/KickArchitect/Presets`).
+* Lesen ist tolerant: eine nackte `BFKAKick`-Wurzel (Inhalt von
+  `getStateInformation()`) wird ebenfalls angenommen; unbekannte
+  Wurzel-Elemente, kaputtes XML und Kick-/Modul-Verwechslung liefern eine
+  Klartextmeldung statt eines Absturzes.
+* Dateien über 32 MB werden abgelehnt (Schutz vor versehentlich geladenen
+  Audiodateien).
+* **A/B (B-94):** zwei gemerkte Gesamtzustände im Prozessor
+  (`storeComparisonState`/`restoreComparisonState`), nicht Teil des Presets.
 
 ### 4.1 Ablage
 

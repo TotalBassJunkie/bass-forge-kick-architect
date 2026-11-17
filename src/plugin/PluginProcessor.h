@@ -3,7 +3,12 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_audio_utils/juce_audio_utils.h>
 
+#include <array>
+#include <atomic>
+#include <optional>
+
 #include "core/KickState.h"
+#include "core/PresetIO.h"
 #include "engine/KickAssembler.h"
 #include "engine/KickRenderer.h"
 #include "fx/FxChainProcessor.h"
@@ -164,6 +169,53 @@ public:
     /** Meldungen des letzten Ladevorgangs. */
     juce::String getLastLoadReport() const { return lastLoadReport; }
 
+    // --- Presets (B-93) ----------------------------------------------------
+    /**
+     * Schreibt den aktuellen Zustand als `.bfkapreset` (Endung wird ergaenzt).
+     *
+     * Der Inhalt ist `captureState()` — Slots, Parameter und die komplette
+     * FX-Kette inklusive Struktur (`<Band>`, `<Pt>`, `ir`).
+     */
+    bool savePreset (const juce::File& file, const PresetInfo& info, juce::String& error) const;
+
+    /** Liest ein Kick-Preset und uebernimmt es (Parameter + Kette, PDC neu). */
+    bool loadPreset (const juce::File& file, juce::String& error);
+
+    /** Kopfdaten eines Presets lesen, ohne den Zustand zu uebernehmen. */
+    static std::optional<PresetInfo> readPresetInfo (const juce::File& file, juce::String& error);
+
+    /**
+     * Schreibt Kettenplatz `slot` als Modul-Preset.
+     *
+     * Enthaelt Typ, `enabled`/`mix`/`outGain` und die komplette Struktur. Vorher
+     * `writeBackModuleStates()` aufrufen, wenn die UI Struktur geaendert hat.
+     */
+    bool saveModulePreset (int slot, const juce::File& file,
+                           const PresetInfo& info, juce::String& error) const;
+
+    /**
+     * Laedt ein Modul-Preset in Kettenplatz `slot`.
+     *
+     * Uebernommen werden Typ, Attribute und Struktur; die Kettenplatz-Werte
+     * (`enabled`, `mix`, `outGain`) bleiben, damit ein Presetwechsel nicht
+     * unerwartet den Pegel springen laesst. Danach wird die Engine neu gebaut.
+     */
+    bool loadModulePreset (int slot, const juce::File& file, juce::String& error);
+
+    // --- A/B-Vergleich (B-94) ---------------------------------------------
+    static constexpr int kNumComparisonSlots = 2;
+
+    /** Merkt sich den aktuellen Zustand als A (0) oder B (1). */
+    void storeComparisonState (int index);
+
+    /** Stellt A bzw. B wieder her; `false`, wenn der Platz leer ist. */
+    bool restoreComparisonState (int index);
+
+    bool hasComparisonState (int index) const noexcept;
+
+    /** Zuletzt gespeicherter/abgerufener Platz (-1 = keiner). */
+    int activeComparisonSlot() const noexcept { return activeComparison.load(); }
+
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createLayout();
 
@@ -196,6 +248,10 @@ private:
 
     /** Die aktuell gesetzte Kette (Spiegel von `extraState`, Zustand + Engine). */
     FxChain currentChain;
+
+    /** A/B-Vergleich (B-94): zwei gemerkte Gesamtzustaende. */
+    std::array<std::optional<KickState>, (size_t) kNumComparisonSlots> comparisonStates;
+    std::atomic<int> activeComparison { -1 };
 
     double currentSampleRate = 48000.0;
     int    currentBlockSize  = 512;

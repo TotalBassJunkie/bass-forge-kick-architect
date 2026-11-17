@@ -1,5 +1,6 @@
 #include "ui/FxPage.h"
 
+#include "core/PresetIO.h"
 #include "fx/FxFactory.h"
 #include "plugin/PluginProcessor.h"
 #include "ui/UiTheme.h"
@@ -13,6 +14,15 @@ namespace
     constexpr int kChainGap    = 8;
     constexpr int kButtonHeight = 22;
     constexpr int kButtonGap   = 3;
+
+    /** Einheitliche Optik der Werkzeugleiste. */
+    void styleToolbarButton (juce::TextButton& button, juce::Colour background,
+                             juce::Colour textColour)
+    {
+        button.setColour (juce::TextButton::buttonColourId, background);
+        button.setColour (juce::TextButton::textColourOffId, textColour);
+        button.setColour (juce::TextButton::textColourOnId, textColour);
+    }
 } // namespace
 
 FxPage::FxPage (PluginProcessor& processor)
@@ -22,18 +32,48 @@ FxPage::FxPage (PluginProcessor& processor)
     viewport.setViewedComponent (&cardHolder, false);
     viewport.setScrollBarsShown (true, false);
 
-    bypassButton.setColour (juce::TextButton::buttonColourId, ui::theme::panelAlt);
-    bypassButton.setColour (juce::TextButton::textColourOffId, ui::theme::text);
+    // --- Ketten-Befehle ---------------------------------------------------
+    styleToolbarButton (bypassButton, ui::theme::panelAlt, ui::theme::text);
     bypassButton.onClick = [this] { toggleBypassAll(); };
     addAndMakeVisible (bypassButton);
 
-    clearButton.setColour (juce::TextButton::buttonColourId, ui::theme::panelAlt);
-    clearButton.setColour (juce::TextButton::textColourOffId, ui::theme::text);
+    styleToolbarButton (clearButton, ui::theme::panelAlt, ui::theme::text);
     clearButton.onClick = [this] { clearChain(); };
     addAndMakeVisible (clearButton);
 
-    demoButton.setColour (juce::TextButton::buttonColourId, ui::theme::accent.withAlpha (0.25f));
-    demoButton.setColour (juce::TextButton::textColourOffId, ui::theme::text);
+    styleToolbarButton (defaultButton, ui::theme::panelAlt, ui::theme::text);
+    defaultButton.setTooltip ("Werkskette laden (Hochpass + Finalizer)");
+    defaultButton.onClick = [this] { applyDefaultChain(); };
+    addAndMakeVisible (defaultButton);
+
+    styleToolbarButton (lockButton, ui::theme::panelAlt, ui::theme::text);
+    lockButton.setTooltip ("Kette gegen Loeschen/Umordnen sperren");
+    lockButton.onClick = [this] { toggleLock(); };
+    addAndMakeVisible (lockButton);
+
+    // --- Presets (B-93) ---------------------------------------------------
+    styleToolbarButton (saveButton, ui::theme::panelAlt, ui::theme::text);
+    saveButton.setTooltip ("Kick-Preset als .bfkapreset speichern");
+    saveButton.onClick = [this] { chooseSavePreset(); };
+    addAndMakeVisible (saveButton);
+
+    styleToolbarButton (loadButton, ui::theme::panelAlt, ui::theme::text);
+    loadButton.setTooltip ("Kick-Preset laden");
+    loadButton.onClick = [this] { chooseLoadPreset(); };
+    addAndMakeVisible (loadButton);
+
+    // --- A/B-Vergleich (B-94) ---------------------------------------------
+    for (auto* button : { &slotAButton, &slotBButton })
+    {
+        styleToolbarButton (*button, ui::theme::panelAlt, ui::theme::textDim);
+        button->setTooltip ("Klick: abrufen (leer: merken) - Shift-Klick: merken");
+        addAndMakeVisible (*button);
+    }
+
+    slotAButton.onClick = [this] { recallOrStoreComparison (0); };
+    slotBButton.onClick = [this] { recallOrStoreComparison (1); };
+
+    styleToolbarButton (demoButton, ui::theme::accent.withAlpha (0.25f), ui::theme::text);
     demoButton.onClick = [this]
     {
         // Baut die Demokette (Multiband + optional Convolver + Dynamic EQ) und
@@ -44,18 +84,25 @@ FxPage::FxPage (PluginProcessor& processor)
     };
     addAndMakeVisible (demoButton);
 
-    loopButton.setColour (juce::TextButton::buttonColourId, ui::theme::panelAlt);
-    loopButton.setColour (juce::TextButton::textColourOffId, ui::theme::textDim);
+    styleToolbarButton (loopButton, ui::theme::panelAlt, ui::theme::textDim);
     loopButton.onClick = [this]
     {
         loopEnabled = ! loopEnabled;
         lastTriggerMs = juce::Time::getMillisecondCounterHiRes();
-        loopButton.setColour (juce::TextButton::buttonColourId,
-                              loopEnabled ? ui::theme::ok.withAlpha (0.35f) : ui::theme::panelAlt);
-        loopButton.setColour (juce::TextButton::textColourOffId,
-                              loopEnabled ? ui::theme::text : ui::theme::textDim);
+        updateToolbarLook();
     };
     addAndMakeVisible (loopButton);
+
+    // --- Modul-Presets (Seitenleiste) -------------------------------------
+    styleToolbarButton (saveModuleButton, ui::theme::panelAlt, ui::theme::text);
+    saveModuleButton.setTooltip ("Gewaehltes Modul als Modul-Preset speichern");
+    saveModuleButton.onClick = [this] { chooseSaveModulePreset(); };
+    addAndMakeVisible (saveModuleButton);
+
+    styleToolbarButton (loadModuleButton, ui::theme::panelAlt, ui::theme::text);
+    loadModuleButton.setTooltip ("Modul-Preset in den gewaehlten Platz laden");
+    loadModuleButton.onClick = [this] { chooseLoadModulePreset(); };
+    addAndMakeVisible (loadModuleButton);
 
     // `+ ADD MODULE`: ein Knopf je registriertem Modultyp.
     for (int i = 0; i < kNumFxTypes; ++i)
@@ -66,12 +113,12 @@ FxPage::FxPage (PluginProcessor& processor)
             continue;
 
         auto* button = addButtons.add (new juce::TextButton ("+ " + fxDisplayName (type)));
-        button->setColour (juce::TextButton::buttonColourId, ui::theme::panelAlt);
-        button->setColour (juce::TextButton::textColourOffId, ui::theme::text);
+        styleToolbarButton (*button, ui::theme::panelAlt, ui::theme::text);
         button->onClick = [this, type] { addModule (type); };
         addAndMakeVisible (*button);
     }
 
+    updateToolbarLook();
     syncFromProcessor();
     startTimerHz (15);
 }
@@ -101,6 +148,7 @@ void FxPage::applyChainToProcessor()
     proc.suspendProcessing (false);
 
     rebuildCards();
+    updateToolbarLook();
     repaint();
 }
 
@@ -123,6 +171,8 @@ void FxPage::rebuildCards()
     bypassButton.setColour (juce::TextButton::buttonColourId,
                             model.isChainBypassed() ? ui::theme::warn.withAlpha (0.35f)
                                                     : ui::theme::panelAlt);
+
+    updateToolbarLook();
 }
 
 void FxPage::layoutCards()
@@ -149,7 +199,12 @@ void FxPage::addModule (FxType type)
     const auto index = model.addModule (type);
 
     if (index < 0)
+    {
+        if (model.isLocked())
+            setStatus ("Kette ist gesperrt - erst LOCK loesen.", true);
+
         return;
+    }
 
     selectedSlot = index;
     applyChainToProcessor();
@@ -158,6 +213,12 @@ void FxPage::addModule (FxType type)
 
 void FxPage::clearChain()
 {
+    if (model.isLocked())
+    {
+        setStatus ("Kette ist gesperrt - erst LOCK loesen.", true);
+        return;
+    }
+
     model.clear();
     selectedSlot = -1;
     applyChainToProcessor();
@@ -167,6 +228,226 @@ void FxPage::toggleBypassAll()
 {
     model.setChainBypass (! model.isChainBypassed());
     applyChainToProcessor();
+}
+
+// ---------------------------------------------------------------------------
+// Presets und A/B (B-93/B-94)
+// ---------------------------------------------------------------------------
+void FxPage::setStatus (const juce::String& text, bool isError)
+{
+    statusText     = text;
+    statusIsError  = isError;
+
+    repaint (statusArea);
+}
+
+void FxPage::chooseSavePreset()
+{
+    auto directory = PresetIO::ensureUserPresetDirectory();
+
+    chooser = std::make_unique<juce::FileChooser> ("Kick-Preset speichern", directory,
+                                                  PresetIO::fileWildcard());
+
+    chooser->launchAsync (juce::FileBrowserComponent::saveMode
+                              | juce::FileBrowserComponent::canSelectFiles
+                              | juce::FileBrowserComponent::warnAboutOverwriting,
+                          [this] (const juce::FileChooser& fc)
+                          {
+                              auto file = fc.getResult();
+
+                              if (file == juce::File())
+                                  return;
+
+                              PresetInfo info;
+                              info.styleId = proc.captureState().getStyleId();
+
+                              juce::String error;
+
+                              if (proc.savePreset (file, info, error))
+                                  setStatus ("Preset gespeichert: " + PresetIO::withPresetExtension (file).getFileName());
+                              else
+                                  setStatus ("Fehler: " + error, true);
+                          });
+}
+
+void FxPage::chooseLoadPreset()
+{
+    chooser = std::make_unique<juce::FileChooser> ("Kick-Preset laden",
+                                                  PresetIO::userPresetDirectory(),
+                                                  PresetIO::fileWildcard());
+
+    chooser->launchAsync (juce::FileBrowserComponent::openMode
+                              | juce::FileBrowserComponent::canSelectFiles,
+                          [this] (const juce::FileChooser& fc)
+                          {
+                              auto file = fc.getResult();
+
+                              if (file == juce::File())
+                                  return;
+
+                              juce::String error;
+
+                              if (proc.loadPreset (file, error))
+                              {
+                                  syncFromProcessor();
+                                  setStatus ("Preset geladen: " + file.getFileName());
+                              }
+                              else
+                              {
+                                  setStatus ("Fehler: " + error, true);
+                              }
+                          });
+}
+
+void FxPage::chooseSaveModulePreset()
+{
+    const auto* moduleState = model.module (selectedSlot);
+
+    if (moduleState == nullptr)
+    {
+        setStatus ("Kein Modul gewaehlt.", true);
+        return;
+    }
+
+    const auto parsed = fxTypeFromString (moduleState->type);
+    const auto name = (parsed.has_value() ? fxDisplayName (*parsed) : moduleState->type)
+                      + juce::String ("-") + juce::String (selectedSlot + 1);
+
+    chooser = std::make_unique<juce::FileChooser> ("Modul-Preset speichern",
+                                                  PresetIO::ensureUserPresetDirectory(),
+                                                  PresetIO::fileWildcard());
+
+    chooser->launchAsync (juce::FileBrowserComponent::saveMode
+                              | juce::FileBrowserComponent::canSelectFiles
+                              | juce::FileBrowserComponent::warnAboutOverwriting,
+                          [this, name] (const juce::FileChooser& fc)
+                          {
+                              auto file = fc.getResult();
+
+                              if (file == juce::File())
+                                  return;
+
+                              PresetInfo info;
+                              info.name = name;
+
+                              juce::String error;
+
+                              if (proc.saveModulePreset (selectedSlot, file, info, error))
+                                  setStatus ("Modul-Preset gespeichert: "
+                                             + PresetIO::withPresetExtension (file).getFileName());
+                              else
+                                  setStatus ("Fehler: " + error, true);
+                          });
+}
+
+void FxPage::chooseLoadModulePreset()
+{
+    if (model.module (selectedSlot) == nullptr)
+    {
+        setStatus ("Kein Modul gewaehlt.", true);
+        return;
+    }
+
+    chooser = std::make_unique<juce::FileChooser> ("Modul-Preset laden",
+                                                  PresetIO::userPresetDirectory(),
+                                                  PresetIO::fileWildcard());
+
+    chooser->launchAsync (juce::FileBrowserComponent::openMode
+                              | juce::FileBrowserComponent::canSelectFiles,
+                          [this] (const juce::FileChooser& fc)
+                          {
+                              auto file = fc.getResult();
+
+                              if (file == juce::File())
+                                  return;
+
+                              juce::String error;
+
+                              if (proc.loadModulePreset (selectedSlot, file, error))
+                              {
+                                  syncFromProcessor();
+                                  setStatus ("Modul-Preset geladen: " + file.getFileName());
+                              }
+                              else
+                              {
+                                  setStatus ("Fehler: " + error, true);
+                              }
+                          });
+}
+
+void FxPage::recallOrStoreComparison (int index)
+{
+    const auto shift = juce::ModifierKeys::getCurrentModifiersRealtime().isShiftDown();
+
+    if (shift || ! proc.hasComparisonState (index))
+    {
+        proc.storeComparisonState (index);
+        setStatus (juce::String (index == 0 ? "A" : "B") + " gemerkt.");
+    }
+    else if (proc.restoreComparisonState (index))
+    {
+        syncFromProcessor();
+        setStatus (juce::String (index == 0 ? "A" : "B") + " abgerufen.");
+    }
+    else
+    {
+        setStatus ("Vergleichszustand nicht verfuegbar.", true);
+    }
+
+    updateToolbarLook();
+}
+
+void FxPage::toggleLock()
+{
+    model.setLocked (! model.isLocked());
+
+    setStatus (model.isLocked() ? "Kette gesperrt (nur Regler)." : "Kette entsperrt.");
+    updateToolbarLook();
+}
+
+void FxPage::applyDefaultChain()
+{
+    if (model.isLocked())
+    {
+        setStatus ("Kette ist gesperrt - erst LOCK loesen.", true);
+        return;
+    }
+
+    model.chain() = FxChainModel::makeDefaultChain();
+    selectedSlot = model.size() > 0 ? 0 : -1;
+
+    applyChainToProcessor();
+    setStatus ("Werkskette geladen.");
+}
+
+void FxPage::updateToolbarLook()
+{
+    const auto locked = model.isLocked();
+
+    lockButton.setButtonText (locked ? "LOCKED" : "LOCK");
+    lockButton.setColour (juce::TextButton::buttonColourId,
+                          locked ? ui::theme::warn.withAlpha (0.35f) : ui::theme::panelAlt);
+
+    // A/B: belegt = heller, aktiv = Akzent.
+    const auto styleSlot = [this] (juce::TextButton& button, int index)
+    {
+        const auto hasState = proc.hasComparisonState (index);
+        const auto isActive = proc.activeComparisonSlot() == index;
+
+        button.setColour (juce::TextButton::buttonColourId,
+                          isActive ? ui::theme::accent.withAlpha (0.35f)
+                                   : (hasState ? ui::theme::panel.brighter (0.12f) : ui::theme::panelAlt));
+        button.setColour (juce::TextButton::textColourOffId,
+                          hasState ? ui::theme::text : ui::theme::textDim);
+    };
+
+    styleSlot (slotAButton, 0);
+    styleSlot (slotBButton, 1);
+
+    loopButton.setColour (juce::TextButton::buttonColourId,
+                          loopEnabled ? ui::theme::ok.withAlpha (0.35f) : ui::theme::panelAlt);
+    loopButton.setColour (juce::TextButton::textColourOffId,
+                          loopEnabled ? ui::theme::text : ui::theme::textDim);
 }
 
 void FxPage::moduleCardMoveRequested (int slot, int delta)
@@ -227,16 +508,27 @@ juce::Rectangle<int> FxPage::chainListArea() const
 void FxPage::resizedSidebar()
 {
     const int buttonCount = addButtons.size();
-    const int height = buttonCount * (kButtonHeight + kButtonGap);
+    const int addHeight   = buttonCount * (kButtonHeight + kButtonGap);
+    const int moduleHeight = 2 * (kButtonHeight + kButtonGap);
 
-    const int contentTop    = sidebarBounds.getY() + 26;
-    const int addAreaTop    = sidebarBounds.getBottom() - height - 8;
+    const int contentTop = sidebarBounds.getY() + 26;
+    const int left       = sidebarBounds.getX() + 8;
+    const int width      = sidebarBounds.getWidth() - 16;
 
-    listArea = { sidebarBounds.getX() + 8, contentTop,
-                 sidebarBounds.getWidth() - 16, juce::jmax (0, addAreaTop - 26 - contentTop) };
+    int bottom = sidebarBounds.getBottom() - 8;
 
-    addArea = { sidebarBounds.getX() + 8, addAreaTop,
-                sidebarBounds.getWidth() - 16, height };
+    // unten: "+ ADD MODULE"
+    addArea = { left, bottom - addHeight, width, addHeight };
+    bottom -= addHeight + 4;
+
+    // darueber: Modul-Presets (SAVE/LOAD) und die Statuszeile
+    modulePresetArea = { left, bottom - moduleHeight, width, moduleHeight };
+    bottom -= moduleHeight + 4;
+
+    statusArea = { left, bottom - 30, width, 30 };
+    bottom -= 34;
+
+    listArea = { left, contentTop, width, juce::jmax (0, bottom - contentTop) };
 
     int y = addArea.getY();
 
@@ -245,6 +537,12 @@ void FxPage::resizedSidebar()
         button->setBounds (addArea.getX(), y, addArea.getWidth(), kButtonHeight);
         y += kButtonHeight + kButtonGap;
     }
+
+    saveModuleButton.setBounds (modulePresetArea.getX(), modulePresetArea.getY(),
+                                modulePresetArea.getWidth(), kButtonHeight);
+    loadModuleButton.setBounds (modulePresetArea.getX(),
+                                modulePresetArea.getY() + kButtonHeight + kButtonGap,
+                                modulePresetArea.getWidth(), kButtonHeight);
 }
 
 void FxPage::paintSidebar (juce::Graphics& g)
@@ -299,8 +597,20 @@ void FxPage::paintSidebar (juce::Graphics& g)
 
     g.setFont (ui::theme::sectionFont());
     g.setColour (ui::theme::textDim);
-    g.drawText ("+ ADD MODULE", addArea.withY (addArea.getY() - 22).withHeight (20),
+    g.drawText ("+ ADD MODULE", addArea.withY (addArea.getY() - 18).withHeight (16),
                 juce::Justification::centredLeft, false);
+
+    // Modul-Preset-Knoepfe: Beschriftung steht darueber.
+    g.drawText ("MODULE PRESET", modulePresetArea.withY (modulePresetArea.getY() - 16).withHeight (14),
+                juce::Justification::centredLeft, false);
+
+    // Statuszeile der Preset-Aktionen (zwei Zeilen, gekuerzt).
+    if (statusText.isNotEmpty())
+    {
+        g.setFont (ui::theme::smallFont());
+        g.setColour (statusIsError ? ui::theme::error : ui::theme::textDim);
+        g.drawFittedText (statusText, statusArea, juce::Justification::topLeft, 2);
+    }
 }
 
 void FxPage::mouseDown (const juce::MouseEvent& event)
@@ -344,10 +654,23 @@ void FxPage::resized()
     auto toolbar = area.removeFromTop (28);
     toolbar.removeFromLeft (80);
 
-    bypassButton.setBounds (toolbar.removeFromLeft (110).reduced (1));
-    clearButton.setBounds (toolbar.removeFromLeft (70).reduced (1));
-    demoButton.setBounds (toolbar.removeFromLeft (86).reduced (1));
-    loopButton.setBounds (toolbar.removeFromLeft (56).reduced (1));
+    // Presets und Kette links, Demo-Aktionen dahinter.
+    saveButton.setBounds (toolbar.removeFromLeft (54).reduced (1));
+    loadButton.setBounds (toolbar.removeFromLeft (54).reduced (1));
+    slotAButton.setBounds (toolbar.removeFromLeft (30).reduced (1));
+    slotBButton.setBounds (toolbar.removeFromLeft (30).reduced (1));
+    lockButton.setBounds (toolbar.removeFromLeft (62).reduced (1));
+    defaultButton.setBounds (toolbar.removeFromLeft (76).reduced (1));
+
+    toolbar.removeFromLeft (8);
+
+    bypassButton.setBounds (toolbar.removeFromLeft (96).reduced (1));
+    clearButton.setBounds (toolbar.removeFromLeft (62).reduced (1));
+
+    toolbar.removeFromLeft (8);
+
+    demoButton.setBounds (toolbar.removeFromLeft (80).reduced (1));
+    loopButton.setBounds (toolbar.removeFromLeft (52).reduced (1));
 
     sidebarBounds = area.removeFromLeft (ui::theme::sidebarWidth).reduced (0, 2);
     resizedSidebar();

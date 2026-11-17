@@ -60,6 +60,17 @@ private:
     void clearChain();
     void toggleBypassAll();
 
+    // --- Presets und A/B (B-93/B-94) --------------------------------------
+    void chooseSavePreset();
+    void chooseLoadPreset();
+    void chooseSaveModulePreset();
+    void chooseLoadModulePreset();
+    void recallOrStoreComparison (int index);
+    void toggleLock();
+    void applyDefaultChain();
+    void setStatus (const juce::String& text, bool isError = false);
+    void updateToolbarLook();
+
     juce::Rectangle<int> chainListArea() const;
     void paintSidebar (juce::Graphics& g);
     void resizedSidebar();
@@ -73,9 +84,26 @@ private:
 
     juce::TextButton bypassButton { "BYPASS ALL" };
     juce::TextButton clearButton  { "CLEAR" };
+    juce::TextButton defaultButton { "DEFAULT" };
+    juce::TextButton lockButton   { "LOCK" };
+    juce::TextButton saveButton   { "SAVE" };
+    juce::TextButton loadButton   { "LOAD" };
+    juce::TextButton slotAButton  { "A" };
+    juce::TextButton slotBButton  { "B" };
     juce::TextButton demoButton   { "FX-DEMO" };
     juce::TextButton loopButton   { "LOOP" };
+
+    juce::TextButton saveModuleButton { "SAVE MODULE" };
+    juce::TextButton loadModuleButton { "LOAD MODULE" };
+
     juce::OwnedArray<juce::TextButton> addButtons;
+
+    /** Datei-Dialog (nur einer gleichzeitig; JUCE-Vertrag). */
+    std::unique_ptr<juce::FileChooser> chooser;
+
+    /** Rueckmeldung nach Speichern/Laden (Seitenleiste unten). */
+    juce::String statusText;
+    bool         statusIsError = false;
 
     /** Loop-Wiedergabe (Demo-Kick alle 1,5 s). */
     bool   loopEnabled = false;
@@ -84,6 +112,8 @@ private:
     juce::Rectangle<int> sidebarBounds;
     juce::Rectangle<int> listArea;
     juce::Rectangle<int> addArea;
+    juce::Rectangle<int> modulePresetArea;
+    juce::Rectangle<int> statusArea;
 
     int selectedSlot = -1;
 
