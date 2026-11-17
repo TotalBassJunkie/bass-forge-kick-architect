@@ -1,6 +1,7 @@
 #include "plugin/PluginProcessor.h"
 #include "plugin/PluginEditor.h"
 
+#include "core/FxChainIO.h"
 #include "core/ParameterRegistry.h"
 #include "core/Version.h"
 #include "core/Log.h"
@@ -224,15 +225,7 @@ void PluginProcessor::rebuildEngineChain()
 void PluginProcessor::setFxChain (const FxChain& chain)
 {
     currentChain = chain;
-
-    juce::String error;
-    KickState state;
-
-    if (auto stored = KickState::fromValueTree (extraState, error))
-        state = *stored;
-
-    state.fxChain() = chain;
-    extraState = state.toValueTree();
+    storeFxChainInExtraState();
 
     // Vor `prepareToPlay()` gibt es noch keine Engine; `prepareToPlay()` baut
     // die Kette dann aus dem Zustand.
@@ -241,6 +234,196 @@ void PluginProcessor::setFxChain (const FxChain& chain)
         fxChain.setChain (chain);
         setLatencySamples (fxChain.totalLatencySamples());
     }
+}
+
+void PluginProcessor::storeFxChainInExtraState()
+{
+    const juce::Identifier fxType ("FxChain");
+    const juce::Identifier rootType ("BFKAKick");
+
+    if (! extraState.hasType (rootType))
+    {
+        // Kein lesbarer Gesamt-Zustand: aus einem frischen KickState aufbauen,
+        // damit Slots/Parameter/Struktur nicht verloren gehen.
+        KickState fresh;
+        const auto& registry = ParameterRegistry::get();
+
+        for (const auto& d : registry.all())
+            if (auto* p = apvts.getRawParameterValue (d.id))
+                fresh.setParam (d.id, p->load());
+
+        extraState = fresh.toValueTree();
+    }
+
+    for (int i = extraState.getNumChildren(); --i >= 0;)
+        if (extraState.getChild (i).hasType (fxType))
+            extraState.removeChild (i, nullptr);
+
+    extraState.appendChild (fxChainToValueTree (currentChain), nullptr);
+}
+
+FxModuleState* PluginProcessor::moduleStateFor (int slot) noexcept
+{
+    if (! juce::isPositiveAndBelow (slot, (int) currentChain.modules.size()))
+        return nullptr;
+
+    return &currentChain.modules[(size_t) slot];
+}
+
+void PluginProcessor::setModuleParam (int slot, int index, float engineeringValue)
+{
+    auto* moduleState = moduleStateFor (slot);
+    auto* module      = fxChain.moduleAt (slot);
+
+    if (moduleState == nullptr || module == nullptr)
+        return;
+
+    const auto& descriptors = module->params();
+
+    if (! juce::isPositiveAndBelow (index, (int) descriptors.size()))
+        return;
+
+    const auto& desc     = descriptors[(size_t) index];
+    const auto  clamped  = juce::jlimit (desc.minValue, desc.maxValue, engineeringValue);
+
+    // Sofort hoerbar: atomar im Modul, kein Rebuild, kein Klick.
+    module->setParam (index, clamped);
+
+    // Gleichzeitig in den Zustand, damit der Wert im Preset landet.
+    if (! moduleState->data.isValid())
+        moduleState->data = juce::ValueTree (juce::Identifier ("Module"));
+
+    moduleState->data.setProperty (juce::Identifier (desc.id), juce::var ((double) clamped), nullptr);
+
+    storeFxChainInExtraState();
+}
+
+float PluginProcessor::getModuleParam (int slot, int index) const
+{
+    const auto* module = getModule (slot);
+
+    return module != nullptr ? module->getParam (index) : 0.0f;
+}
+
+void PluginProcessor::setModuleAttribute (int slot, const juce::String& id, double engineeringValue)
+{
+    auto* moduleState = moduleStateFor (slot);
+
+    if (moduleState == nullptr || id.isEmpty())
+        return;
+
+    if (! moduleState->data.isValid())
+        moduleState->data = juce::ValueTree (juce::Identifier ("Module"));
+
+    moduleState->data.setProperty (juce::Identifier (id), juce::var (engineeringValue), nullptr);
+
+    // Ist die Kennung ein echter Parameter, soll die Aenderung auch klingen
+    // (die Attribute sind die Anzeige-Einheiten derselben Werte).
+    if (auto* module = fxChain.moduleAt (slot))
+    {
+        const auto& descriptors = module->params();
+
+        for (size_t i = 0; i < descriptors.size(); ++i)
+        {
+            if (descriptors[i].id != id)
+                continue;
+
+            module->setParam ((int) i, juce::jlimit (descriptors[i].minValue,
+                                                     descriptors[i].maxValue,
+                                                     (float) engineeringValue));
+            break;
+        }
+    }
+
+    storeFxChainInExtraState();
+}
+
+void PluginProcessor::setModuleMix (int slot, float mix01)
+{
+    auto* moduleState = moduleStateFor (slot);
+
+    if (moduleState == nullptr)
+        return;
+
+    const auto value = juce::jlimit (0.0f, 1.0f, mix01);
+
+    fxChain.setModuleMix (slot, value);
+    moduleState->mix = value;
+
+    storeFxChainInExtraState();
+}
+
+void PluginProcessor::setModuleOutGain (int slot, float gain)
+{
+    auto* moduleState = moduleStateFor (slot);
+
+    if (moduleState == nullptr)
+        return;
+
+    const auto value = juce::jlimit (0.0f, 2.0f, gain);
+
+    fxChain.setModuleOutGain (slot, value);
+    moduleState->outGain = value;
+
+    storeFxChainInExtraState();
+}
+
+void PluginProcessor::setModuleEnabled (int slot, bool shouldBeEnabled)
+{
+    auto* moduleState = moduleStateFor (slot);
+
+    if (moduleState == nullptr)
+        return;
+
+    fxChain.setModuleEnabled (slot, shouldBeEnabled);
+    moduleState->enabled = shouldBeEnabled;
+
+    storeFxChainInExtraState();
+}
+
+void PluginProcessor::writeBackModuleStates()
+{
+    const auto& modules = fxChain.modules();
+
+    for (size_t i = 0; i < modules.size() && i < currentChain.modules.size(); ++i)
+    {
+        const auto* module = modules[i].get();
+
+        if (module == nullptr)
+            continue;
+
+        // Der Struktur-Zustand des Moduls (Bänder, Kurven, IR-Pfad).
+        const auto state = module->getState();
+
+        if (! state.isValid())
+            continue;
+
+        auto& data = currentChain.modules[i].data;
+
+        if (! data.isValid())
+            data = juce::ValueTree (juce::Identifier ("Module"));
+
+        // Kinder, die das Modul selbst liefert, ersetzen; alles andere (die
+        // skalaren Attribute) bleibt.
+        for (int c = data.getNumChildren(); --c >= 0;)
+        {
+            const auto child = data.getChild (c);
+
+            if (state.getChildWithName (child.getType()).isValid())
+                data.removeChild (c, nullptr);
+        }
+
+        for (int c = 0; c < state.getNumChildren(); ++c)
+            data.appendChild (state.getChild (c).createCopy(), nullptr);
+
+        // Der IR-Pfad steht beim Convolver als String-Property im Zustand.
+        const auto ir = state.getProperty (juce::Identifier ("ir"));
+
+        if (ir.isString())
+            data.setProperty (juce::Identifier ("ir"), ir, nullptr);
+    }
+
+    storeFxChainInExtraState();
 }
 
 void PluginProcessor::getStateInformation (juce::MemoryBlock& destData)

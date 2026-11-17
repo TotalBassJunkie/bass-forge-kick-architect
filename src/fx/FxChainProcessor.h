@@ -96,6 +96,14 @@ public:
      */
     const std::vector<std::unique_ptr<FxModule>>& modules() const noexcept { return moduleList; }
 
+    /**
+     * Modulzeiger an einem Kettenplatz (`nullptr` bei unbekanntem Typ oder
+     * ungueltigem Index). Fuer Spezial-Editoren und Diagnose; die Rueckgabe
+     * darf nur auf dem Message-Thread veraendert werden.
+     */
+    FxModule* moduleAt (int moduleIndex) noexcept;
+    const FxModule* moduleAt (int moduleIndex) const noexcept;
+
     /** Anzahl der Kettenplaetze (inklusive nicht erzeugbarer Module). */
     int numModules() const noexcept { return (int) moduleList.size(); }
 

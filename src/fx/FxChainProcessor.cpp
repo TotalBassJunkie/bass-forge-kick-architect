@@ -385,6 +385,22 @@ void FxChainProcessor::process (juce::AudioBuffer<float>& buffer)
 }
 
 // ---------------------------------------------------------------------------
+// Zugriff
+// ---------------------------------------------------------------------------
+FxModule* FxChainProcessor::moduleAt (int moduleIndex) noexcept
+{
+    if (moduleIndex < 0 || moduleIndex >= (int) moduleList.size())
+        return nullptr;
+
+    return moduleList[(size_t) moduleIndex].get();
+}
+
+const FxModule* FxChainProcessor::moduleAt (int moduleIndex) const noexcept
+{
+    return const_cast<FxChainProcessor*> (this)->moduleAt (moduleIndex);
+}
+
+// ---------------------------------------------------------------------------
 // Display
 // ---------------------------------------------------------------------------
 const ModuleDisplay& FxChainProcessor::displayFor (int moduleIndex) const

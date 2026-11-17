@@ -76,6 +76,52 @@ public:
     /** Anzahl der im Engine-Rack gebauten Plaetze (Diagnose/Test). */
     int getEngineModuleCount() const noexcept { return fxChain.numModules(); }
 
+    // --- Live-Bedienung der Module (B-144) --------------------------------
+    // Alle Methoden laufen auf dem Message-Thread. Regler-Aenderungen wirken
+    // sofort (atomar im Modul) und landen gleichzeitig im Ketten-Zustand, damit
+    // der Wert im Preset steht. Ein Rebuild der Engine findet nur bei
+    // `setFxChain()` statt (Add/Remove/Move/Preset).
+    //
+    // Fuer Struktur-Aenderungen (Bänder, Kurven, IR-Pfad) gilt: erst in das
+    // Modul schreiben, dann `writeBackModuleStates()` aufrufen.
+
+    /** Setzt Parameter `index` eines Moduls in Anzeige-Einheiten (dB, Hz, %). */
+    void setModuleParam (int slot, int index, float engineeringValue);
+
+    /** Letzter Wert eines Modulparameters in Anzeige-Einheiten (0 bei Fehlern). */
+    float getModuleParam (int slot, int index) const;
+
+    /**
+     * Setzt ein Modul-Attribut (`FxParamDesc::id`) im Ketten-Zustand.
+     *
+     * Ist die Kennung ein Parameter des Moduls, wirkt der Wert sofort auf den
+     * DSP; andere Attribute landen nur im Zustand (Snapshot, z. B. `ir`).
+     */
+    void setModuleAttribute (int slot, const juce::String& id, double engineeringValue);
+
+    /** MIX 0…1, OUT GAIN 0…2 und Power je Kettenplatz (Engine + Zustand). */
+    void setModuleMix (int slot, float mix01);
+    void setModuleOutGain (int slot, float gain);
+    void setModuleEnabled (int slot, bool shouldBeEnabled);
+
+    /**
+     * Uebernimmt fuer jedes Modul `getState()` in den Ketten-Zustand (O6).
+     *
+     * Regel: Skalare Attribute in `data` bleiben erhalten (sie kommen aus
+     * `setModuleAttribute()`/`setModuleParam()`), Kinder mit gleichem Namen wie
+     * die von `getState()` gelieferten (`Band`, `WNode`, `Pt`, `Eq`, `Dc`)
+     * werden ersetzt, die String-Property `ir` wird uebernommen. Kein
+     * Engine-Rebuild.
+     */
+    void writeBackModuleStates();
+
+    /** Anzeigedaten (pre/post) eines Kettenplatzes fuer die Karten-Wellenform. */
+    const ModuleDisplay& getModuleDisplay (int slot) const { return fxChain.displayFor (slot); }
+
+    /** Modulzeiger fuer Diagnose und Spezial-Editoren (nullptr = unbekannter Typ). */
+    FxModule* getModule (int slot) { return fxChain.moduleAt (slot); }
+    const FxModule* getModule (int slot) const { return fxChain.moduleAt (slot); }
+
     /** Letzte gespielte MIDI-Note (Anzeige/Test). */
     int getLastNote() const noexcept { return lastNote.load(); }
 
@@ -102,6 +148,12 @@ private:
      * setzt danach die Host-Latenz. Laeuft auf dem Message-Thread.
      */
     void rebuildEngineChain();
+
+    /** Schreibt `currentChain` als `<FxChain>` in `extraState` (ohne Rebuild). */
+    void storeFxChainInExtraState();
+
+    /** Prueft `slot` gegen `currentChain`; liefert den Modulzustand oder nullptr. */
+    FxModuleState* moduleStateFor (int slot) noexcept;
 
     juce::AudioProcessorValueTreeState apvts;
 

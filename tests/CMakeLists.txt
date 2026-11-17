@@ -28,6 +28,7 @@ target_sources(BFKA_Tests PRIVATE
     KickAssemblerTests.cpp
     FxChainIOTests.cpp
     PluginProcessorStateTests.cpp
+    ModuleStateRoundtripTests.cpp
     TestMain.cpp
     ../src/core/Version.cpp
     ../src/core/Log.cpp
