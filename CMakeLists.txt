@@ -56,6 +56,9 @@ set(BFKA_CORE_SOURCES
     )
 
 set(BFKA_ENGINE_SOURCES
+    src/engine/SampleVoice.cpp
+    src/engine/KickRenderer.cpp
+    src/engine/WsolaStretcher.cpp
     )
 
 set(BFKA_FX_SOURCES
@@ -65,6 +68,8 @@ set(BFKA_FX_SOURCES
 
 set(BFKA_LIBRARY_SOURCES
     src/library/SampleLibrary.cpp
+    src/library/StyleModel.cpp
+    src/library/RandomizerEngine.cpp
     )
 
 set(BFKA_UI_SOURCES
@@ -84,7 +89,13 @@ set(BFKA_HEADERS
     src/fx/FxFactory.h
     src/fx/PassThroughModule.h
     src/fx/FxChainProcessor.h
+    src/engine/SampleVoice.h
+    src/engine/KickRenderer.h
+    src/engine/WsolaStretcher.h
+    src/engine/Resampler.h
     src/library/SampleLibrary.h
+    src/library/StyleModel.h
+    src/library/RandomizerEngine.h
     src/plugin/PluginProcessor.h
     src/plugin/PluginEditor.h
     )

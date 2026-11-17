@@ -82,15 +82,35 @@ namespace
         return gain;
     }
 
-    /** "#RRGGBB" (oder "#AARRGGBB") -> Colour. Alles andere faellt zurueck. */
+    /** "#RRGGBB" (oder "#AARRGGBB", "#RGB") -> Colour. Alles andere faellt zurueck. */
     juce::Colour parseColour (const juce::String& text, juce::Colour fallback)
     {
-        auto hex = text.trim().retainCharacters ("0123456789abcdefABCDEF");
+        const auto trimmed = text.trim();
+
+        // Ein Farbwert MUSS mit '#' beginnen. Sonst wuerde z. B. "keinefarbe"
+        // ueber die zufaellig enthaltenen Hex-Buchstaben eine Farbe erfinden.
+        if (! trimmed.startsWith ("#"))
+            return fallback;
+
+        auto hex = trimmed.substring (1).trim();
+
+        if (hex.length() == 3)   // Kurzform "#RGB" -> "#RRGGBB"
+        {
+            juce::String expanded;
+
+            for (int i = 0; i < 3; ++i)
+            {
+                const auto digit = hex[i];
+                expanded << digit << digit;
+            }
+
+            hex = expanded;
+        }
 
         if (hex.length() == 6)
             hex = "FF" + hex;   // volle Deckkraft ergaenzen
 
-        if (hex.length() != 8)
+        if (hex.length() != 8 || ! hex.containsOnly ("0123456789abcdefABCDEF"))
             return fallback;
 
         return juce::Colour ((juce::uint32) hex.getHexValue32());
@@ -227,12 +247,13 @@ bool StyleModel::parseFromJson (const juce::String& jsonText, juce::String& erro
         return false;
     }
 
+    // JUCE 8 liefert aus JSON::parse ein juce::Result (kein var mehr).
     juce::var root;
-    const auto parseError = juce::JSON::parse (jsonText, root);
+    const auto parseResult = juce::JSON::parse (jsonText, root);
 
-    if (! parseError.isVoid())
+    if (parseResult.failed())
     {
-        error = "JSON-Fehler: " + parseError.toString();
+        error = "JSON-Fehler: " + parseResult.getErrorMessage();
         return false;
     }
 

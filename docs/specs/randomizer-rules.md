@@ -331,6 +331,27 @@ Gewichte in Klammern = `pools`-Gewicht. „Pflicht“ = `layerRules.min > 0`.
 Pegel = `db`/`dbPair` der zugehörigen Regel (dB); „—“ = kein Bereich, dann
 gilt `defaultGain` des Pools.
 
+**Übersicht (aus `genres.json` berechnet, inkl. `layerRules`-Kappung):**
+
+| Style | Parts im Minimum | Parts im Maximum | Pflichtsumme |
+|---|---|---|---|
+| `rumble_kicks` | 5 | 8 | 5 |
+| `reverse_bass` | 3 | 7 | 3 |
+| `industrial` | 2 | 4 | 2 |
+| `psy` | 3 | 7 | 3 |
+| `schranz` | 6 | **12** | 6 |
+| `rumble_kicks_clean` | 3 | 4 | 3 |
+| `midintro_newstyle` | 4 | 8 | 4 |
+| `rawstyle` | 3 | 6 | 3 |
+| `zaag` | 3 | 3 | 3 |
+
+„Minimum“ = alle Tier-2/4-Würfe fallen aus (dann greifen die
+`layerRules`-Minima), „Maximum“ = alle Würfe treffen und die `max`-Grenzen sind
+ausgeschöpft. Kein Style überschreitet 12 Slots; SCHRANZ erreicht sie exakt.
+Alle Pflichtrollen sind durch Regel-Pools gedeckt — der einzige Pool, der in
+einem Style deklariert, aber in keiner Regel verwendet wird, ist `CLK-STD` in
+RAWSTYLE, und genau dieser steht dort in `addable`.
+
 ### 4.1 RUMBLE — `rumble_kicks` · `#DE2A2A` · Preset „Rumble Magic“
 
 | Pools | Pflicht | Optional |

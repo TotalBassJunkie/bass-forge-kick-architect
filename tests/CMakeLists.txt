@@ -14,6 +14,10 @@ target_sources(BFKA_Tests PRIVATE
     KickStateTests.cpp
     FxChainTests.cpp
     SampleLibraryFileNameTests.cpp
+    StyleModelTests.cpp
+    RandomizerEngineTests.cpp
+    VoiceAndRenderTests.cpp
+    WsolaTests.cpp
     TestMain.cpp
     ../src/core/Version.cpp
     ../src/core/Log.cpp
@@ -22,6 +26,11 @@ target_sources(BFKA_Tests PRIVATE
     ../src/fx/FxFactory.cpp
     ../src/fx/FxChainProcessor.cpp
     ../src/library/SampleLibrary.cpp
+    ../src/library/StyleModel.cpp
+    ../src/library/RandomizerEngine.cpp
+    ../src/engine/SampleVoice.cpp
+    ../src/engine/KickRenderer.cpp
+    ../src/engine/WsolaStretcher.cpp
     )
 
 target_include_directories(BFKA_Tests PRIVATE ../src)
