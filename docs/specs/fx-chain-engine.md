@@ -474,34 +474,42 @@ Regeln:
 | **O9** | Display zeigt `post` **nach** OUT GAIN, aber **vor** der Latenzkorrektur | Vergleich zweier Displays kann verschoben wirken | Mit B-92 klären, ob die UI latenzkompensiert zeichnet |
 | **O10** | Keine Obergrenze für die Zahl der Module in der Kette | 76 Referenzketten haben max. 8 Module | UI-seitig begrenzen (z. B. 8), Engine bleibt offen |
 
-### 9.1 CPU-Profil je Modul (B-149)
+### 9.1 CPU-Profil je Modul (B-149, Release-Messung B-153)
 
-Messung: `tests/CpuProfileTests.cpp`, Windows/MSVC, **Debug**-Build, 48 kHz,
-Blockgröße 128, Median aus drei Läufen über je 400 Blöcke (≈ 1,07 s Audio).
-Wert = Anteil **eines** Kerns. Im Release-Build liegt jeder Wert um Faktor
-3…8 niedriger; die Debug-Budgets sind so gewählt, dass Regressionen auffallen,
-ohne bei Maschinenrauschen zu flackern.
+Messung: `tests/CpuProfileTests.cpp`, Windows/MSVC, 48 kHz, Blockgröße 128,
+Median aus drei Läufen über je 400 Blöcke (≈ 1,07 s Audio). Wert = Anteil
+**eines** Kerns. Gemessen in beiden Konfigurationen (Debug: unoptimiert,
+Release: `/O2`). Die Budgets sind je Konfiguration gesetzt: Debug rund doppelt
+bis dreifach über dem Messwert, Release bei 6 % je Modul — die 3-%-Ziele aus
+B-149 werden damit auch auf langsameren Rechnern nicht zum Zufallstreffer.
 
-| Modul | Debug (Kette) | Budget Debug | Ziel Release |
+| Modul | Debug (Kette) | Release (Kette) | Ziel |
 |---|---|---|---|
-| `filt` | 0,4 % | 8 % | < 3 % |
-| `eq` | 0,2 % | 8 % | < 3 % |
-| `mseq` | 0,3 % | 8 % | < 3 % |
-| `dist` | 3,3 % | 15 % | < 3 % (2×-Oversampling) |
-| `shaper` | 0,6 % | 8 % | < 3 % |
-| `trans` | 0,7 % | 8 % | < 3 % |
-| `reverb` (ohne IR) | 0,2 % | 10 % | < 3 % |
-| `final` | 4,7 % | 60 % | < 3 % (4×-Oversampling; Debug-Ausreißer bis 25 %) |
-| `ott` | 2,0 % | 15 % | < 3 % |
-| `dynEq` | 1,3 % | 10 % | < 3 % |
+| `filt` | 0,4 % | 0,1 % | < 3 % |
+| `eq` | 0,3 % | 0,1 % | < 3 % |
+| `mseq` | 0,3 % | 0,1 % | < 3 % |
+| `dist` | 3,6 % | 0,5 % | < 3 % (2×-Oversampling) |
+| `shaper` | 0,7 % | 0,1 % | < 3 % |
+| `trans` | 0,8 % | 0,1 % | < 3 % |
+| `reverb` (ohne IR) | 0,3 % | 0,1 % | < 3 % |
+| `final` | 5,1 % | 0,5 % | < 3 % (4×-Oversampling; Debug-Ausreißer bis 25 %) |
+| `ott` | 2,4 % | 0,7 % | < 3 % |
+| `dynEq` | 1,4 % | 0,2 % | < 3 % |
+
+**Ergebnis der Release-Messung (B-153):** alle zehn Module liegen zusammen bei
+**2,5 %** eines Kerns (Summe der Spalte), jedes einzeln deutlich unter 3 %.
 
 Teure Einzelkonfigurationen (Modul direkt, ohne Kettenpfad):
 
-| Konfiguration | Debug | Budget Debug |
-|---|---|---|
-| `reverb` true stereo, 4-Kanal-IR, 2 s | 82 % | 160 % |
-| `ott` linearphasig (513 Taps @ 48 kHz) | 17 % | 160 % |
+| Konfiguration | Debug | Release | Budget (Debug/Release) |
+|---|---|---|---|
+| `reverb` true stereo, 4-Kanal-IR, 2 s | 92 % | 5,2 % | 160 % / 30 % |
+| `ott` linearphasig (513 Taps @ 48 kHz) | 20,5 % | 4,7 % | 160 % / 30 % |
 
 > Die Werte sind **maschinenabhängig**. Reißt ein Budget auf einem langsameren
 > Rechner, zuerst den Median prüfen (der Test misst drei Läufe) und das Budget
 > mit Begründung anheben — nicht die Messung entfernen.
+
+**Noch offen (Rest von B-153):** der Sidechain-Hosttest in einer echten DAW
+(Aux-Bus zuweisen, `sidechain = 1` hören). Er lässt sich nur am Host machen,
+nicht im Unit-Test.

@@ -19,16 +19,24 @@ using namespace bfka;
 //
 // Gemessen wird die Wanduhrzeit fuer die Verarbeitung eines Blocks bei
 // 48 kHz/128 Samples, bezogen auf die Dauer des Blocks (= Anteil eines Kerns).
-// Die Budgets unten gelten fuer den **Debug**-Build; im Release-Build liegt
-// jeder Wert deutlich niedriger (Faktor 3 bis 8). Die Messung ist bewusst
-// grob: sie soll Ausreisser und Regressionen finden, keine DSP-Benchmarks
-// ersetzen.
+// Die Budgets gelten je Konfiguration: im Debug sind sie rund doppelt bis
+// dreifach ueber dem Messwert, im Release bei 6 % je Modul (Ziel < 3 %, B-153).
+// Die Messung ist bewusst grob: sie soll Ausreisser und Regressionen finden,
+// keine DSP-Benchmarks ersetzen.
 namespace
 {
     constexpr double kSampleRate = 48000.0;
     constexpr int    kBlockSize  = 128;
     constexpr int    kWarmupBlocks  = 5;
     constexpr int    kMeasureBlocks = 400;
+
+#if defined (NDEBUG)
+    /** Budget der teuren Einzelkonfigurationen im Release (gemessen 5,0-5,6 %). */
+    constexpr double kExpensiveBudget = 30.0;
+#else
+    /** Budget der teuren Einzelkonfigurationen im Debug. */
+    constexpr double kExpensiveBudget = 160.0;
+#endif
 
     FxModuleState makeModule (const juce::String& type)
     {
@@ -124,13 +132,20 @@ TEST_CASE ("CPU: Profil je Modul", "[cpu][fx]")
         report << type << " " << juce::String (percent, 1) << " %  ";
         ++painted;
 
-        INFO ("Modul " << type << ": " << juce::String (percent, 1) << " % eines Kerns (Debug)");
+        INFO ("Modul " << type << ": " << juce::String (percent, 1) << " % eines Kerns");
 
-        // Debug-Budgets: rund doppelt bis dreifach ueber den gemessenen Werten
-        // (siehe docs/specs/fx-chain-engine.md, Abschnitt 9) Ã¢â‚¬â€ eng genug, um
-        // Regressionen zu finden.
         const auto budget = [] (const juce::String& type)
         {
+#if defined (NDEBUG)
+            // Release: Ziel sind < 3 % je Modul (B-153, gemessen 0,1-1,0 %).
+            // Das Budget liegt bei 6 %, damit ein langsamer CI-Rechner nicht
+            // flackert; eine echte Regression (Faktor 3) faellt trotzdem auf.
+            juce::ignoreUnused (type);
+            return 6.0;
+#else
+            // Debug-Budgets: rund doppelt bis dreifach ueber den gemessenen
+            // Werten (docs/specs/fx-chain-engine.md, Abschnitt 9.1) - eng
+            // genug, um Regressionen zu finden.
             if (type == "final")  return 60.0;
             if (type == "dist")   return 15.0;
             if (type == "ott")    return 15.0;
@@ -138,6 +153,7 @@ TEST_CASE ("CPU: Profil je Modul", "[cpu][fx]")
             if (type == "dynEq")  return 10.0;
 
             return 8.0;
+#endif
         } (type);
 
         CHECK (percent < budget);
@@ -185,7 +201,7 @@ TEST_CASE ("CPU: teure Konfigurationen bleiben messbar", "[cpu][fx]")
 
         const auto percent = results[1];
 
-        INFO (juce::String (percent, 1) << " % eines Kerns (Debug)");
+        INFO (juce::String (percent, 1) << " % eines Kerns");
         CHECK (percent < budget);
 
         return percent;
@@ -206,7 +222,7 @@ TEST_CASE ("CPU: teure Konfigurationen bleiben messbar", "[cpu][fx]")
         convolver->prepare (kSampleRate, kBlockSize);
         convolver->loadImpulseFromBuffer (ir, kSampleRate);
 
-        const auto percent = measureModule (*convolver, 160.0);
+        const auto percent = measureModule (*convolver, kExpensiveBudget);
         std::cout << "[CPU] reverb (true stereo, 2 s IR) " << percent << " %" << std::endl;
     }
 
@@ -229,7 +245,7 @@ TEST_CASE ("CPU: teure Konfigurationen bleiben messbar", "[cpu][fx]")
         REQUIRE (linearIndex >= 0);
         multiband->setParam (linearIndex, 1.0f);
 
-        const auto percent = measureModule (*multiband, 160.0);
+        const auto percent = measureModule (*multiband, kExpensiveBudget);
         std::cout << "[CPU] ott (linear) " << percent << " %" << std::endl;
     }
 }

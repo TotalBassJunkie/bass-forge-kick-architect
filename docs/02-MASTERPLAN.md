@@ -478,7 +478,7 @@ Einzelheiten in docs/PROGRESS.md und im jeweiligen Handoff.
 | B-150 | getTailLengthSeconds() aus Kette/Kick-Länge ableiten | offen |
 | B-151 | Karten-Layout für Module mit vielen Parametern (dynEq, 64) gruppieren | offen |
 | B-152 | IR-Browser mit User-Directories | offen |
-| B-153 | Release-CPU-Messung und Sidechain-Hosttest in einer DAW | offen |
+| B-153 | Release-CPU-Messung und Sidechain-Hosttest in einer DAW | teilweise: Release-Messung erledigt (alle Module < 3 %, §9.1), DAW-Hosttest offen |
 | B-44 | Pitch/Stretch in SampleVoice (die Regler der Slot-Karten) | offen |
 
 **Getestete Eigenschaften (Welle 7/8):** siehe docs/specs/fx-chain-engine.md

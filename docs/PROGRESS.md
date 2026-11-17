@@ -63,6 +63,15 @@ Laufendes Protokoll. Neueste Einträge oben. Format:
 * `PluginEditor` zeigte die KICK-Seite als Skelett; der Tab KICK ist jetzt die
   echte Seite mit Karten und Visualiser.
 
+**B-153 (Teil 1) — Release-CPU gemessen.** `tests/CpuProfileTests.cpp` prüft die
+Budgets jetzt je Konfiguration (`NDEBUG`: 6 % je Modul, teure Konfigurationen
+30 %; Debug unverändert). Messung im Release: `filt/eq/mseq/shaper/trans/reverb`
+je 0,1 %, `dynEq` 0,2 %, `dist/final` 0,5 %, `ott` 0,7 % — **alle zehn Module
+zusammen 2,5 %** eines Kerns, jedes unter dem 3-%-Ziel. Teure Einzelkonfigurationen
+im Release: Convolver true stereo (4-Kanal-IR, 2 s) 5,2 %, Multiband linearphasig
+(513 Taps) 4,7 %. Tabelle in `docs/specs/fx-chain-engine.md` §9.1. Offen bleibt
+der Sidechain-Hosttest in einer DAW (Teil 2 von B-153).
+
 **Tests: 316 Testfälle, 540.097 Assertions, alle grün.** Neu:
 `tests/KickPageTests.cpp` mit 11 Testfällen (12 Karten, Sample laden/leeren,
 Live-Regler, BPM/Klemmung, Rollen/Sperren, Reglertexte, Visualiser PARTS/SUM,
