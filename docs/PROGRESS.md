@@ -5,6 +5,35 @@ Laufendes Protokoll. Neueste Einträge oben. Format:
 
 ---
 
+## 2026-11-17 — Welle 3: Engine, Stretching und Randomizer im Build
+
+**Erledigt**
+
+* **Sample-Engine (P3)**: `src/engine/SampleVoice.*` (Position, Trim, fünf Fade-Kurven,
+  Declick-Rampe, monotone Ausgabe) und `src/engine/KickRenderer.*` (12 Slots, Solo-Logik,
+  `KICK LENGTH` 1 Beat vs. Full Sample, Auto-Gain über das Body-Fenster 20–120 ms).
+* **Stretching (P4)**: `src/engine/WsolaStretcher.*` — eigene WSOLA-Implementierung
+  (Hann-Fenster, Grain-Suche per normalisierter Kreuzkorrelation, OLA-Normalisierung,
+  kanalgekoppelte Suche gegen Phasendrift im Bass) plus `REPITCH`-Pfad und
+  `src/engine/Resampler.h`. **Lizenzrein, keine Fremdbibliothek.**
+* **Randomizer (P7)**: `src/library/StyleModel.*` (JSON-Parser für `genres.json`:
+  25 Pools, 10 Styles, Rollen, Tonarten, Gewichte) und `src/library/RandomizerEngine.*`
+  (Pflicht-/Optionalteile, gewichtete Pool-Wahl, `shares`, Pegelbereiche,
+  Ausschlussregel „melodic × atonal", deterministisch über Seed).
+* **Tests: 112 Testfälle, 384.903 Assertions, alle grün.** Build grün.
+* **CI:** erster vollständig grüner Durchlauf auf GitHub Actions (7 min 16 s),
+  Artefakt-Upload funktioniert.
+
+**Gates:** Build grün · Tests grün · `origin/main` aktuell · CI success.
+
+**Nächste Schritte**
+
+1. Pitch/Stretch in die Voice einhängen (B-44) — die Schnittstellen stehen.
+2. Die neun FX-Module implementieren (größter Parallelisierungssprung).
+3. Danach UI-Seiten (P8/P9).
+
+---
+
 ## 2026-11-17 — Welle 2: Parameter-Modell korrigiert, Library integriert
 
 **Erledigt**
