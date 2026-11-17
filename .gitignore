@@ -1,0 +1,66 @@
+# ── Build-Ordner ────────────────────────────────────────────────
+build/
+build-*/
+out/
+cmake-build-*/
+CMakeUserPresets.json
+compile_commands.json
+
+# ── Externe Abhängigkeiten (werden per CMake geholt) ────────────
+JUCE/
+_extern/
+tools/_downloads/
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.sln.DotSettings.user
+
+# ── Vertrauliche RE-Artefakte (NIE veröffentlichen) ─────────────
+# Auszüge/Übersetzungen aus dem kommerziellen Original (Strings, RTTI,
+# Handbuchtext) bleiben ausschließlich lokal.
+_private/
+*.strings.txt
+strings-*.txt
+rtti-*.txt
+
+# ── Fremder Content (Teknovault-Sample-Library u. ä.) ───────────
+# Diese Dateien gehören nicht uns und dürfen nicht ins Repo.
+content/
+samples_private/
+*.wav
+*.aif
+*.aiff
+*.flac
+*.mp3
+!resources/demo/**/*.wav
+!tests/data/**/*.wav
+*.itkbpreset
+*.edm
+
+# ── Build-Artefakte / Binaries ──────────────────────────────────
+*.obj
+*.o
+*.lib
+*.exp
+*.pdb
+*.ilk
+*.dll
+*.exe
+*.vst3
+*.component
+*.so
+*.dylib
+!tools/*.ps1
+
+# ── Laufzeit/OS ─────────────────────────────────────────────────
+Thumbs.db
+desktop.ini
+.DS_Store
+*.log
+*.tmp
+
+# Handbuchtext des Referenzprodukts (urheberrechtlich) - nie veroeffentlichen
+docs/manual.txt
+manual*.txt
