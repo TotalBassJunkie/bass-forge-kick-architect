@@ -205,6 +205,13 @@ struct FxChainProcessor::SlotState
     int         latency = 0;      ///< Latenz des Moduls in Samples (0 = keine)
     LatencyLine latencyLine;      ///< Latenzausgleich fuer den Trockenpfad
 
+    /**
+     * Latenz der Vormodule (B-146): der externe Sidechain muss um denselben
+     * Betrag laufen wie das Nutzsignal, damit Detektor und Signal fluchten.
+     */
+    int         sidechainLatency = 0;
+    LatencyLine sidechainLine;
+
     juce::AudioBuffer<float> dry; ///< trockener Zwischenpuffer (in prepare reserviert)
     ModuleDisplay            display;
 };
@@ -234,6 +241,11 @@ void FxChainProcessor::applyPreparation()
         if (module != nullptr)
             module->prepare (preparedSampleRate, preparedBlockSize);
 
+    sidechainWork.setSize (kChannels, juce::jmax (1, preparedBlockSize), false, true, true);
+    sidechainWork.clear();
+
+    int latencyBefore = 0;
+
     for (size_t i = 0; i < slotList.size(); ++i)
     {
         auto* slot = slotList[i].get();
@@ -245,6 +257,13 @@ void FxChainProcessor::applyPreparation()
 
         slot->latency   = (module != nullptr) ? juce::jmax (0, module->latencySamples()) : 0;
         cachedLatency  += slot->latency;
+
+        // Der Sidechain dieses Platzes laeuft um die Latenz der Vormodule
+        // verzoegert (B-146).
+        slot->sidechainLatency = latencyBefore;
+        slot->sidechainLine.prepare (kChannels, slot->sidechainLatency);
+
+        latencyBefore += slot->latency;
 
         slot->latencyLine.prepare (kChannels, slot->latency);
         slot->dry.setSize (kChannels, preparedBlockSize, false, true, true);
@@ -269,11 +288,14 @@ void FxChainProcessor::reset()
             continue;
 
         slot->latencyLine.reset();
+        slot->sidechainLine.reset();
         slot->dry.clear();
         slot->display.pre.clear();
         slot->display.post.clear();
         slot->display.valid = false;
     }
+
+    sidechainWork.clear();
 }
 
 void FxChainProcessor::setChain (const FxChain& chain)
@@ -323,7 +345,8 @@ void FxChainProcessor::setChain (const FxChain& chain)
 // ---------------------------------------------------------------------------
 // Audio
 // ---------------------------------------------------------------------------
-void FxChainProcessor::process (juce::AudioBuffer<float>& buffer)
+void FxChainProcessor::process (juce::AudioBuffer<float>& buffer,
+                                const juce::AudioBuffer<float>* sidechain)
 {
     if (! prepared)
         return;
@@ -336,6 +359,13 @@ void FxChainProcessor::process (juce::AudioBuffer<float>& buffer)
 
     const auto chainBypassed = bypassAll.load (std::memory_order_relaxed);
 
+    // Ein externer Sidechain liegt nur an, wenn er lang genug ist und die
+    // Arbeitskopie Platz bietet (B-146).
+    const bool haveSidechain = sidechain != nullptr
+                               && sidechain->getNumChannels() > 0
+                               && sidechain->getNumSamples() >= numSamples
+                               && sidechainWork.getNumSamples() >= numSamples;
+
     for (size_t i = 0; i < moduleList.size(); ++i)
     {
         auto* slot   = slotList[i].get();
@@ -343,6 +373,32 @@ void FxChainProcessor::process (juce::AudioBuffer<float>& buffer)
 
         if (slot == nullptr || module == nullptr)
             continue;
+
+        // Externer Sidechain an das Modul reichen (verzoegert um die Latenz
+        // der Vormodule). Module ohne Detektor ignorieren den Zeiger.
+        if (module->acceptsExternalSidechain())
+        {
+            if (haveSidechain)
+            {
+                const auto scChannels = juce::jmin (kChannels, sidechain->getNumChannels(),
+                                                    sidechainWork.getNumChannels());
+
+                for (int ch = 0; ch < scChannels; ++ch)
+                    sidechainWork.copyFrom (ch, 0, *sidechain, ch, 0, numSamples);
+
+                if (scChannels == 1)
+                    sidechainWork.copyFrom (1, 0, *sidechain, 0, 0, numSamples);
+
+                if (slot->sidechainLatency > 0)
+                    slot->sidechainLine.process (sidechainWork, kChannels, numSamples);
+
+                module->setSidechainBuffer (&sidechainWork);
+            }
+            else
+            {
+                module->setSidechainBuffer (nullptr);
+            }
+        }
 
         // Display: Signal, wie es am Modul ankommt.
         captureDisplay (slot->display.pre, buffer, numChannels, numSamples);
@@ -357,6 +413,7 @@ void FxChainProcessor::process (juce::AudioBuffer<float>& buffer)
             // Modul uebersprungen: keine Bearbeitung, kein OUT GAIN — aber die
             // Latenz bleibt erhalten, damit die Kette nicht springt.
             slot->latencyLine.process (buffer, numChannels, numSamples);
+            module->setSidechainBuffer (nullptr);
 
             captureDisplay (slot->display.post, buffer, numChannels, numSamples);
             continue;
@@ -372,6 +429,7 @@ void FxChainProcessor::process (juce::AudioBuffer<float>& buffer)
             slot->latencyLine.process (slot->dry, numChannels, numSamples);
 
         module->process (buffer);
+        module->setSidechainBuffer (nullptr);
 
         if (mix < 1.0f)
             blendInPlace (buffer, slot->dry, numChannels, numSamples, mix);
@@ -398,6 +456,16 @@ FxModule* FxChainProcessor::moduleAt (int moduleIndex) noexcept
 const FxModule* FxChainProcessor::moduleAt (int moduleIndex) const noexcept
 {
     return const_cast<FxChainProcessor*> (this)->moduleAt (moduleIndex);
+}
+
+int FxChainProcessor::sidechainLatencyFor (int moduleIndex) const noexcept
+{
+    if (moduleIndex < 0 || moduleIndex >= (int) slotList.size())
+        return 0;
+
+    const auto* slot = slotList[(size_t) moduleIndex].get();
+
+    return slot != nullptr ? slot->sidechainLatency : 0;
 }
 
 // ---------------------------------------------------------------------------

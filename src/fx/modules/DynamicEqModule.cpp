@@ -63,7 +63,10 @@ DynamicEqModule::DynamicEqModule()
     descriptors.push_back ({ "delta",      "Delta",              0.0f,    1.0f,    0.0f, ""   });
     descriptors.push_back ({ "channels",   "Channels",           0.0f,    6.0f,    1.0f, ""   });
     descriptors.push_back ({ "quality",    "Quality",            0.0f,    2.0f,    1.0f, ""   });
-    descriptors.push_back ({ "sidechain",  "Sidechain",          0.0f,    1.0f,    0.0f, ""   });
+    // 0 = Int SC (Detektor 60 Hz hochpassgefiltert), 1 = Ext SC (zweiter
+    // Eingang), 2 = Int SC flat (interner Detektor ohne Filter). Reihenfolge
+    // wie im Referenz-Plugin; 1 ist seit B-146 ein echter externer Sidechain.
+    descriptors.push_back ({ "sidechain",  "Sidechain",          0.0f,    2.0f,    0.0f, ""   });
 
     for (int b = 0; b < numBands; ++b)
     {
@@ -115,6 +118,11 @@ void DynamicEqModule::prepare (double newSampleRate, int newMaxBlockSize)
     dryBuffer.setSize (maxChannels, maxBlockSize, false, true, true);
     workBuffer.setSize (maxChannels, maxBlockSize, false, true, true);
 
+    // Eigene Kopie des externen Sidechains: die Engine reicht nur einen
+    // Zeiger auf ihren Arbeitspuffer, und der wird zwischen zwei Modulen neu
+    // gefuellt (B-146).
+    sidechainCopy.setSize (maxChannels, maxBlockSize, false, true, true);
+
     wideFollower.prepare (sampleRate);
 
     for (auto& band : bands)
@@ -163,6 +171,11 @@ void DynamicEqModule::reset()
 
     dryBuffer.clear();
     workBuffer.clear();
+    sidechainCopy.clear();
+
+    sidechainBuffer = nullptr;
+    usingExternalSidechain.store (false, std::memory_order_relaxed);
+    lastSidechainMode.store (0, std::memory_order_relaxed);
 
     for (int b = 0; b < numBands; ++b)
         lastBandDynamicDb[b].store (0.0f, std::memory_order_relaxed);
@@ -367,14 +380,43 @@ void DynamicEqModule::process (juce::AudioBuffer<float>& buffer)
 
     const int wideDyn    = (int) std::lround (paramValues[pWideDyn]);
     const int channelMode = juce::jlimit (0, 6, (int) std::lround (paramValues[pChannels]));
-    const int sidechainMode = (int) std::lround (paramValues[pSidechain]);
+    const int sidechainMode = juce::jlimit (0, 2, (int) std::lround (paramValues[pSidechain]));
+
+    // ---- Externer Sidechain (B-146) --------------------------------------
+    // Modus 1 = EXT SC. Ohne anliegenden Bus faellt das Modul auf den
+    // internen, flachen Detektor zurueck (Modus 2) — so bleibt der Klang
+    // definiert, wenn der Host den zweiten Eingang nicht versorgt.
+    const bool externalUsable = (sidechainMode == 1)
+                                && sidechainBuffer != nullptr
+                                && sidechainBuffer->getNumChannels() > 0
+                                && sidechainBuffer->getNumSamples() >= numSamples;
+
+    const bool external = externalUsable;
+
+    if (external)
+    {
+        const auto scChannels = juce::jmin (maxChannels, sidechainBuffer->getNumChannels());
+
+        for (int ch = 0; ch < scChannels; ++ch)
+            sidechainCopy.copyFrom (ch, 0, *sidechainBuffer, ch, 0, numSamples);
+
+        // Mono-Sidechain auf beide Kanaele spiegeln, damit die Detektoren
+        // stereo gleich reagieren.
+        if (scChannels == 1)
+            sidechainCopy.copyFrom (1, 0, *sidechainBuffer, 0, 0, numSamples);
+    }
+
+    sidechainBuffer          = nullptr;
+    lastSidechainMode.store (external ? 1 : (sidechainMode == 0 ? 0 : 2), std::memory_order_relaxed);
+    usingExternalSidechain.store (external, std::memory_order_relaxed);
 
     const double wideThreshold = paramValues[pWideThresh];
     const double wideRatio     = std::max (1.0, (double) paramValues[pWideRatio]);
 
     wideFollower.setTimes (paramValues[pWideAttack], paramValues[pWideRelease]);
 
-    sidechainHighPass.setCoefficients (sidechainMode == 0
+    // Der interne Detektor-Hochpass gilt nur fuer "Int SC" (Modus 0).
+    sidechainHighPass.setCoefficients ((sidechainMode == 0 && ! external)
                                            ? dsp::designBiquad (dsp::BiquadKind::highPass, sampleRate, 60.0, kButterworthQ1, 0.0)
                                            : dsp::BiquadCoeffs {});
 
@@ -533,12 +575,21 @@ void DynamicEqModule::process (juce::AudioBuffer<float>& buffer)
         // ---- W-Band-Detektor (stereo-gekoppelt, optional gefiltert) ------
         double detectorInput = 0.0;
 
-        for (int ch = 0; ch < maxChannels; ++ch)
-            if (processChannel[ch])
-                detectorInput = std::max (detectorInput, std::abs (samples[ch]));
+        if (external)
+        {
+            for (int ch = 0; ch < maxChannels; ++ch)
+                detectorInput = std::max (detectorInput,
+                                          std::abs ((double) sidechainCopy.getSample (ch, n)));
+        }
+        else
+        {
+            for (int ch = 0; ch < maxChannels; ++ch)
+                if (processChannel[ch])
+                    detectorInput = std::max (detectorInput, std::abs (samples[ch]));
 
-        if (sidechainMode == 0)
-            detectorInput = sidechainHighPass.processSampleDouble (detectorInput);
+            if (sidechainMode == 0)
+                detectorInput = sidechainHighPass.processSampleDouble (detectorInput);
+        }
 
         const double wideEnvelope = wideFollower.process (detectorInput);
         const double wideLevelDb  = dsp::gainToDb (wideEnvelope);
@@ -573,9 +624,19 @@ void DynamicEqModule::process (juce::AudioBuffer<float>& buffer)
             double bandDetector = 0.0;
 
             for (int ch = 0; ch < maxChannels; ++ch)
-                if (processChannel[ch])
-                    bandDetector = std::max (bandDetector,
-                                             std::abs (band.detector[ch].processSampleDouble (samples[ch])));
+            {
+                if (! processChannel[ch] && ! external)
+                    continue;
+
+                // Externer Sidechain: die Bandfilter laufen auf dem zweiten
+                // Signal, damit auch die SPLIT-Baender darauf reagieren.
+                const double detectorSource = external
+                                                  ? (double) sidechainCopy.getSample (ch, n)
+                                                  : samples[ch];
+
+                bandDetector = std::max (bandDetector,
+                                         std::abs (band.detector[ch].processSampleDouble (detectorSource)));
+            }
 
             double dynamicDb = 0.0;
 

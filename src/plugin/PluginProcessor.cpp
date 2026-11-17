@@ -12,6 +12,12 @@ namespace bfka
 
 PluginProcessor::PluginProcessor()
     : juce::AudioProcessor (BusesProperties()
+                                // Detektor-Quellen (B-146), beide optional:
+                                // `Input` ist der Haupt-Eingang, den der Host
+                                // in-place mit dem Ausgang teilt; `Sidechain`
+                                // ist der VST3-Aux-Bus und hat Vorrang.
+                                .withInput ("Input", juce::AudioChannelSet::stereo(), false)
+                                .withInput ("Sidechain", juce::AudioChannelSet::stereo(), false)
                                 .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       apvts (*this, nullptr, "PARAMETERS", createLayout())
 {
@@ -55,6 +61,12 @@ void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     renderer.prepare (sampleRate, samplesPerBlock);
     fxChain.prepare (sampleRate, samplesPerBlock);
 
+    // Arbeitskopie fuer den externen Detektor (B-146). Wird im Audio-Thread
+    // nur beschrieben, nie vergroessert.
+    sidechainInput.setSize (FxChainProcessor::kMaxChannels, juce::jmax (1, samplesPerBlock),
+                            false, true, true);
+    sidechainInput.clear();
+
     // Kette aus dem Zustand bauen und die Latenz an den Host melden (B-143).
     rebuildEngineChain();
 
@@ -79,10 +91,36 @@ bool PluginProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
     const auto& out = layouts.getMainOutputChannelSet();
 
-    if (out == juce::AudioChannelSet::stereo() || out == juce::AudioChannelSet::mono())
-        return layouts.getMainInputChannelSet().isDisabled();
+    if (! (out == juce::AudioChannelSet::stereo() || out == juce::AudioChannelSet::mono()))
+        return false;
 
-    return false;
+    if (layouts.outputBuses.size() != 1)
+        return false;
+
+    // Der Sidechain-Eingang (B-146) ist optional: aus, mono oder stereo.
+    for (int i = 0; i < layouts.inputBuses.size(); ++i)
+    {
+        const auto& bus = layouts.inputBuses.getReference (i);
+
+        if (! (bus.isDisabled() || bus == juce::AudioChannelSet::mono()
+               || bus == juce::AudioChannelSet::stereo()))
+            return false;
+    }
+
+    return true;
+}
+
+int PluginProcessor::getSidechainChannels() const noexcept
+{
+    const auto index = sidechainBusIndex.load();
+
+    if (index < 0)
+        return 0;
+
+    if (auto* bus = getBus (true, index); bus != nullptr && bus->isEnabled())
+        return bus->getNumberOfChannels();
+
+    return 0;
 }
 
 void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
@@ -90,25 +128,87 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
     juce::ScopedNoDenormals noDenormals;
     juce::ignoreUnused (midi);
 
-    const auto numSamples = buffer.getNumSamples();
-    buffer.clear();
+    // Nur den Ausgangsbus beschreiben. Mit aktivem Sidechain traegt `buffer`
+    // vorne die Eingangs- und danach die Ausgangskanaele; ein `clear()` auf dem
+    // ganzen Buffer wuerde den Detektor loeschen (B-146).
+    auto outBuffer = getBusBuffer (buffer, false, 0);
+
+    if (outBuffer.getNumChannels() == 0 || outBuffer.getNumSamples() == 0)
+        outBuffer = buffer;
+
+    const auto numSamples = outBuffer.getNumSamples();
+    const auto outOffset  = getChannelIndexInProcessBlockBuffer (false, 0, 0);
+
+    // Detektor-Quelle bestimmen: Aux-Bus (Index 1) vor Haupt-Eingang (Index 0).
+    // Der Haupt-Eingang teilt sich die Kanaele mit dem Ausgang (In-Place-
+    // Verarbeitung); deshalb wird er **vor** dem Leeren kopiert.
+    int busIndex = -1;
+
+    for (int i = getBusCount (true) - 1; i >= 0; --i)
+    {
+        auto* bus = getBus (true, i);
+
+        if (bus == nullptr || ! bus->isEnabled() || bus->getNumberOfChannels() <= 0)
+            continue;
+
+        const auto offset = getChannelIndexInProcessBlockBuffer (true, i, 0);
+
+        // Ein Aux-Bus, der auf denselben Kanaelen wie der Ausgang liegt, kann
+        // von JUCE nicht getrennt werden (kein Haupt-Eingang belegt) — dann
+        // lieber gar kein Sidechain als ein ueberschriebener Detektor.
+        if (i > 0 && offset == outOffset)
+            continue;
+
+        busIndex = i;
+        break;
+    }
+
+    const juce::AudioBuffer<float>* sidechain = nullptr;
+
+    const bool canCopySidechain = busIndex >= 0
+                                  && sidechainInput.getNumSamples() >= numSamples
+                                  && sidechainInput.getNumChannels() > 0;
+
+    if (canCopySidechain)
+    {
+        auto scBuffer = getBusBuffer (buffer, true, busIndex);
+
+        if (scBuffer.getNumChannels() > 0 && scBuffer.getNumSamples() >= numSamples)
+        {
+            const auto channels = juce::jmin (sidechainInput.getNumChannels(),
+                                             scBuffer.getNumChannels());
+
+            for (int ch = 0; ch < channels; ++ch)
+                sidechainInput.copyFrom (ch, 0, scBuffer, ch, 0, numSamples);
+
+            for (int ch = channels; ch < sidechainInput.getNumChannels(); ++ch)
+                sidechainInput.copyFrom (ch, 0, scBuffer, 0, 0, numSamples);
+
+            sidechain = &sidechainInput;
+        }
+    }
+
+    sidechainBusIndex.store (sidechain != nullptr ? busIndex : -1, std::memory_order_relaxed);
+    sidechainActive.store (sidechain != nullptr, std::memory_order_relaxed);
+
+    outBuffer.clear();
 
     if (auto* masterParam = apvts.getRawParameterValue ("master_vol"))
         masterGain.store (masterParam->load (std::memory_order_relaxed),
                           std::memory_order_relaxed);
 
     // 1) Kick rendern (additiv).
-    renderer.renderNextBlock (buffer, 0, numSamples);
+    renderer.renderNextBlock (outBuffer, 0, numSamples);
 
-    // 2) FX-Kette (in-place, Module in Reihenfolge).
+    // 2) FX-Kette (in-place, Module in Reihenfolge, optional mit Sidechain).
     if (fxChain.numModules() > 0)
-        fxChain.process (buffer);
+        fxChain.process (outBuffer, sidechain);
 
     // 3) Master-Fader.
     const auto gain = juce::jlimit (0.0f, 2.0f, masterGain.load (std::memory_order_relaxed));
 
     if (! juce::approximatelyEqual (gain, 1.0f))
-        buffer.applyGain (0, numSamples, gain);
+        outBuffer.applyGain (0, numSamples, gain);
 
     // 4) MIDI: jede Note-On startet den Kick neu.
     for (const auto meta : midi)

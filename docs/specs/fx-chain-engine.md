@@ -33,6 +33,7 @@ Trockenpfad noch die Pegelstufe der Karte. Damit ist jede MIX-Semantik zentral
 Eingang (Summe)
   └─ für jedes Modul in Kettenreihenfolge:
        pre-Display   ← Kopie des Eingangs in das Modul
+       Sidechain     ← optional: Kopie des zweiten Eingangs, verzögert um ΣL der Vormodule
        trocken       ← Kopie (nur wenn nötig)
        Modul.process()          → nass (mit Modullatenz L)
        out = trocken·(1−mix) + nass·mix
@@ -40,6 +41,26 @@ Eingang (Summe)
        post-Display  ← Kopie des Ausgangs
 Ausgang
 ```
+
+### 1.2 Externer Sidechain (B-146)
+
+Detektor-Module (bisher `dynEq`) können statt ihres Eingangs ein zweites Signal
+auswerten. Der Vertrag besteht aus zwei Methoden in `FxModule`:
+
+```cpp
+virtual void setSidechainBuffer (const juce::AudioBuffer<float>* sidechain) noexcept {}
+virtual bool acceptsExternalSidechain() const noexcept { return false; }
+```
+
+* Die Engine setzt den Zeiger **vor** jedem `process()` und nimmt ihn danach
+  wieder weg; ein Modul darf ihn nicht speichern.
+* Die Verzögerung ist die Summe der Latenzen der **Vormodule**
+  (`sidechainLatencyFor(slot)`), damit Detektor und Nutzsignal fluchten.
+* `FxChainProcessor::process (buffer, sidechain = nullptr)` — ohne Argument
+  bleibt alles wie bisher (interne Detektoren).
+* Das Plugin bietet dafür zwei optionale Busse (`Input` = Haupt-Eingang,
+  `Sidechain` = Aux) und kopiert den Detektor vor dem Leeren des
+  Ausgangspuffers (In-Place-Mapping von JUCE).
 
 ---
 

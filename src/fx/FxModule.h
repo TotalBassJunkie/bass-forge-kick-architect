@@ -181,6 +181,32 @@ public:
     virtual juce::String displayName() const = 0;
 
     // -----------------------------------------------------------------------
+    // Externer Sidechain (B-146)
+    // -----------------------------------------------------------------------
+    // Ein Modul mit Detektor (bisher nur `dynEq`) kann statt des eigenen
+    // Eingangssignals ein zweites Signal auswerten. Die Ketten-Engine setzt den
+    // Zeiger vor jedem `process()`-Aufruf und nimmt ihn danach wieder weg; das
+    // Signal ist bereits um die Latenz der Vormodule verzoegert, damit Detektor
+    // und Nutzsignal zeitlich fluchten.
+
+    /**
+     * Meldet den Detektor-Block fuer den naechsten `process()`-Aufruf an.
+     *
+     * `sidechain` ist `nullptr`, wenn kein externes Signal anliegt — dann
+     * arbeitet das Modul wie bisher mit dem internen Detektor. Der Buffer hat
+     * dieselbe Samplezahl wie der Block, darf vom Modul nur gelesen werden und
+     * ist hoechstens bis zum Ende des `process()`-Aufrufs gueltig (nicht
+     * speichern, nur kopieren).
+     *
+     * Laeuft auf dem Audio-Thread; die Standard-Implementierung ignoriert den
+     * Zeiger (Module ohne Sidechain).
+     */
+    virtual void setSidechainBuffer (const juce::AudioBuffer<float>* /*sidechain*/) noexcept {}
+
+    /** true, wenn das Modul ein externes Detektor-Signal auswerten kann. */
+    virtual bool acceptsExternalSidechain() const noexcept { return false; }
+
+    // -----------------------------------------------------------------------
     // Struktur-Zustand (Bänder, Kurven, Hüllkurven, IR-Pfad)
     // -----------------------------------------------------------------------
     // Die 14 Host-Proxy-Parameter `fx<N>_p<M>` tragen nur Skalare. Alles, was

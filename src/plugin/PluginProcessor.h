@@ -125,6 +125,20 @@ public:
     /** Letzte gespielte MIDI-Note (Anzeige/Test). */
     int getLastNote() const noexcept { return lastNote.load(); }
 
+    // --- Externer Sidechain (B-146) ---------------------------------------
+    /**
+     * Lag im letzten Block ein Signal als Detektor an?
+     *
+     * Zwei optionale Eingangsbusse: `Sidechain` (VST3-Aux-Bus) hat Vorrang,
+     * danach `Input` (der Haupt-Eingang, den der Host in-place mit dem Ausgang
+     * teilt). Ist keiner belegt, hoeren die Detektor-Module wie bisher auf ihr
+     * eigenes Signal.
+     */
+    bool isSidechainActive() const noexcept { return sidechainActive.load(); }
+
+    /** Anzahl der Kanaele der aktiven Detektor-Quelle (0 = kein Sidechain). */
+    int getSidechainChannels() const noexcept;
+
     /**
      * Baut einen hoerbaren Test-Kick aus der Sample-Library und startet ihn.
 
@@ -187,6 +201,13 @@ private:
     int    currentBlockSize  = 512;
     std::atomic<int> lastNote { -1 };
     std::atomic<float> masterGain { 0.8333333f };
+    std::atomic<bool> sidechainActive { false };
+
+    /** Kopie des Detektor-Signals (in `prepareToPlay()` angelegt, B-146). */
+    juce::AudioBuffer<float> sidechainInput;
+
+    /** Gewaehlter Detektor-Bus des letzten Blocks (-1 = keiner). */
+    std::atomic<int> sidechainBusIndex { -1 };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginProcessor)
 };

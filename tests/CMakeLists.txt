@@ -35,6 +35,7 @@ target_sources(BFKA_Tests PRIVATE
     FxChainModelTests.cpp
     FxPageTests.cpp
     FxDemoChainTests.cpp
+    SidechainTests.cpp
     TestMain.cpp
     ../src/core/Version.cpp
     ../src/core/Log.cpp

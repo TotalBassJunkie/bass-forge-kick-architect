@@ -83,6 +83,27 @@ public:
 
     juce::String displayName() const override { return "Dynamic EQ"; }
 
+    // --- Externer Sidechain (B-146) ---------------------------------------
+    /**
+     * Setzt den Detektor-Block. Wirkt nur, wenn `sidechain` den Wert 1
+     * (EXT SC) hat; sonst bleibt der interne Detektor aktiv.
+     */
+    void setSidechainBuffer (const juce::AudioBuffer<float>* sidechain) noexcept override
+    {
+        sidechainBuffer = sidechain;
+    }
+
+    bool acceptsExternalSidechain() const noexcept override { return true; }
+
+    /** Wurde im letzten Block wirklich der externe Detektor benutzt? */
+    bool isUsingExternalSidechain() const noexcept
+    {
+        return usingExternalSidechain.load (std::memory_order_relaxed);
+    }
+
+    /** Sidechain-Modus des letzten Blocks (0 = Int SC, 1 = Ext SC, 2 = Int SC flat). */
+    int sidechainMode() const noexcept { return lastSidechainMode.load (std::memory_order_relaxed); }
+
     // --- Diagnose (Tests / spaetere Anzeige) ------------------------------
     /** Mittlerer dynamischer Regelweg des letzten Blocks in dB (<= 0). */
     float bandDynamicGainDb (int band) const noexcept;
@@ -211,6 +232,15 @@ private:
 
     dsp::Biquad sidechainHighPass;
     dsp::EnvelopeFollower wideFollower;
+
+    /** Detektor-Block des externen Sidechains (nur gueltig waehrend `process()`). */
+    const juce::AudioBuffer<float>* sidechainBuffer = nullptr;
+
+    /** Kopie des externen Sidechains fuer den laufenden Block (in `prepare()` angelegt). */
+    juce::AudioBuffer<float> sidechainCopy;
+
+    std::atomic<bool> usingExternalSidechain { false };
+    std::atomic<int>  lastSidechainMode { 0 };
 
     BandRuntime bands[numBands];
 

@@ -110,6 +110,12 @@ public:
     /** Summe der Modullatenzen in Samples (fuer die Host-Kompensation). */
     int totalLatencySamples() const noexcept { return cachedLatency; }
 
+    /**
+     * Verzoegerung, mit der der externe Sidechain an Kettenplatz `moduleIndex`
+     * ankommt (Summe der Latenzen der Vormodule). Nur Diagnose/Anzeige.
+     */
+    int sidechainLatencyFor (int moduleIndex) const noexcept;
+
     /** Wurde `prepare()` bereits gerufen? */
     bool isPrepared() const noexcept { return prepared; }
 
@@ -117,8 +123,15 @@ public:
     /**
      * Verarbeitet die Summe in-place durch die Kette.
      * Ohne vorheriges `prepare()` kehrt die Methode sofort zurueck.
+     *
+     * `sidechain` ist das optionale Detektor-Signal des zweiten Eingangs
+     * (B-146). Es wird nur an Module weitergereicht, die
+     * `acceptsExternalSidechain()` melden, und dabei um die Latenz der
+     * Vormodule verzoegert, damit Detektor und Nutzsignal fluchten. Ohne
+     * Argument arbeitet die Kette wie bisher mit den internen Detektoren.
      */
-    void process (juce::AudioBuffer<float>& buffer);
+    void process (juce::AudioBuffer<float>& buffer,
+                  const juce::AudioBuffer<float>* sidechain = nullptr);
 
     // --- Display ----------------------------------------------------------
     /** Anzeigedaten von Kettenplatz `moduleIndex`; ungueltig -> `valid == false`. */
@@ -141,6 +154,9 @@ private:
 
     std::vector<std::unique_ptr<FxModule>>  moduleList;
     std::vector<std::unique_ptr<SlotState>> slotList;
+
+    /** Arbeitskopie des externen Sidechains (in `prepare()` angelegt, B-146). */
+    juce::AudioBuffer<float> sidechainWork;
 
     double preparedSampleRate = 48000.0;
     int    preparedBlockSize  = 512;
