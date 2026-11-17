@@ -330,7 +330,7 @@ void FxPage::paint (juce::Graphics& g)
     // Status rechts: Modulzahl und gemeldete Latenz
     g.setFont (ui::theme::smallFont());
     g.setColour (ui::theme::textDim);
-    g.drawText (juce::String (proc.getEngineModuleCount()) + " Module  ·  Latenz "
+    g.drawText (juce::String (proc.getEngineModuleCount()) + " Module  -  Latenz "
                     + juce::String (proc.getLatencySamples()) + " Samples",
                 toolbar.withTrimmedRight (8), juce::Justification::centredRight, false);
 
