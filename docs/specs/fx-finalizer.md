@@ -372,3 +372,16 @@ registerType (FxType::finalizer, [] { return std::make_unique<FinalizerModule>()
 `kLimiterReleaseMs`, `kDenormalGuard`, `kCoeffEpsilon` und das Enum
 `ParamIndex` (`pBoost`, `pFreq`, `pClip`, `pUpward`, `pMonoFreq`, `pShelfOn`,
 `pMonoOn`, `pClipOn`, `numParams`).
+
+---
+
+## Nachtrag 2026-11-17 (B-92b, B-147)
+
+* **UI:** src/ui/editors/FinalizerView.{h,cpp} — reine Anzeige: Sub-Shelf-Kurve
+  (oost/req), Mono-Bass-Marker (monoF), Balken für Aufwärts-Anhebung
+  (currentUpwardGainDb()), Limiter-Reduktion (currentLimiterGain()) und
+  Clip-Lampe; Statuszeile LAT / CLIP / UP.
+* **Latenz (B-147):** PluginProcessor::updateModuleRenderLength() ändert die
+  Latenz nicht, aber ein Test prüft die gemeldete Host-Latenz:
+  getLatencySamples() == 72 bei 48 kHz, 144 bei zwei Finalizern in Reihe
+  (	ests/RenderLengthTests.cpp).

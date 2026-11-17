@@ -5,6 +5,81 @@ Laufendes Protokoll. Neueste Einträge oben. Format:
 
 ---
 
+## 2026-11-17 — Welle 8: Sidechain, Presets, die letzten drei Editoren, Rampen, CPU-Profil
+
+**Erledigt (Phase 3, B-146, B-93/B-94, B-92b, B-147, B-148, B-149)**
+
+* **B-146 — Externer Sidechain für `dynEq`.** `FxModule` hat zwei neue
+  Methoden (`setSidechainBuffer()` / `acceptsExternalSidechain()`), die
+  Ketten-Engine reicht das Signal an Module mit Detektor weiter und verzögert es
+  um die Latenz der Vormodule (`sidechainLatencyFor()`). Der Prozessor bietet
+  zwei optionale Eingangsbusse an (`Input` = Haupt-Eingang, `Sidechain` = Aux)
+  und kopiert den Detektor **vor** dem Leeren des Ausgangspuffers, weil JUCE
+  Ein- und Ausgang in-place auf dieselben Kanäle legt. `dynEq` wertet den
+  Modus `sidechain = 1` (Ext SC) jetzt wirklich aus, inklusive der SPLIT-Bandfilter,
+  und fällt ohne Bus definiert auf „Int SC flat“ (2) zurück. Abnahme: 6 Tests in
+  `tests/SidechainTests.cpp`.
+* **B-93 — Preset-IO.** Neu `src/core/PresetIO.{h,cpp}`: `<BFKAPreset>`-Kopf
+  (`kind="kick|module"`, Name, Autor, Style, Datum, App-Version), Endungs-
+  Ergänzung, 32-MB-Grenze, tolerantes Lesen (auch nackte `BFKAKick`-Wurzel).
+  Prozessor: `savePreset`/`loadPreset`, `readPresetInfo`,
+  `saveModulePreset`/`loadModulePreset` (Kettenplatz behält `enabled`/`mix`/`outGain`).
+  UI: `SAVE`/`LOAD` in der Werkzeugleiste, `SAVE MODULE`/`LOAD MODULE` in der
+  Seitenleiste, Statuszeile für Rückmeldungen.
+* **B-94 — A/B und Ketten-Header.** Zwei gemerkte Gesamtzustände im Prozessor
+  (`storeComparisonState`/`restoreComparisonState`, A/B-Knöpfe in der Leiste),
+  `FxChainModel` mit **Sperre** (Add/Remove/Move/Duplicate/Clear blockiert,
+  Regler bleiben bedienbar) und **Werkskette** (`filt` + `final`).
+* **B-92b — die letzten drei Graph-Editoren.** `MidSideEqView` (Bandknoten,
+  WIDTH, Solo/Mute), `KickShaperView` (ziebare `<Pt>`-Kurve, Segmenttypen,
+  Abspielmarke) und `FinalizerView` (Sub-Shelf, Mono-Marker, Limiter/Clip).
+  `createStructureView()` kennt damit sechs der zehn Typen.
+  **Nebenbefund behoben:** `writeBackModuleStates()` entfernt die
+  Struktur-Kinder (`Band`, `WNode`, `Pt`, `Eq`, `Dc`) jetzt **immer** — vorher
+  blieben gelöschte Bänder im Zustand/Preset stehen, weil `getState()` bei
+  leerer Liste gar kein `<Band>` mehr liefert.
+* **B-147 — Kick-Länge für `shaper`.** `KickRenderer::kickLengthSeconds()`
+  (Beat-Länge bei KICK LENGTH = 1 BEAT, sonst die längste belegte Voice);
+  `PluginProcessor::updateModuleRenderLength()` setzt sie nach jedem
+  Ketten-Rebuild, nach einem neuen Kick und nach `applyState()`. `applyState()`
+  gibt das Tempo aus dem Zustand an den Renderer. Finalizer-Latenz im Host-Test
+  verifiziert (72 Samples @ 48 kHz, 144 bei zwei Finalizern).
+* **B-148 — Rampen.** Die Kette rampt `mix`/`outGain` sampleweise
+  (`blendInPlaceRamp`, `applyGainRamp`; O4 geschlossen), der Convolver rampt
+  `wet` und `width` sampleweise statt pro Block. MIX-Tests prüfen jetzt das
+  Rampenverhalten (Rampe im ersten Block, exakte Werte danach).
+* **B-149 — CPU-Profil je Modul.** `tests/CpuProfileTests.cpp` misst alle zehn
+  Module (Median aus drei Läufen, 48 kHz/128) und die beiden teuren
+  Konfigurationen (Convolver true stereo, Multiband linearphasig); Tabelle in
+  `docs/specs/fx-chain-engine.md`, Abschnitt 9.1.
+
+**Nebenbefunde dieser Welle**
+
+* JUCE legt Ein- und Ausgangskanäle **in-place** übereinander
+  (`getBusBuffer`-Offsets: Ausgang 0 und Haupt-Eingang 0 sind derselbe Kanal).
+  Ein Aux-Bus ohne Haupt-Eingang würde den Ausgang überschreiben — deshalb zwei
+  Busse und der Kanal-Offset-Vergleich im Prozessor.
+* `applyState()` hat das Tempo nie an den Renderer gegeben; die Kick-Länge war
+  dadurch immer 150 BPM. Jetzt Teil von B-147.
+* Test-Rendering in PNGs: `BFKA_RENDER_UI=1` schreibt
+  `C:\bfka-re\ui-*.png`. **Vorher die alten Dateien löschen** — ein noch
+  gesperrtes Ziel lässt `FileOutputStream` still scheitern, und man debuggt
+  stundenlang ein Bild, das längst veraltet ist.
+
+**Gates:** Build grün (VST3 + Standalone) · **305 Testfälle / 539.977
+Assertions** grün · Doku aktualisiert. Baseline vor der Welle: 278 Testfälle.
+
+**Nächste Schritte**
+
+1. `getTailLengthSeconds()` (noch 8,0 s) aus Kette/Kick-Laenge ableiten.
+2. Eingebettete Samples im Preset (`<Samples>`, B-95) und Factory-Presets.
+3. IR-Browser mit User-Directories; Karten-Layout für 64-Parameter-Module
+   (`dynEq`) gruppieren.
+4. Host-Test des Sidechains in einer echten DAW (Bus-Routing); Release-CPU-Messung
+   für die 3-%-Budgets.
+
+---
+
 ## 2026-11-17 — Welle 7: FX-Kette im Prozessor, FX-UI und die letzten drei Module
 
 **Erledigt (Phase 2/3, B-143, B-144, B-90/B-91, B-92, B-145, B-62/B-64/B-67)**

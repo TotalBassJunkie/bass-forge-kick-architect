@@ -166,3 +166,14 @@ Statische Bearbeitung der Kurven über `setEqCurve()`/`setDecayCurve()`.
 | True Stereo | Kreuzantworten L→R/R→L, Abschalten liefert Stille |
 | Zustand | `ir`, `<Eq>`, `<Dc>` Roundtrip |
 | Kette | läuft stabil mit OTT und Dynamic EQ |
+
+---
+
+## Nachtrag 2026-11-17 (B-148)
+
+wet und width (Parameter wet/stereo) werden nicht mehr pro Block
+gesetzt, sondern sampleweise von ppliedWetGain/ppliedWidth auf den neuen
+Wert gerampt (Mitglieder in ConvolverModule.h; prepare() setzt sie auf die
+aktuellen Werte). 	one bleibt eine blockweise Koeffizienten-Aktualisierung der
+Tilt-Filter — der Filterzustand ist stetig, ein Koeffizientensprung erzeugt kein
+Zipper. Abnahme: 	ests/SmoothingTests.cpp.

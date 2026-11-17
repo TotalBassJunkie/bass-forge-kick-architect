@@ -444,12 +444,18 @@ Regeln:
 | `setChain` vor `prepare` | Reihenfolge-Unabhängigkeit, kein Processing ohne `prepare` |
 | Abschaltetes Modul | `enabled == false` überspringt DSP **und** OUT GAIN |
 | Ketten-Bypass | `bypassAll` rechnet kein Modul, live umschaltbar |
-| MIX | `0` → trocken, `1` → nass, `0,5` → lineare Blende |
+| MIX (B-148) | `0` → trocken, `1` → nass, `0,5` → lineare Blende; ein Wechsel rampt in **einem** Block (erster Sample nah am alten Wert, letzter exakt am neuen) |
+| OUT GAIN (B-148) | Rampe je Block; `setChain()` setzt die Rampe auf den gesetzten Wert zurück |
 | Unbekannter Typ | Platz bleibt (`nullptr`), kein Absturz, Warnung, Display ungültig |
 | Modulattribute | `data`-Attribute landen geklemmt im Modul |
 | Latenz | Summe (4+8=12), Bypass hält Latenz (Impuls bei 8), Modul selbst verzögert nicht |
 | Display | `pre`/`post`-Pegel, Kanäle, Fenster (128 bzw. 512), `valid`-Zustände |
 | Typ-Kennungen | Hin-/Rückabbildung aller zehn Typen, unbekannt → `nullopt` |
+| Sidechain (B-146) | `process (buffer, sidechain)` reicht den Detektor weiter, `sidechainLatencyFor()` = Latenz der Vormodule (`tests/SidechainTests.cpp`) |
+| Struktur-Editoren (B-92b) | Fabrik liefert für `mseq`, `shaper`, `final`, `ott`, `reverb`, `dynEq` einen Editor; `writeBackModuleStates()` entfernt gelöschte `<Band>`-Kinder (`tests/StructureViewTests.cpp`) |
+| Presets (B-93/B-94) | Roundtrip `.bfkapreset`, Modul-Presets, A/B, Sperre (`tests/PresetIOTests.cpp`) |
+| Kick-Länge (B-147) | `shaper` bekommt `60/bpm` bzw. die längste Voice, Finalizer-Latenz wird gemeldet (`tests/RenderLengthTests.cpp`) |
+| CPU je Modul (B-149) | Messung und Budgets, siehe Abschnitt 9.1 (`tests/CpuProfileTests.cpp`) |
 
 ---
 
@@ -460,10 +466,42 @@ Regeln:
 | **O1** | Parameternamen von `filt` sind **nicht** aus dem XML belegt (`CUTOFF`, `RESO`, `DRIVE`, `TYPE`, `SLOPE`, `POLARITY` laut Handbuch) | Preset-Kompatibilität, Proxy-Parameter | B-60: Namen/Reihenfolge am Original verifizieren, dann hier nachtragen |
 | **O2** | ~~Lookahead-Länge des Finalizer-Ceilings (Vorschlag 1,5 ms) und ein „latency-free“-Modus~~ **entschieden**: 1,5 ms Lookahead (`ceil (0.0015 · sampleRate)` = 72 @ 48 kHz, 144 @ 96 kHz), gemeldet über `latencySamples()`; der Prozessor summiert sie per `setLatencySamples()` | Kick-Verschiebung im Raster, Klang | erledigt mit B-67 (Phase 3) |
 | **O3** | Equal-Power-Blende des Convolvers liegt **im Modul** (`wet` gegen Direktsignal); die Ketten-MIX bleibt linear | Mischverhalten bei 50 % | B-66: Equal-Power im Modul, Kette unverändert lassen |
-| **O4** | `mix`/`outGain` springen pro Block (kein Rampen) → Zipper bei Automation | Hörbarkeit bei Automation | Nachrüsten: `applyGainRamp` über den Block (kleine Änderung, additiv) |
+| **O4** | ~~`mix`/`outGain` springen pro Block (kein Rampen) → Zipper bei Automation~~ **behoben (B-148)**: die Kette rampt `mix`/`outGain` sampleweise von `mixCurrent`/`gainCurrent` auf den Zielwert des Blocks; `setChain()`/`reset()` setzen die Rampen auf den gesetzten Wert | Hörbarkeit bei Automation | erledigt mit B-148 (Phase 3) |
 | **O5** | ~~`FxModuleState::data` enthält nur Attribute; Kind-Elemente erreichen das Modul nicht~~ **behoben**: `setChain()` ruft `module->setState (state.data)` (Phase 2) | EQ-Bänder, Kurven, IR-Pfade sind Teil der Module | erledigt für alle zehn Typen (`eq`, `mseq`, `shaper`, `ott`, `reverb`, `dynEq` u. a.) |
-| **O6** | ~~Zustandsübertragung Modul↔Zustand ist einseitig~~ **behoben**: `PluginProcessor::writeBackModuleStates()` merged `module->getState()` in `currentChain.modules[i].data` (skalare Attribute bleiben, gleichnamige Kinder werden ersetzt, `ir` übernommen) | Nach dem Bearbeiten in der UI muss der Zustand zurückgeschrieben werden | erledigt mit B-144 (Phase 3) |
+| **O6** | ~~Zustandsübertragung Modul↔Zustand ist einseitig~~ **behoben**: `PluginProcessor::writeBackModuleStates()` merged `module->getState()` in `currentChain.modules[i].data` (skalare Attribute bleiben, Struktur-Kinder `Band`/`WNode`/`Pt`/`Eq`/`Dc` werden **immer** entfernt und neu geschrieben, `ir` übernommen) | Nach dem Bearbeiten in der UI muss der Zustand zurückgeschrieben werden | erledigt mit B-144 (Phase 3), Lückenschluss mit B-92b |
 | **O7** | ~~Kartenindex ↔ Kettenposition bei unbekannten Typen (`nullptr`)~~ **behoben**: die Karte zeigt Titel aus dem Typ-String und den Hinweis „Für diesen Typ gibt es kein Modul“; der Platz bleibt erhalten | UI darf keine Karte für ein unbekanntes Modul zeichnen | erledigt mit B-90/B-91 (Phase 3) |
 | **O8** | `fxN_pM` → Modulparameter (F2) | Host-Automation je Modul | Nach Modulimplementierung: `params()`-Reihenfolge als Zuordnung festschreiben, `p12 = mix`, `p13` Reserve (Hypothese aus `03-RE-FINDINGS.md`, 3.2) |
 | **O9** | Display zeigt `post` **nach** OUT GAIN, aber **vor** der Latenzkorrektur | Vergleich zweier Displays kann verschoben wirken | Mit B-92 klären, ob die UI latenzkompensiert zeichnet |
 | **O10** | Keine Obergrenze für die Zahl der Module in der Kette | 76 Referenzketten haben max. 8 Module | UI-seitig begrenzen (z. B. 8), Engine bleibt offen |
+
+### 9.1 CPU-Profil je Modul (B-149)
+
+Messung: `tests/CpuProfileTests.cpp`, Windows/MSVC, **Debug**-Build, 48 kHz,
+Blockgröße 128, Median aus drei Läufen über je 400 Blöcke (≈ 1,07 s Audio).
+Wert = Anteil **eines** Kerns. Im Release-Build liegt jeder Wert um Faktor
+3…8 niedriger; die Debug-Budgets sind so gewählt, dass Regressionen auffallen,
+ohne bei Maschinenrauschen zu flackern.
+
+| Modul | Debug (Kette) | Budget Debug | Ziel Release |
+|---|---|---|---|
+| `filt` | 0,4 % | 8 % | < 3 % |
+| `eq` | 0,2 % | 8 % | < 3 % |
+| `mseq` | 0,3 % | 8 % | < 3 % |
+| `dist` | 3,3 % | 15 % | < 3 % (2×-Oversampling) |
+| `shaper` | 0,6 % | 8 % | < 3 % |
+| `trans` | 0,7 % | 8 % | < 3 % |
+| `reverb` (ohne IR) | 0,2 % | 10 % | < 3 % |
+| `final` | 4,7 % | 60 % | < 3 % (4×-Oversampling; Debug-Ausreißer bis 25 %) |
+| `ott` | 2,0 % | 15 % | < 3 % |
+| `dynEq` | 1,3 % | 10 % | < 3 % |
+
+Teure Einzelkonfigurationen (Modul direkt, ohne Kettenpfad):
+
+| Konfiguration | Debug | Budget Debug |
+|---|---|---|
+| `reverb` true stereo, 4-Kanal-IR, 2 s | 82 % | 160 % |
+| `ott` linearphasig (513 Taps @ 48 kHz) | 17 % | 160 % |
+
+> Die Werte sind **maschinenabhängig**. Reißt ein Budget auf einem langsameren
+> Rechner, zuerst den Median prüfen (der Test misst drei Läufe) und das Budget
+> mit Begründung anheben — nicht die Messung entfernen.

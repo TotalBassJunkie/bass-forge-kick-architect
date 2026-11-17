@@ -404,3 +404,16 @@ FxFactory::get().registerType (FxType::midSideEq,
 
 Die `#include`-Pfade sind relativ zu `src` (`target_include_directories(... PRIVATE src)`),
 also `"fx/modules/MidSideEqModule.h"` — im Modul selbst wie in den Tests.
+
+---
+
+## Nachtrag 2026-11-17 (B-92b)
+
+UI-Editor src/ui/editors/MidSideEqView.{h,cpp}: Frequenz-/Gain-Plot
+(20 Hz…20 kHz log, ±18 dB) mit Knoten je Band (Mid ch = 0 blau, Side ch = 1
+gelb), Ziehen ändert /g, Mausrad q, Rechtsklick den kind
+(0 Bell … 5 Notch), Doppelklick auf freie Fläche legt ein Band an, Strg-Klick
+löscht. Darunter WIDTH-Slider und die vier Schalter MID SOLO, SIDE SOLO,
+MID MUTE, SIDE MUTE (Parameter width, msolo, ssolo, mmute, smute).
+Geschrieben wird über setState() + writeBackModuleStates(); dyn bleibt
+unverändert erhalten.

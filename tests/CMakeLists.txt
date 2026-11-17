@@ -1,4 +1,4 @@
-include(FetchContent)
+﻿include(FetchContent)
 
 FetchContent_Declare(Catch2
     GIT_REPOSITORY https://github.com/catchorg/Catch2.git
@@ -38,6 +38,7 @@ target_sources(BFKA_Tests PRIVATE
     SidechainTests.cpp
     RenderLengthTests.cpp
     SmoothingTests.cpp
+    CpuProfileTests.cpp
     PresetIOTests.cpp
     StructureViewTests.cpp
     TestMain.cpp

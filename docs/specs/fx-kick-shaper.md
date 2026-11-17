@@ -346,3 +346,19 @@ registerType (FxType::kickShaper, [] { return std::make_unique<KickShaperModule>
 
 Damit ersetzt das Modul die bisherige `PassThroughModule`-Platzhalter-Registrierung
 für `FxType::kickShaper`.
+
+---
+
+## Nachtrag 2026-11-17 (B-92b, B-147)
+
+* **UI:** src/ui/editors/KickShaperView.{h,cpp} (B-92b). Zeigt die Hüllkurve aus
+  <Pt> als ziehbare Punkte, die tatsächliche Kurve über
+  evaluateEnvelope() (129 Stützstellen), Segmenttyp je Punkt (	, Rechtsklick),
+  Abspielmarke an currentEnvelopePosition() und die Statuszeile
+  LEN <ms> / POS / ENV. Schreiben über setEnvelopePoints() +
+  PluginProcessor::writeBackModuleStates().
+* **Kick-Länge (B-147):** Der Prozessor setzt die Länge jetzt aus dem Renderer
+  (KickRenderer::kickLengthSeconds() = 60/bpm bei KICK LENGTH 1 BEAT, sonst die
+  längste belegte Voice) — nach jedem Ketten-Rebuild, nach einem neuen Kick und
+  nach pplyState() (dort geht das Tempo aus dem Zustand an den Renderer).
+  Abnahme: 	ests/RenderLengthTests.cpp.
