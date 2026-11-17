@@ -98,6 +98,15 @@ public:
     static constexpr float  kParamSmoothMs          = 20.0f;  ///< Glaettung von sPre/sPost/amount
     static constexpr float  kTriggerHighLevel       = 0.01f;  ///< -40 dBFS (Trigger-Schwelle)
     static constexpr float  kTriggerLowLevel        = 0.0031623f; ///< -50 dBFS (Hysterese)
+
+    /**
+     * Mindestdauer unter der Hysterese-Schwelle, bevor neu getriggert wird.
+     *
+     * Ohne diese Sperre wuerde ein gehaltenes Signal (z. B. ein Sinus) bei
+     * jedem Nulldurchgang unter die Schwelle fallen und die Huellkurve
+     * zuruecksetzen — die Umformung waere dann nie zu hoeren.
+     */
+    static constexpr double kRearmHoldSeconds       = 0.01;   ///< 10 ms Stille vor einem neuen Trigger
     static constexpr double kDefaultRenderLengthSeconds = 0.5;///< Vorgabe fuer die Kick-Laenge
     static constexpr double kMinRenderLengthSeconds = 0.05;   ///< 50 ms
     static constexpr double kMaxRenderLengthSeconds = 10.0;   ///< 10 s
@@ -264,6 +273,10 @@ private:
     // Huellkurven-Uhr und Trigger (Audio-Thread)
     double envelopePhase = 0.0;      ///< 0...1
     bool   triggerActive = false;
+
+    /** Samples unter der Hysterese-Schwelle (Sperre fuer neues Triggern). */
+    int    samplesBelowLow = 0;
+    int    rearmHoldSamples = 0;     ///< aus `kRearmHoldSeconds` und der Samplerate
 
     // Parameterziele (Message-/Host-Thread -> Audio-Thread)
     std::atomic<float>  targetPreGain  { 1.0f };

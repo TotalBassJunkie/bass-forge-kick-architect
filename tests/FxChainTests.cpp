@@ -156,6 +156,9 @@ TEST_CASE ("Registry kennt alle Typen und erzeugt Module", "[fx]")
 // ---------------------------------------------------------------------------
 TEST_CASE ("Drei Module mit OUT GAIN 0.5 ergeben 0.125", "[fx]")
 {
+    // Neutraler Kettenplatz mit Pegel ("amount"): ersetzt den frueheren Platzhalter.
+    const ScopedTypeOverride neutralPlaceholder (FxType::finalizer,
+                                               [] { return std::make_unique<PassThroughModule> (FxType::finalizer); });
     FxChain chain;
 
     for (int i = 0; i < 3; ++i)
@@ -183,6 +186,9 @@ TEST_CASE ("Drei Module mit OUT GAIN 0.5 ergeben 0.125", "[fx]")
 
 TEST_CASE ("setChain vor prepare funktioniert ebenfalls", "[fx]")
 {
+    // Neutraler Kettenplatz mit Pegel ("amount"): ersetzt den frueheren Platzhalter.
+    const ScopedTypeOverride neutralPlaceholder (FxType::finalizer,
+                                               [] { return std::make_unique<PassThroughModule> (FxType::finalizer); });
     FxChain chain;
     chain.modules.push_back (makeModule ("final", 1.0f, 0.5f));
 
@@ -208,6 +214,9 @@ TEST_CASE ("setChain vor prepare funktioniert ebenfalls", "[fx]")
 
 TEST_CASE ("Abschaltetes Modul wird uebersprungen", "[fx]")
 {
+    // Neutraler Kettenplatz mit Pegel ("amount"): ersetzt den frueheren Platzhalter.
+    const ScopedTypeOverride neutralPlaceholder (FxType::finalizer,
+                                               [] { return std::make_unique<PassThroughModule> (FxType::finalizer); });
     FxChain chain;
     chain.modules.push_back (makeModule ("final", 1.0f, 1.0f,  true));
     chain.modules.push_back (makeModule ("final", 1.0f, 0.25f, false));   // aus
@@ -227,6 +236,9 @@ TEST_CASE ("Abschaltetes Modul wird uebersprungen", "[fx]")
 
 TEST_CASE ("Ketten-Bypass rechnet kein Modul", "[fx]")
 {
+    // Neutraler Kettenplatz mit Pegel ("amount"): ersetzt den frueheren Platzhalter.
+    const ScopedTypeOverride neutralPlaceholder (FxType::finalizer,
+                                               [] { return std::make_unique<PassThroughModule> (FxType::finalizer); });
     FxChain chain;
     chain.modules.push_back (makeModule ("final", 1.0f, 0.25f));
     chain.bypassAll = true;
@@ -251,6 +263,9 @@ TEST_CASE ("Ketten-Bypass rechnet kein Modul", "[fx]")
 
 TEST_CASE ("MIX blendet trocken und nass", "[fx]")
 {
+    // Neutraler Kettenplatz mit Pegel ("amount"): ersetzt den frueheren Platzhalter.
+    const ScopedTypeOverride neutralPlaceholder (FxType::finalizer,
+                                               [] { return std::make_unique<PassThroughModule> (FxType::finalizer); });
     constexpr float input = 0.25f;
 
     auto state = makeModule ("final", 1.0f, 1.0f);
@@ -296,6 +311,9 @@ TEST_CASE ("MIX blendet trocken und nass", "[fx]")
 // ---------------------------------------------------------------------------
 TEST_CASE ("Unbekannter Modultyp wird uebersprungen", "[fx]")
 {
+    // Neutraler Kettenplatz mit Pegel ("amount"): ersetzt den frueheren Platzhalter.
+    const ScopedTypeOverride neutralPlaceholder (FxType::finalizer,
+                                               [] { return std::make_unique<PassThroughModule> (FxType::finalizer); });
     FxChain chain;
     chain.modules.push_back (makeModule ("final", 1.0f, 0.5f));
     chain.modules.push_back (makeModule ("quatsch", 1.0f, 0.1f));
@@ -326,6 +344,9 @@ TEST_CASE ("Unbekannter Modultyp wird uebersprungen", "[fx]")
 // ---------------------------------------------------------------------------
 TEST_CASE ("Modulattribute aus dem Zustand landen im Modul", "[fx]")
 {
+    // Neutraler Kettenplatz mit Pegel ("amount"): ersetzt den frueheren Platzhalter.
+    const ScopedTypeOverride neutralPlaceholder (FxType::finalizer,
+                                               [] { return std::make_unique<PassThroughModule> (FxType::finalizer); });
     // "final" ist noch mit dem Platzhalter belegt; hier geht es nur um den Weg
     // Zustand -> Modul, nicht um DSP.
     auto state = makeModule ("final", 1.0f, 1.0f);
@@ -354,6 +375,9 @@ TEST_CASE ("Modulattribute aus dem Zustand landen im Modul", "[fx]")
 
 TEST_CASE ("Modulattribute werden auf den deklarierten Bereich geklemmt", "[fx]")
 {
+    // Neutraler Kettenplatz mit Pegel ("amount"): ersetzt den frueheren Platzhalter.
+    const ScopedTypeOverride neutralPlaceholder (FxType::finalizer,
+                                               [] { return std::make_unique<PassThroughModule> (FxType::finalizer); });
     auto state = makeModule ("final", 1.0f, 1.0f);
     setAttribute (state, "amount", 900.0);    // ueber dem Maximum (400)
 
@@ -371,8 +395,8 @@ TEST_CASE ("Modulattribute werden auf den deklarierten Bereich geklemmt", "[fx]"
 
 TEST_CASE ("Echte Module ersetzen die Platzhalter", "[fx]")
 {
-    // Gebaut und in der Factory registriert: eq, dist, trans, filt, reverb,
-    // ott und dynEq. Die uebrigen Typen laufen weiter als Platzhalter.
+    // Alle zehn Typen sind jetzt mit echten Modulen belegt; die ersten
+    // Parameterkennungen stammen aus dem Referenzformat.
     struct Expectation { const char* typeString; const char* firstParam; };
 
     for (const auto& expected : { Expectation { "eq",     "lowgain" },
@@ -381,7 +405,9 @@ TEST_CASE ("Echte Module ersetzen die Platzhalter", "[fx]")
                                   Expectation { "filt",   "type"    },
                                   Expectation { "reverb", "wet"     },
                                   Expectation { "ott",    "depth"   },
-                                  Expectation { "dynEq",  "outGain" } })
+                                  Expectation { "dynEq",  "outGain" },
+                                  Expectation { "mseq",   "midlow"  },
+                                  Expectation { "shaper", "sPre"    } })
     {
         const auto module = FxFactory::get().create (expected.typeString);
         INFO ("Typ " << expected.typeString);
@@ -390,8 +416,8 @@ TEST_CASE ("Echte Module ersetzen die Platzhalter", "[fx]")
         REQUIRE (module->params()[0].id == juce::String (expected.firstParam));
     }
 
-    // Noch nicht gebaute Module fallen weiterhin auf den Platzhalter zurueck.
-    for (const auto& stillStub : { "mseq", "shaper", "final" })
+    // Noch nicht gebaut: nur der Finalizer laeuft als Platzhalter.
+    for (const auto& stillStub : { "final" })
     {
         const auto module = FxFactory::get().create (stillStub);
         INFO ("Typ " << stillStub);
@@ -456,6 +482,9 @@ TEST_CASE ("Latenz wird summiert und beim Ueberspringen gehalten", "[fx]")
 // ---------------------------------------------------------------------------
 TEST_CASE ("Display liefert Ein- und Ausgang je Modul", "[fx]")
 {
+    // Neutraler Kettenplatz mit Pegel ("amount"): ersetzt den frueheren Platzhalter.
+    const ScopedTypeOverride neutralPlaceholder (FxType::finalizer,
+                                               [] { return std::make_unique<PassThroughModule> (FxType::finalizer); });
     FxChain chain;
     chain.modules.push_back (makeModule ("final", 1.0f, 0.5f));
 

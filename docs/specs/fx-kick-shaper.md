@@ -190,6 +190,12 @@ dem Ticket (halten / Spiegel / Stufe).
 * **Hysterese:** re-armiert wird erst unter `kTriggerLowLevel = 0,0031623`
   (−50 dBFS), also 10 dB unter der Triggerschwelle. Damit löst ein einzelner
   Kick genau einen Trigger aus und nicht mehrere.
+* **Sperrzeit `kRearmHoldSeconds = 0,01` s** (10 ms Stille): Erst wenn der Pegel
+  so lange unter der Hysterese-Schwelle bleibt, wird neu armiert. Ohne diese
+  Sperre fällt ein **gehaltenes** Signal (Sinus, DC-Kick, langer Rumble) bei
+  jedem Nulldurchgang unter die Schwelle; die Hüllkurve würde dann zweimal pro
+  Periode neu starten und die Umformung wäre praktisch unhörbar
+  (Befund beim Bau der Tests, siehe auch Test „amount 100 formt das Signal“).
 * Bei jedem Triggerstart wird die Hüllkurven-Position **hart auf 0** gesetzt.
 * Liegt kein Trigger an, **parkt** die Uhr bei Position 0 (der Wert des ersten
   Punkts wirkt dann auch auf leise Vorlauf-Samples). Nach dem Ende der Länge

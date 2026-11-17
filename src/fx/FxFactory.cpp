@@ -6,6 +6,8 @@
 #include "fx/modules/DynamicEqModule.h"
 #include "fx/modules/EqualizerModule.h"
 #include "fx/modules/FiltersModule.h"
+#include "fx/modules/KickShaperModule.h"
+#include "fx/modules/MidSideEqModule.h"
 #include "fx/modules/MultibandModule.h"
 #include "fx/modules/TransientShaperModule.h"
 
@@ -25,9 +27,9 @@ FxFactory::FxFactory()
     // Anzeige-Reihenfolge in availableTypes().
     registerType (FxType::filters,         [] { return std::make_unique<FiltersModule>(); });
     registerType (FxType::equalizer,       [] { return std::make_unique<EqualizerModule>(); });
-    registerType (FxType::midSideEq,       [] { return std::make_unique<PassThroughModule> (FxType::midSideEq); });
+    registerType (FxType::midSideEq,       [] { return std::make_unique<MidSideEqModule>(); });
     registerType (FxType::distortion,      [] { return std::make_unique<DistortionModule>(); });
-    registerType (FxType::kickShaper,      [] { return std::make_unique<PassThroughModule> (FxType::kickShaper); });
+    registerType (FxType::kickShaper,      [] { return std::make_unique<KickShaperModule>(); });
     registerType (FxType::transientShaper, [] { return std::make_unique<TransientShaperModule>(); });
     registerType (FxType::convolver,       [] { return std::make_unique<ConvolverModule>(); });
     registerType (FxType::finalizer,       [] { return std::make_unique<PassThroughModule> (FxType::finalizer); });

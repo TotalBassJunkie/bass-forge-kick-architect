@@ -125,6 +125,9 @@ void KickShaperModule::prepare (double sampleRate, int maxBlockSize)
     preparedSampleRate = (sampleRate > 0.0) ? sampleRate : 48000.0;
     preparedBlockSize  = juce::jmax (1, maxBlockSize);
 
+    // Sperrzeit vor einem neuen Trigger (siehe kRearmHoldSeconds).
+    rearmHoldSamples = juce::jmax (1, (int) std::lround (preparedSampleRate * kRearmHoldSeconds));
+
     // Enthaelt reset(): Uhr, Trigger und Glaettung starten bei jedem prepare()
     // frisch, damit sich nichts aus einem alten Zustand fortschreibt.
     resetInternal();
@@ -139,6 +142,7 @@ void KickShaperModule::resetInternal() noexcept
 {
     envelopePhase = 0.0;
     triggerActive = false;
+    samplesBelowLow = 0;
 
     // Glaettung auf die aktuellen Ziele setzen: nach prepare()/reset() gibt es
     // keine Einlauf-Rampe, und ein Test mit amount == 0 ist ab dem ersten
@@ -241,11 +245,24 @@ void KickShaperModule::process (juce::AudioBuffer<float>& buffer)
         if (triggered)
         {
             if (level < kTriggerLowLevel)
-                triggered = false;   // re-armieren (Hysterese)
+            {
+                // Erst nach einer kurzen Stille neu armieren: ein gehaltenes
+                // Signal laeuft sonst bei jedem Nulldurchgang in die Schwelle.
+                if (++samplesBelowLow >= rearmHoldSamples)
+                {
+                    triggered      = false;
+                    samplesBelowLow = 0;
+                }
+            }
+            else
+            {
+                samplesBelowLow = 0;
+            }
         }
         else if (level >= kTriggerHighLevel)
         {
             triggered = true;
+            samplesBelowLow = 0;
             phase = 0.0;             // jeder Trigger startet an Punkt 0
         }
 

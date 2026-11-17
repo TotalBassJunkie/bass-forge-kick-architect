@@ -86,8 +86,16 @@ namespace
 
     int sampleIndex (double seconds, int numSamples, double sampleRate = kSampleRate)
     {
-        const auto index = (int) std::lround (seconds * sampleRate);
-        return juce::jlimit (0, numSamples, index);
+        if (seconds <= 0.0)
+            return 0;
+
+        const auto samples = seconds * sampleRate;
+
+        // Kein Cast riesiger Werte: alles hinter dem Puffer ist `numSamples`.
+        if (samples >= (double) numSamples)
+            return numSamples;
+
+        return (int) std::lround (samples);
     }
 
     /** RMS eines Kanals zwischen zwei Zeitpunkten (Sekunden). */
@@ -120,6 +128,24 @@ namespace
         float peak = 0.0f;
 
         for (int i = start; i < buffer.getNumSamples(); ++i)
+            peak = juce::jmax (peak, std::abs (buffer.getSample (channel, i)));
+
+        return peak;
+    }
+
+    /** Spitzenbetrag eines Kanals in einem Zeitfenster (Sekunden). */
+    float peakBetween (const juce::AudioBuffer<float>& buffer,
+                       int channel,
+                       double startSeconds,
+                       double endSeconds,
+                       double sampleRate = kSampleRate)
+    {
+        const auto start = sampleIndex (startSeconds, buffer.getNumSamples(), sampleRate);
+        const auto end   = juce::jmax (start, sampleIndex (endSeconds, buffer.getNumSamples(), sampleRate));
+
+        float peak = 0.0f;
+
+        for (int i = start; i < end; ++i)
             peak = juce::jmax (peak, std::abs (buffer.getSample (channel, i)));
 
         return peak;
@@ -495,7 +521,7 @@ TEST_CASE ("Finalizer: Neutralzustand ist nur die Lookahead-Verzoegerung", "[fx]
 
         for (int i = 0; i < total; ++i)
         {
-            const auto value = 0.4f * std::sin (0.01f * (float) i);
+            const auto value = 0.4f * (float) std::sin (0.01f * (float) i);
             stream.setSample (0, i, value);
             stream.setSample (1, i, value);
         }
@@ -803,8 +829,9 @@ TEST_CASE ("Finalizer: Parametersprung erzeugt keinen Sprung im Ausgang", "[fx][
             output.copyFrom (ch, start0, block, ch, 0, numSamples);
     }
 
-    const auto before = peakOf (output, 0, 0.20);
-    const auto after  = peakOf (output, 0, (double) (jumpSample + 2 * kBlockSize) / kSampleRate);
+    const auto before = peakBetween (output, 0, 0.20, (double) jumpSample / kSampleRate);
+    const auto after  = peakBetween (output, 0,
+                                     (double) (jumpSample + 2 * kBlockSize) / kSampleRate, 1.0e9);
 
     // Der Parameter wirkt (Pegel steigt), aber ohne Sprung.
     REQUIRE (after > before * 2.0f);
@@ -855,7 +882,7 @@ TEST_CASE ("Finalizer: Stabilitaet, Stille und Grenzfaelle", "[fx][finalizer]")
             module.process (buffer);
 
             finite = finite && allFinite (buffer);
-            peak = juce::jmax (peak, peakOf (buffer, 0), peakOf (buffer, 1));
+            peak = juce::jmax (peak, juce::jmax (peakOf (buffer, 0), peakOf (buffer, 1)));
         }
 
         REQUIRE (finite);
@@ -888,7 +915,7 @@ TEST_CASE ("Finalizer: Stabilitaet, Stille und Grenzfaelle", "[fx][finalizer]")
         juce::AudioBuffer<float> mono (1, 512);
 
         for (int i = 0; i < 512; ++i)
-            mono.setSample (0, i, 0.8f * std::sin (2.0 * kPi * 100.0 * (double) i / kSampleRate));
+            mono.setSample (0, i, 0.8f * (float) std::sin (2.0 * kPi * 100.0 * (double) i / kSampleRate));
 
         module.process (mono);
 

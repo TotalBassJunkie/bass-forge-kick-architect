@@ -31,7 +31,7 @@ namespace bfka
  * Die Stufen 1 und 2 sind bis 15 Hz hinunter aktiv; der Subsonik-Hochpass
  * laeuft immer mit (Zustand), wird aber nur eingeblendet, wenn mindestens
  * eine Stufe arbeitet - sonst waere der Bypass-Nulltest nicht bitgenau
- * (Spec `docs/specs/fx-finalizer.md`, Abschnitt 7.1).
+ * (Spec `docs/specs/fx-finalizer.md`, Abschnitt 7, O-F1).
  *
  * ## Latenz
  *
@@ -136,7 +136,7 @@ private:
     /** Setzt Filter, Verzoegerungen, Huellkurven und den Limiter zurueck. */
     void resetSignalState() noexcept;
 
-    /** Uebernimmt die Parameterziele in die Glättung (nach prepare()). */
+    /** Uebernimmt die Parameterziele in die Glaettung (nach prepare()). */
     void syncSmoothedToTargets() noexcept;
 
     /** Setzt Shelf- und Crossover-Koeffizienten, wenn sich Werte geaendert haben. */
@@ -156,8 +156,6 @@ private:
     int lookahead       = 0;
     int reportedLatency = 0;
 
-    std::vector<FxParamDesc> descriptors;
-
     // Parameterziele (Message-/Host-Thread -> Audio-Thread), Anzeige-Einheiten
     std::atomic<float> paramTargets[numParams];
 
@@ -171,7 +169,7 @@ private:
     double smoothedShelfMix     = 0.0;   ///< 0...1 Sub-Boost eingeblendet
     double smoothedMonoMix      = 0.0;   ///< 0...1 Mono-Bass eingeblendet
 
-    /** One-Pole-Koeffizient der Parameterglaettung (20 ms), pro Block benutzt. */
+    /** One-Pole-Koeffizient der Parameterglaettung (20 ms), pro Sample benutzt. */
     double paramSmoothCoeff = 1.0;
 
     // Zuletzt gesetzte Koeffizienten (Hysterese, einmal pro Block)

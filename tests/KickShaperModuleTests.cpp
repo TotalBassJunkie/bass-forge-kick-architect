@@ -635,7 +635,7 @@ TEST_CASE ("Kick Shaper: Trigger startet die Huellkurve bei Position 0", "[fx][k
     REQUIRE (module.currentEnvelopeTarget() <= 1.0f);
 
     // Stille re-armiert und parkt die Uhr wieder bei 0.
-    auto silence = makeLevel (0.0f, 64);
+    auto silence = makeLevel (0.0f, (int) (kSampleRate * 0.02));
     module.process (silence);
 
     REQUIRE (! module.isTriggerActive());
@@ -730,7 +730,7 @@ TEST_CASE ("Kick Shaper: Stabilitaet, Stille, Mono und kurze Bloecke", "[fx][kic
     REQUIRE (module.currentEnvelopeTarget() <= 1.0f);
 
     // Stille bleibt Stille (keine Denormals, kein Rauschen).
-    juce::AudioBuffer<float> silence (2, 256);
+    juce::AudioBuffer<float> silence (2, (int) (kSampleRate * 0.02));
     silence.clear();
     module.process (silence);
 
