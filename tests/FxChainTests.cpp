@@ -407,22 +407,14 @@ TEST_CASE ("Echte Module ersetzen die Platzhalter", "[fx]")
                                   Expectation { "ott",    "depth"   },
                                   Expectation { "dynEq",  "outGain" },
                                   Expectation { "mseq",   "midlow"  },
-                                  Expectation { "shaper", "sPre"    } })
+                                  Expectation { "shaper", "sPre"    },
+                                  Expectation { "final",  "boost"   } })
     {
         const auto module = FxFactory::get().create (expected.typeString);
         INFO ("Typ " << expected.typeString);
         REQUIRE (module != nullptr);
         REQUIRE_FALSE (module->params().empty());
         REQUIRE (module->params()[0].id == juce::String (expected.firstParam));
-    }
-
-    // Noch nicht gebaut: nur der Finalizer laeuft als Platzhalter.
-    for (const auto& stillStub : { "final" })
-    {
-        const auto module = FxFactory::get().create (stillStub);
-        INFO ("Typ " << stillStub);
-        REQUIRE (module != nullptr);
-        REQUIRE (module->params()[0].id == "amount");
     }
 }
 

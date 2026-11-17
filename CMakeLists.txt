@@ -71,6 +71,7 @@ set(BFKA_FX_SOURCES
     src/fx/modules/DynamicEqModule.cpp
     src/fx/modules/EqualizerModule.cpp
     src/fx/modules/FiltersModule.cpp
+    src/fx/modules/FinalizerModule.cpp
     src/fx/modules/KickShaperModule.cpp
     src/fx/modules/MidSideEqModule.cpp
     src/fx/modules/MultibandModule.cpp
@@ -114,6 +115,7 @@ set(BFKA_HEADERS
     src/fx/modules/DynamicEqModule.h
     src/fx/modules/EqualizerModule.h
     src/fx/modules/FiltersModule.h
+    src/fx/modules/FinalizerModule.h
     src/fx/modules/KickShaperModule.h
     src/fx/modules/MidSideEqModule.h
     src/fx/modules/MultibandModule.h

@@ -134,6 +134,16 @@ public:
      */
     bool startDemoKick();
 
+    /**
+     * Baut eine hoerbare Demo-Kette (Ticket B-145): Multiband (`ott`),
+     * optional der Convolver mit der zuletzt gewaehlten IR und ein
+     * Dynamic EQ, jeweils mit sinnvollen Werks-Einstellungen.
+     *
+     * Die Kette laeuft ueber `setFxChain()` (Rebuild + PDC). Nur vom
+     * Message-Thread aufrufen.
+     */
+    void loadFxDemoChain();
+
     /** Startet den aktuellen Kick (wie eine Note). */
     void triggerKick();
 

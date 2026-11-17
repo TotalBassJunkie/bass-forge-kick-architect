@@ -73,7 +73,13 @@ private:
 
     juce::TextButton bypassButton { "BYPASS ALL" };
     juce::TextButton clearButton  { "CLEAR" };
+    juce::TextButton demoButton   { "FX-DEMO" };
+    juce::TextButton loopButton   { "LOOP" };
     juce::OwnedArray<juce::TextButton> addButtons;
+
+    /** Loop-Wiedergabe (Demo-Kick alle 1,5 s). */
+    bool   loopEnabled = false;
+    double lastTriggerMs = 0.0;
 
     juce::Rectangle<int> sidebarBounds;
     juce::Rectangle<int> listArea;

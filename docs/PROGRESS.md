@@ -5,6 +5,80 @@ Laufendes Protokoll. Neueste Einträge oben. Format:
 
 ---
 
+## 2026-11-17 — Welle 7: FX-Kette im Prozessor, FX-UI und die letzten drei Module
+
+**Erledigt (Phase 2/3, B-143, B-144, B-90/B-91, B-92, B-145, B-62/B-64/B-67)**
+
+* **B-143 — Prozessor-Verdrahtung und Zustand.** Neu `src/core/FxChainIO.{h,cpp}`:
+  `fxChainToValueTree()`/`fxChainFromValueTree()` halten das `<FxChain>`-Schema
+  an einer Stelle, `KickState` ruft sie auf. `extraState` ist jetzt ein
+  `BFKAKick` (vorher `BFKAExtra`, das `KickState::fromValueTree()` immer
+  ablehnte) — damit tragen `captureState()`/`applyState()` Slots, Rollen, Locks,
+  Sample-Pfade und die komplette FX-Kette verlustfrei. `prepareToPlay()` baut die
+  Kette (`rebuildEngineChain()`) und meldet die Summe der Modullatenzen per
+  `setLatencySamples()`; `setFxChain()` schreibt Zustand + Engine und meldet
+  danach neu. Abnahme: PDC 2304 Samples für `ott` (`linear=1`, 256) +
+  `reverb` (`zeroLat=0`, 2048).
+* **B-144 — Modul-API für die UI.** `setModuleParam`/`getModuleParam`
+  (Anzeige-Einheiten, atomar im Modul, kein Rebuild), `setModuleAttribute`,
+  `setModuleMix`/`setModuleOutGain`/`setModuleEnabled` (Engine **und**
+  `currentChain`), `getModuleDisplay`, `getModule(slot)` sowie
+  `writeBackModuleStates()` (Merge von `getState()` in den Ketten-Zustand,
+  schließt O6). `FxChainProcessor::moduleAt()` als Modulzeiger-Zugriff.
+* **B-90/B-91 — FX-Seite.** Neu `src/ui/`: `UiTheme.h`, `FxChainModel`
+  (Add/Remove/Move/Duplicate ohne GUI), `ModuleCard` (Kopf, MIX/OUT,
+  Wellenform pre/post, Parameter-Raster in Anzeige-Einheiten), `FxPage`
+  (Kettenliste, `+ ADD MODULE`, BYPASS ALL, CLEAR, FX-DEMO, LOOP, Status mit
+  Modulzahl + Latenz). Strukturänderungen laufen über
+  `suspendProcessing(true) … setFxChain(…) … suspendProcessing(false)`,
+  Regler ohne Rebuild. `PluginEditor` hat jetzt die Seiten KICK und FX.
+* **B-92 — Graph-Editoren.** `editors/MultibandView` (drei Bänder, ziehbare
+  Grenzen `x1`/`x2`, GR-Balken je Band), `editors/ConvolverView`
+  (IR-Picker per async FileChooser, EQ-Kurve ±24 dB über 11 Punkte,
+  Decay-Kurve 0,1×…2×, jeweils mit `writeBackModuleStates()` nach dem Ziehen),
+  `editors/DynamicEqView` (vier Bandknoten mit Frequenz/Gain, Mausrad = Q,
+  Rechtsklick = Typ, HP/LP-Kanten, GR-Balken, N1-Hinweis im Footer).
+* **B-62/B-64/B-67 — die letzten drei Module.** `mseq` (Mid/Side-EQ mit
+  Solo/Mute und `<Band ch=0|1>`), `shaper` (Kick Shaper: `<Pt x y t>`-Hüllkurve,
+  8 Segmentmodi, `amount`/`sLine`, Kick-Länge per `setRenderLength`), `final`
+  (Finalizer: Sub-Boost-Shelf, Mono-Bass per LR4, Upward, True-Peak-Clipper mit
+  1,5 ms Lookahead und 4×-Oversampling). Alle drei mit Spec und Tests; Factory
+  und CMake eingetragen — damit sind **alle zehn Modultypen echt**.
+* **B-145 — Demo-Kette.** `PluginProcessor::loadFxDemoChain()` baut
+  Multiband + (nur bei vorhandener IR) Convolver + Dynamic EQ, „FX-DEMO“ baut
+  und startet sie, „LOOP“ triggert alle 1,5 s. Abnahme im Test: Bypass-Nulltest
+  bitgenau, mit Kette messbar anders (RMS > 1 %), Latenz 0, CPU 5,7 % eines
+  Kerns im Debug-Build (Budget ~10 %).
+
+**Behobene Nebenbefunde**
+
+* `ScopedTypeOverride` in `tests/FxChainTests.cpp` stellte den Creator nicht
+  wieder her und ersetzte echte Module dauerhaft durch Platzhalter (fehlende
+  Test-Isolation) — jetzt wird der vorherige Creator gesichert
+  (`FxFactory::creatorFor()`), die Platzhalter-Tests nutzen ihn explizit.
+* Shaper-Trigger: ohne Sperrzeit fiel ein gehaltenes Signal bei jedem
+  Nulldurchgang unter die Hysterese, die Hüllkurve startete zweimal pro Periode
+  neu (`amount=100` war unhörbar). Neu: `kRearmHoldSeconds = 10 ms`.
+* Parameter-Textboxen zeigten die Default-Formatierung, weil
+  `textFromValueFunction` erst nach `setValue` gesetzt wurde; `updateText()`
+  ergänzt. Nicht-ASCII-Literale in UI-Strings durch ASCII ersetzt (MSVC liest
+  die Quellen ohne `/utf-8` in der Systemcodepage).
+
+**Gates:** Build grün (VST3 + Standalone) · **278 Testfälle / 539.262
+Assertions** grün · Doku aktualisiert. Baseline vor der Welle: 212 Testfälle.
+
+**Nächste Schritte**
+
+1. B-146: externer Sidechain für `dynEq` (Bus-Layout, Host-Kompatibilität).
+2. IR-Browser mit User-Directories; Preset-IO (`.bfkapreset`) an die UI binden,
+   A/B-Umschaltung.
+3. Smoothing Härtung: `mix`/`outGain` der Kette rampen (O4), Convolver
+   `wet`/`stereo`/`tone` per-Sample.
+4. CPU-Profile je Modul messen (Budget < 3 % je Modul), Karten-Höhe/Scroll
+   aufräumen (Karten mit vielen Parametern sehr hoch).
+
+---
+
 ## 2026-11-17 — Welle 6: FX-Integration von OTT, TDR Nova und Convology XT
 
 **Erledigt (Phase 2, B-140…B-142)**

@@ -32,6 +32,31 @@ FxPage::FxPage (PluginProcessor& processor)
     clearButton.onClick = [this] { clearChain(); };
     addAndMakeVisible (clearButton);
 
+    demoButton.setColour (juce::TextButton::buttonColourId, ui::theme::accent.withAlpha (0.25f));
+    demoButton.setColour (juce::TextButton::textColourOffId, ui::theme::text);
+    demoButton.onClick = [this]
+    {
+        // Baut die Demokette (Multiband + optional Convolver + Dynamic EQ) und
+        // startet sie einmal, damit man den Unterschied sofort hoert.
+        proc.loadFxDemoChain();
+        syncFromProcessor();
+        proc.triggerKick();
+    };
+    addAndMakeVisible (demoButton);
+
+    loopButton.setColour (juce::TextButton::buttonColourId, ui::theme::panelAlt);
+    loopButton.setColour (juce::TextButton::textColourOffId, ui::theme::textDim);
+    loopButton.onClick = [this]
+    {
+        loopEnabled = ! loopEnabled;
+        lastTriggerMs = juce::Time::getMillisecondCounterHiRes();
+        loopButton.setColour (juce::TextButton::buttonColourId,
+                              loopEnabled ? ui::theme::ok.withAlpha (0.35f) : ui::theme::panelAlt);
+        loopButton.setColour (juce::TextButton::textColourOffId,
+                              loopEnabled ? ui::theme::text : ui::theme::textDim);
+    };
+    addAndMakeVisible (loopButton);
+
     // `+ ADD MODULE`: ein Knopf je registriertem Modultyp.
     for (int i = 0; i < kNumFxTypes; ++i)
     {
@@ -302,6 +327,13 @@ void FxPage::paint (juce::Graphics& g)
     g.setColour (ui::theme::textDim);
     g.drawText ("FX RACK", toolbar.reduced (4, 0), juce::Justification::centredLeft, false);
 
+    // Status rechts: Modulzahl und gemeldete Latenz
+    g.setFont (ui::theme::smallFont());
+    g.setColour (ui::theme::textDim);
+    g.drawText (juce::String (proc.getEngineModuleCount()) + " Module  ·  Latenz "
+                    + juce::String (proc.getLatencySamples()) + " Samples",
+                toolbar.withTrimmedRight (8), juce::Justification::centredRight, false);
+
     paintSidebar (g);
 }
 
@@ -314,6 +346,8 @@ void FxPage::resized()
 
     bypassButton.setBounds (toolbar.removeFromLeft (110).reduced (1));
     clearButton.setBounds (toolbar.removeFromLeft (70).reduced (1));
+    demoButton.setBounds (toolbar.removeFromLeft (86).reduced (1));
+    loopButton.setBounds (toolbar.removeFromLeft (56).reduced (1));
 
     sidebarBounds = area.removeFromLeft (ui::theme::sidebarWidth).reduced (0, 2);
     resizedSidebar();

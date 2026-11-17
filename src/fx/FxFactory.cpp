@@ -6,6 +6,7 @@
 #include "fx/modules/DynamicEqModule.h"
 #include "fx/modules/EqualizerModule.h"
 #include "fx/modules/FiltersModule.h"
+#include "fx/modules/FinalizerModule.h"
 #include "fx/modules/KickShaperModule.h"
 #include "fx/modules/MidSideEqModule.h"
 #include "fx/modules/MultibandModule.h"
@@ -32,7 +33,7 @@ FxFactory::FxFactory()
     registerType (FxType::kickShaper,      [] { return std::make_unique<KickShaperModule>(); });
     registerType (FxType::transientShaper, [] { return std::make_unique<TransientShaperModule>(); });
     registerType (FxType::convolver,       [] { return std::make_unique<ConvolverModule>(); });
-    registerType (FxType::finalizer,       [] { return std::make_unique<PassThroughModule> (FxType::finalizer); });
+    registerType (FxType::finalizer,       [] { return std::make_unique<FinalizerModule>(); });
     registerType (FxType::multiband,       [] { return std::make_unique<MultibandModule>(); });
     registerType (FxType::dynamicEq,       [] { return std::make_unique<DynamicEqModule>(); });
 }

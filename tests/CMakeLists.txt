@@ -21,6 +21,7 @@ target_sources(BFKA_Tests PRIVATE
     DistortionModuleTests.cpp
     EqualizerModuleTests.cpp
     FiltersModuleTests.cpp
+    FinalizerModuleTests.cpp
     TransientShaperModuleTests.cpp
     MultibandModuleTests.cpp
     ConvolverModuleTests.cpp
@@ -33,6 +34,7 @@ target_sources(BFKA_Tests PRIVATE
     ModuleStateRoundtripTests.cpp
     FxChainModelTests.cpp
     FxPageTests.cpp
+    FxDemoChainTests.cpp
     TestMain.cpp
     ../src/core/Version.cpp
     ../src/core/Log.cpp
@@ -53,6 +55,7 @@ target_sources(BFKA_Tests PRIVATE
     ../src/fx/modules/DynamicEqModule.cpp
     ../src/fx/modules/EqualizerModule.cpp
     ../src/fx/modules/FiltersModule.cpp
+    ../src/fx/modules/FinalizerModule.cpp
     ../src/fx/modules/KickShaperModule.cpp
     ../src/fx/modules/MidSideEqModule.cpp
     ../src/fx/modules/MultibandModule.cpp

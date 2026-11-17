@@ -132,6 +132,114 @@ void PluginProcessor::triggerKick()
     renderer.noteOn();
 }
 
+namespace
+{
+    /** Neuer Kettenplatz mit Werkswerten (kein `data`: Modul-Defaults gelten). */
+    FxModuleState makeDemoModule (const juce::String& type)
+    {
+        FxModuleState state;
+        state.type    = type;
+        state.enabled = true;
+        state.mix     = 1.0f;
+        state.outGain = 1.0f;
+        state.data    = juce::ValueTree (juce::Identifier ("Module"));
+        return state;
+    }
+
+    /** Setzt ein Attribut in Anzeige-Einheiten (wie im Referenz-XML). */
+    void setDemoAttribute (FxModuleState& state, const juce::String& id, double value)
+    {
+        if (! state.data.isValid())
+            state.data = juce::ValueTree (juce::Identifier ("Module"));
+
+        state.data.setProperty (juce::Identifier (id), juce::var (value), nullptr);
+    }
+} // namespace
+
+void PluginProcessor::loadFxDemoChain()
+{
+    FxChain chain;
+
+    // 1) Multiband: deutliche Dynamik, Linearphase aus (Latenz 0).
+    auto multiband = makeDemoModule ("ott");
+    setDemoAttribute (multiband, "depth",   80.0);
+    setDemoAttribute (multiband, "time",    45.0);
+    setDemoAttribute (multiband, "upwdStr", 60.0);
+    setDemoAttribute (multiband, "dnwdStr", 100.0);
+    setDemoAttribute (multiband, "thL",     -30.0);
+    setDemoAttribute (multiband, "thM",     -28.0);
+    setDemoAttribute (multiband, "thH",     -26.0);
+    chain.modules.push_back (std::move (multiband));
+
+    // 2) Convolver nur, wenn eine IR vorhanden ist. IRs werden nicht
+    //    mitgeliefert; eine bereits gewaehlte IR der aktuellen Kette wird
+    //    weiterverwendet.
+    juce::String irPath;
+
+    for (const auto& module : currentChain.modules)
+    {
+        if (module.type != "reverb")
+            continue;
+
+        const auto ir = module.data.getProperty (juce::Identifier ("ir"));
+
+        if (ir.isString() && ir.toString().isNotEmpty())
+        {
+            irPath = ir.toString();
+            break;
+        }
+    }
+
+    if (irPath.isNotEmpty())
+    {
+        auto convolver = makeDemoModule ("reverb");
+        convolver.data.setProperty (juce::Identifier ("ir"), irPath, nullptr);
+        setDemoAttribute (convolver, "wet",      30.0);
+        setDemoAttribute (convolver, "predelay", 20.0);
+        setDemoAttribute (convolver, "stereo",   110.0);
+        chain.modules.push_back (std::move (convolver));
+    }
+
+    // 3) Dynamic EQ: Low-Shelf an, eine Bell-Absenkung und eine Bell-Anhebung
+    //    mit Dynamik, High-Shelf leicht an.
+    auto dynamicEq = makeDemoModule ("dynEq");
+
+    setDemoAttribute (dynamicEq, "b1_active", 1.0);
+    setDemoAttribute (dynamicEq, "b1_type",   1.0);      // Low-Shelf
+    setDemoAttribute (dynamicEq, "b1_freq",   60.0);
+    setDemoAttribute (dynamicEq, "b1_gain",   5.0);
+
+    setDemoAttribute (dynamicEq, "b2_active",  1.0);
+    setDemoAttribute (dynamicEq, "b2_type",    0.0);     // Bell
+    setDemoAttribute (dynamicEq, "b2_freq",    400.0);
+    setDemoAttribute (dynamicEq, "b2_gain",    -4.0);
+    setDemoAttribute (dynamicEq, "b2_dyn",     1.0);
+    setDemoAttribute (dynamicEq, "b2_split",   1.0);
+    setDemoAttribute (dynamicEq, "b2_thresh",  -24.0);
+    setDemoAttribute (dynamicEq, "b2_ratio",   3.0);
+
+    setDemoAttribute (dynamicEq, "b3_active", 1.0);
+    setDemoAttribute (dynamicEq, "b3_type",   0.0);
+    setDemoAttribute (dynamicEq, "b3_freq",   3000.0);
+    setDemoAttribute (dynamicEq, "b3_gain",   4.0);
+    setDemoAttribute (dynamicEq, "b3_dyn",    1.0);
+    setDemoAttribute (dynamicEq, "b3_thresh", -26.0);
+    setDemoAttribute (dynamicEq, "b3_ratio",  2.0);
+
+    setDemoAttribute (dynamicEq, "b4_active", 1.0);
+    setDemoAttribute (dynamicEq, "b4_type",   2.0);      // High-Shelf
+    setDemoAttribute (dynamicEq, "b4_freq",   8000.0);
+    setDemoAttribute (dynamicEq, "b4_gain",   3.0);
+
+    setDemoAttribute (dynamicEq, "outGain", 0.0);
+    chain.modules.push_back (std::move (dynamicEq));
+
+    setFxChain (chain);
+
+    log::i ("FX-Demo-Kette: " + juce::String ((int) chain.modules.size())
+            + " Module, Latenz " + juce::String (getLatencySamples()) + " Samples");
+}
+
 bool PluginProcessor::startDemoKick()
 {
     if (! contentRoot.isDirectory())
