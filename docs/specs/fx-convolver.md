@@ -80,6 +80,8 @@ IR-Datei (WAV/AIF, 1/2/4 Kanäle)
 
 ### 3.1 Faltung
 
+* Ohne geladene IR ist das Modul **neutral**: der Eingang wird unverändert
+  durchgereicht (kein Pegelverlust, keine Faltung).
 * `juce::dsp::Convolution` mit **Zero-Latency-Kopf** (non-uniform, Kopflänge
   1024). `zeroLat = 0` verwendet die feste Latenz 2048 Samples (CPU-sparsamer).
 * **Stereo:** zwei IR-Kanäle (L→L, R→R).

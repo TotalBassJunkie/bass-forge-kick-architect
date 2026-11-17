@@ -80,9 +80,11 @@ In Gain
   kaskadierte Butterworth-2-Stufen (`Q = 0.7071`).
   `cleanXov = 1` schaltet auf **LR 8. Ordnung** (vier Stufen) für eine
   steilere Trennung.
-* **`linear = 1`:** linearphasiger FIR-Split, 513 Taps, Hann-Fenster,
-  DC-normierter Sinc. Die Bänder rekonstruieren das Eingangssignal
-  **exakt** (`Low + Mid + High == Eingang`, um die Gruppenlaufzeit verzögert).
+* **`linear = 1`:** linearphasiger FIR-Split, fensterter Sinc mit Hann-Fenster.
+  Die Fensterlänge beträgt ≈ 10,7 ms, also **513 Taps bei 48 kHz** (511…2049
+  Taps, mit der Samplerate skaliert), DC-normiert. Die Bänder rekonstruieren
+  das Eingangssignal **exakt** (`Low + Mid + High == Eingang`, um die
+  Gruppenlaufzeit verzögert).
 
 ### 3.2 Dynamik
 
@@ -102,7 +104,7 @@ Je Band ein peak-basierter, stereo-gekoppelter Hüllkurvenfolger:
 | Modus | Latenz |
 |---|---|
 | Minimum-Phase | 0 Samples |
-| Linearphase (513 Taps) | **(513−1)/2 = 256 Samples** |
+| Linearphase (513 Taps bei 48 kHz) | **(Taps−1)/2 = 256 Samples** (bei 48 kHz) |
 
 Die Latenz wird über `latencySamples()` gemeldet; ein Umschalten von
 `linear` ändert sie. Der Host/PDC-Ausgleich muss nach einem erneuten

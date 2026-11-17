@@ -63,8 +63,12 @@ public:
     static constexpr int numBands    = 3;
     static constexpr int maxChannels = 2;
 
-    /** Taps des linearphasigen FIR-Splits (ungerade). */
+    /** Taps des linearphasigen FIR-Splits bei 48 kHz (ungerade). */
     static constexpr int linearPhaseTaps = 513;
+
+    /** Grenzen der linearphasigen Fensterlaenge (unabhaengig von der Samplerate). */
+    static constexpr int multibandMinLinearTaps = 511;
+    static constexpr int multibandMaxLinearTaps = 2049;
 
     MultibandModule();
 

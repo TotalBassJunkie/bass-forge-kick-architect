@@ -918,6 +918,10 @@ void ConvolverModule::process (juce::AudioBuffer<float>& buffer)
         delete kernel;
     }
 
+    // Ohne IR ist der Convolver neutral (Durchreichen, kein Pegelverlust).
+    if (! hasImpulseResponse())
+        return;
+
     // ---- 1. Parameter glaetten -------------------------------------------
     const double smoothing = smoothingCoefficient (numSamples, kParameterSmoothingMs);
 

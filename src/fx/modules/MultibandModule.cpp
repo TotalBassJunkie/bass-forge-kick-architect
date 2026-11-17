@@ -73,7 +73,14 @@ void MultibandModule::prepare (double newSampleRate, int newMaxBlockSize)
     sampleRate   = (newSampleRate > 0.0) ? newSampleRate : 48000.0;
     maxBlockSize = juce::jmax (1, newMaxBlockSize);
 
-    linearPhase.taps = linearPhaseTaps;
+    // Linearphasiger Split: ~10,7 ms Fenster (513 Taps bei 48 kHz), damit die
+    // Crossover-Aufloesung auch bei 96 kHz brauchbar bleibt.
+    int desiredTaps = (int) std::lround (sampleRate * 0.0106875);
+
+    if (desiredTaps % 2 == 0)
+        ++desiredTaps;
+
+    linearPhase.taps = juce::jlimit (multibandMinLinearTaps, multibandMaxLinearTaps, desiredTaps);
 
     for (int ch = 0; ch < maxChannels; ++ch)
     {
