@@ -1,0 +1,102 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  JUCE_VERSION: '8.0.7'
+
+jobs:
+  windows:
+    name: Windows (VST3 + Standalone)
+    runs-on: windows-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: MSVC-Umgebung
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: JUCE cachen
+        id: juce-cache
+        uses: actions/cache@v4
+        with:
+          path: _extern/JUCE
+          key: juce-${{ env.JUCE_VERSION }}-${{ runner.os }}
+
+      - name: JUCE holen
+        if: steps.juce-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          git clone --depth 1 --branch $env:JUCE_VERSION `
+            https://github.com/juce-framework/JUCE.git _extern/JUCE
+
+      - name: Konfigurieren
+        shell: pwsh
+        run: |
+          cmake -S . -B build -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DBFKA_JUCE_SOURCE_DIR="${{ github.workspace }}/_extern/JUCE" `
+            -DBFKA_BUILD_TESTS=ON
+
+      - name: Bauen
+        shell: pwsh
+        run: cmake --build build --config Release
+
+      - name: Unit-Tests
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem build -Recurse -Filter BFKA_Tests.exe | Select-Object -First 1
+          if (-not $exe) { throw 'BFKA_Tests.exe nicht gefunden' }
+          & $exe.FullName
+
+      - name: Artefakte sammeln
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          $art = 'build/BassForgeKickArchitect_artefacts/Release'
+          if (Test-Path "$art/VST3")       { Copy-Item -Recurse "$art/VST3" dist/ }
+          if (Test-Path "$art/Standalone") { Copy-Item -Recurse "$art/Standalone" dist/ }
+          Get-ChildItem dist -Recurse | Select-Object FullName
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BassForgeKickArchitect-windows-x64
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    name: Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: windows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: BassForgeKickArchitect-windows-x64
+          path: dist
+
+      - name: ZIP packen
+        run: |
+          cd dist
+          zip -r ../BassForgeKickArchitect-windows-x64.zip .
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: BassForgeKickArchitect-windows-x64.zip
+          generate_release_notes: true
