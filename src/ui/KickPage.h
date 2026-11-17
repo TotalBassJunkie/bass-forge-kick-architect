@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include <array>
 #include <memory>
 #include <vector>
 
@@ -44,6 +45,9 @@ class KickVisualizer final : public juce::Component
 public:
     enum class ViewMode { parts, sum };
 
+    /** Stuetzpunkte der Summen-Kurve (feste Groesse: kein Allokieren im Paint). */
+    static constexpr int kSumBuckets = 512;
+
     explicit KickVisualizer (PluginProcessor& processor);
     ~KickVisualizer() override = default;
 
@@ -60,11 +64,11 @@ public:
 
 private:
     void paintParts (juce::Graphics& g, juce::Rectangle<int> area) const;
-    void paintSum (juce::Graphics& g, juce::Rectangle<int> area) const;
+    void paintSum (juce::Graphics& g, juce::Rectangle<int> area);
     void paintGrid (juce::Graphics& g, juce::Rectangle<int> area) const;
 
-    /** Summenhuelle ueber das Fenster [0, kickLength], 0..1 skaliert. */
-    void buildSumCurve (std::vector<float>& out) const;
+    /** Summenhuelle ueber das Fenster [0, kickLength] in `sumCurve`. */
+    void buildSumCurve();
 
     PluginProcessor& proc;
     ViewMode mode = ViewMode::parts;
@@ -73,6 +77,9 @@ private:
     KickState snapshot;
     double    kickLength = 1.0;
     double    beatLength = 0.4;
+
+    /** Arbeitspuffer der Summen-Kurve. */
+    std::array<float, (size_t) kSumBuckets> sumCurve {};
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (KickVisualizer)
 };
@@ -155,6 +162,9 @@ private:
 
     juce::String statusText;
     bool         statusIsError = false;
+
+    /** Zeitpunkt der letzten Statusmeldung (die Zeile raeumt sich selbst). */
+    double statusSetMs = 0.0;
 
     bool   loopEnabled = false;
     double lastTriggerMs = 0.0;

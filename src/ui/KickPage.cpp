@@ -19,8 +19,8 @@ namespace
     constexpr int kColumns = 3;
     constexpr int kCardGap = 8;
 
-    /** Anzahl der Stuetzpunkte der Summen-Kurve. */
-    constexpr int kSumBuckets = 512;
+    /** Nach dieser Zeit verschwindet eine Statusmeldung wieder (ms). */
+    constexpr double kStatusTimeoutMs = 6000.0;
 
     /** dB -> linear (wie im Assembler). */
     float dbToLinear (float db)
@@ -125,9 +125,11 @@ void KickVisualizer::setViewMode (ViewMode newMode)
     repaint();
 }
 
-void KickVisualizer::buildSumCurve (std::vector<float>& out) const
+void KickVisualizer::buildSumCurve ()
 {
-    out.assign ((size_t) kSumBuckets, 0.0f);
+    sumCurve.fill (0.0f);
+
+    constexpr auto kBuckets = kSumBuckets;
 
     if (! (kickLength > 0.0))
         return;
@@ -202,9 +204,9 @@ void KickVisualizer::buildSumCurve (std::vector<float>& out) const
                 continue;
 
             const auto index = (size_t) juce::jlimit (
-                0, kSumBuckets - 1, (int) ((double) kickTime / kickLength * (double) kSumBuckets));
+                0, kBuckets - 1, (int) ((double) kickTime / kickLength * (double) kBuckets));
 
-            out[index] += value * gain;
+            sumCurve[index] += value * gain;
         }
     }
 }
@@ -321,14 +323,13 @@ void KickVisualizer::paintParts (juce::Graphics& g, juce::Rectangle<int> area) c
     }
 }
 
-void KickVisualizer::paintSum (juce::Graphics& g, juce::Rectangle<int> area) const
+void KickVisualizer::paintSum (juce::Graphics& g, juce::Rectangle<int> area)
 {
-    std::vector<float> curve;
-    buildSumCurve (curve);
+    buildSumCurve ();
 
     auto peak = 0.0f;
 
-    for (const auto value : curve)
+    for (const auto value : sumCurve)
         peak = juce::jmax (peak, value);
 
     if (peak <= 0.0f)
@@ -346,7 +347,7 @@ void KickVisualizer::paintSum (juce::Graphics& g, juce::Rectangle<int> area) con
 
     for (int i = 0; i < kSumBuckets; ++i)
     {
-        const auto value = juce::jlimit (0.0f, 1.0f, curve[(size_t) i] / peak);
+        const auto value = juce::jlimit (0.0f, 1.0f, sumCurve[(size_t) i] / peak);
         const auto x = (float) area.getX() + (float) i * width;
         const auto h = juce::jmax (1.0f, value * halfH);
 
@@ -522,6 +523,7 @@ void KickPage::setStatus (const juce::String& text, bool isError)
 {
     statusText    = text;
     statusIsError = isError;
+    statusSetMs   = juce::Time::getMillisecondCounterHiRes ();
     repaint (statusArea);
 }
 
@@ -575,6 +577,15 @@ void KickPage::timerCallback()
 {
     if (! isShowing())
         return;
+
+    // Meldungen verschwinden wieder, damit die Zusammenfassung sichtbar wird.
+    if (statusText.isNotEmpty()
+        && juce::Time::getMillisecondCounterHiRes () - statusSetMs > kStatusTimeoutMs)
+    {
+        statusText.clear ();
+        statusIsError = false;
+        repaint (statusArea);
+    }
 
     syncFromProcessor();
 
