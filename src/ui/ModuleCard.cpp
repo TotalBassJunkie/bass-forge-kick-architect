@@ -224,6 +224,21 @@ void ModuleCard::buildControls()
     for (auto& knob : knobs)
         knob->updateText();
 
+    // --- Seitensteuerung (B-151) -----------------------------------------
+    styleMiniButton (prevPageButton);
+    styleMiniButton (nextPageButton);
+    styleCaption (pageLabel, "");
+
+    prevPageButton.onClick = [this] { setPage (pageIndex - 1); };
+    nextPageButton.onClick = [this] { setPage (pageIndex + 1); };
+
+    addAndMakeVisible (prevPageButton);
+    addAndMakeVisible (nextPageButton);
+    addAndMakeVisible (pageLabel);
+
+    applyPageVisibility();
+    updatePageControls();
+
     updatePowerLook();
 }
 
@@ -240,16 +255,67 @@ void ModuleCard::updatePowerLook()
                            enabled ? ui::theme::text : ui::theme::textDim);
 }
 
+int ModuleCard::pageCount() const
+{
+    // Mindestens eine Seite, auch wenn ein Typ gar keine Parameter hat.
+    const int numParams = (int) descriptors.size();
+    return juce::jmax (1, (numParams + paramsPerPage - 1) / paramsPerPage);
+}
+
+void ModuleCard::setPage (int newPage)
+{
+    // Der Member heisst wie im Vertrag beschrieben `pageIndex`; der Parameter
+    // heisst `newPage`, damit er ihn nicht verdeckt.
+    pageIndex = juce::jlimit (0, pageCount() - 1, newPage);
+
+    applyPageVisibility();
+    updatePageControls();
+    resized();
+    repaint();
+}
+
+void ModuleCard::applyPageVisibility()
+{
+    // Nur die Regler der aktuellen Seite sind sichtbar; die uebrigen bleiben
+    // unsichtbar im Hintergrund und werden von `refresh()` weiter gepflegt.
+    for (size_t i = 0; i < knobs.size(); ++i)
+    {
+        const bool visible = ((int) i / paramsPerPage) == pageIndex;
+        knobs[i]->setVisible (visible);
+    }
+}
+
+void ModuleCard::updatePageControls()
+{
+    const int pages = pageCount();
+
+    pageLabel.setText ("SEITE " + juce::String (pageIndex + 1) + "/" + juce::String (pages),
+                       juce::dontSendNotification);
+
+    const bool paged = pages > 1;
+
+    prevPageButton.setVisible (paged);
+    nextPageButton.setVisible (paged);
+    pageLabel.setVisible (paged);
+
+    prevPageButton.setEnabled (pageIndex > 0);
+    nextPageButton.setEnabled (pageIndex < pages - 1);
+}
+
 int ModuleCard::preferredHeight() const
 {
-    const int knobRows = descriptors.empty()
-                             ? 0
-                             : ((int) descriptors.size() + kColumns - 1) / kColumns;
+    // B-151: nur die Regler der aktuellen Seite bestimmen die Hoehe.
+    const int visibleCount = juce::jmin ((int) descriptors.size(), paramsPerPage);
+    const int knobRows = visibleCount == 0 ? 0 : (visibleCount + kColumns - 1) / kColumns;
 
     int height = kPadding + kHeaderHeight + 6 + kMixRowHeight + 6;
 
     if (structureView != nullptr)
         height += structureView->preferredHeight() + 6;
+
+    // B-151: die Seitenzeile belegt zusaetzlich Platz, wenn es mehr als eine gibt.
+    if (pageCount() > 1)
+        height += 18 + 4;
 
     height += kDisplayHeight + 8 + knobRows * kKnobHeight + kPadding;
 
@@ -282,6 +348,16 @@ void ModuleCard::resized()
 
     area.removeFromTop (6);
 
+    // Seitensteuerung (B-151): nur bei mehr als einer Parameter-Seite.
+    if (pageCount() > 1)
+    {
+        auto pageRow = area.removeFromTop (18);
+        prevPageButton.setBounds (pageRow.removeFromLeft (44).reduced (1));
+        nextPageButton.setBounds (pageRow.removeFromLeft (44).reduced (1));
+        pageLabel.setBounds (pageRow.removeFromLeft (110));
+        area.removeFromTop (4);
+    }
+
     // Struktur-Editor
     if (structureView != nullptr)
     {
@@ -292,10 +368,11 @@ void ModuleCard::resized()
     // Wellenform
     area.removeFromTop (kDisplayHeight + 8);
 
-    // Parameter-Raster
+    // Parameter-Raster. Alle Regler werden gelayoutet, die der anderen Seiten
+    // mit negativem Zeilenversatz; sichtbar ist immer nur die aktuelle Seite.
     for (size_t i = 0; i < knobs.size(); ++i)
     {
-        const int row = (int) i / kColumns;
+        const int row = ((int) i / kColumns) - (pageIndex * (paramsPerPage / kColumns));
         const int col = (int) i % kColumns;
 
         const int cellWidth  = juce::jmax (60, (getWidth() - 2 * kPadding) / kColumns);
@@ -342,6 +419,9 @@ void ModuleCard::refresh()
 
     if (structureView != nullptr)
         structureView->refresh();
+
+    // B-151: die Sichtbarkeit gehoert der Seite, nicht dem Wert-Update.
+    applyPageVisibility();
 
     repaint();
 }
@@ -405,6 +485,23 @@ void ModuleCard::paintDisplay (juce::Graphics& g, juce::Rectangle<int> area)
     g.drawHorizontalLine ((int) inner.getCentreY(), inner.getX(), inner.getRight());
 }
 
+void ModuleCard::paintKnobLabels (juce::Graphics& g)
+{
+    g.setFont (ui::theme::smallFont());
+    g.setColour (ui::theme::textDim);
+
+    for (size_t i = 0; i < knobs.size() && i < descriptors.size() && i < knobAreas.size(); ++i)
+    {
+        // B-151: Namen nur fuer die Regler der aktuellen Seite zeichnen.
+        if (! knobs[i]->isVisible())
+            continue;
+
+        g.drawText (descriptors[i].name,
+                    knobAreas[i].withHeight (kLabelHeight),
+                    juce::Justification::centred, false);
+    }
+}
+
 void ModuleCard::paint (juce::Graphics& g)
 {
     auto bounds = getLocalBounds().toFloat();
@@ -434,20 +531,18 @@ void ModuleCard::paint (juce::Graphics& g)
     area.removeFromTop (kMixRowHeight);
     area.removeFromTop (6);
 
+    // Seitensteuerung (B-151): muss zum Layout in `resized()` passen.
+    if (pageCount() > 1)
+        area.removeFromTop (18 + 4);
+
     if (structureView != nullptr)
         area.removeFromTop (structureView->preferredHeight() + 6);
 
     paintDisplay (g, area.removeFromTop (kDisplayHeight));
     area.removeFromTop (8);
 
-    // Parameter-Namen ueber den Reglern
-    g.setFont (ui::theme::smallFont());
-    g.setColour (ui::theme::textDim);
-
-    for (size_t i = 0; i < knobs.size() && i < descriptors.size() && i < knobAreas.size(); ++i)
-        g.drawText (descriptors[i].name,
-                    knobAreas[i].withHeight (kLabelHeight),
-                    juce::Justification::centred, false);
+    // Parameter-Namen ueber den Reglern (nur aktuelle Seite, siehe B-151)
+    paintKnobLabels (g);
 
     if (descriptors.empty())
     {

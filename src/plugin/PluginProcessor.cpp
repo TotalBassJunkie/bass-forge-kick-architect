@@ -124,6 +124,16 @@ int PluginProcessor::getSidechainChannels() const noexcept
     return 0;
 }
 
+double PluginProcessor::getTailLengthSeconds() const
+{
+    // B-150: Kick-Laenge plus der Nachhall der FX-Kette. Der Host nutzt den
+    // Wert, um die Spur nach dem letzten Event nicht abzuschneiden. Die Kette
+    // ist seriell, deshalb addieren sich die Modul-Tails.
+    const double total = renderer.kickLengthSeconds() + fxChain.tailSeconds();
+
+    return juce::jlimit (0.05, 60.0, total);
+}
+
 void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
 {
     juce::ScopedNoDenormals noDenormals;

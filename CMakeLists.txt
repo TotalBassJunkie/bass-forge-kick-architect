@@ -83,6 +83,7 @@ set(BFKA_LIBRARY_SOURCES
     src/library/SampleLibrary.cpp
     src/library/StyleModel.cpp
     src/library/RandomizerEngine.cpp
+    src/library/ImpulseLibrary.cpp
     )
 
 set(BFKA_UI_SOURCES
@@ -135,6 +136,7 @@ set(BFKA_HEADERS
     src/library/SampleLibrary.h
     src/library/StyleModel.h
     src/library/RandomizerEngine.h
+    src/library/ImpulseLibrary.h
     src/plugin/PluginProcessor.h
     src/plugin/PluginEditor.h
     src/ui/UiTheme.h

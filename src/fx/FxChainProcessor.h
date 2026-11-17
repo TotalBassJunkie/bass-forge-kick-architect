@@ -111,6 +111,12 @@ public:
     int totalLatencySamples() const noexcept { return cachedLatency; }
 
     /**
+     * Summe der Nachhallzeiten aller Module in Sekunden (B-150).
+     * Die Kette ist seriell, die Tails addieren sich.
+     */
+    double tailSeconds() const;
+
+    /**
      * Verzoegerung, mit der der externe Sidechain an Kettenplatz `moduleIndex`
      * ankommt (Summe der Latenzen der Vormodule). Nur Diagnose/Anzeige.
      */

@@ -13,6 +13,11 @@ namespace
     constexpr int kIrRowHeight = 28;
     constexpr int kCaptionHeight = 14;
 
+    /** IR-Browser unter der IR-Zeile (Ticket B-152). */
+    constexpr int kIrListGap    = 4;
+    constexpr int kIrListHeight = 70;
+    constexpr int kIrListBlock  = kIrListHeight + kIrListGap;
+
     constexpr double kEqMinDb   = -24.0;
     constexpr double kEqMaxDb   =  24.0;
     constexpr double kDecayMin  = 0.1;
@@ -30,7 +35,80 @@ ConvolverView::ConvolverView (PluginProcessor& processor, int slotIndex)
     irButton.onClick = [this] { chooseImpulseResponse(); };
     addAndMakeVisible (irButton);
 
+    // IR-Browser: nur der User-Ordner, kein Factory-Ordner vorgegeben.
+    impulseLibrary.scan();
+
+    irListModel = std::make_unique<IrListModel> (*this);
+    irList.setModel (irListModel.get());
+    irList.setRowHeight (18);
+    irList.setColour (juce::ListBox::backgroundColourId, ui::theme::panelAlt);
+    addAndMakeVisible (irList);
+
+    irListRowCount = (int) impulseLibrary.entries().size();
+    irList.updateContent();
+
     readCurvesFromModule();
+}
+
+// ---------------------------------------------------------------------------
+// IR-Browser (Ticket B-152)
+// ---------------------------------------------------------------------------
+int ConvolverView::IrListModel::getNumRows()
+{
+    return (int) owner.impulseLibrary.entries().size();
+}
+
+void ConvolverView::IrListModel::paintListBoxItem (int row, juce::Graphics& g,
+                                                   int w, int h, bool selected)
+{
+    const auto& entries = owner.impulseLibrary.entries();
+
+    if (row < 0 || row >= (int) entries.size())
+        return;
+
+    const auto& entry = entries[(size_t) row];
+
+    if (selected)
+        g.fillAll (ui::theme::accent.withAlpha (0.18f));
+
+    g.setFont (ui::theme::smallFont());
+    g.setColour (selected ? ui::theme::text
+                          : (entry.factory ? ui::theme::textDim : ui::theme::text));
+
+    auto area = juce::Rectangle<int> (0, 0, w, h).reduced (4, 0);
+
+    g.drawText (entry.name, area.removeFromLeft (juce::jmax (0, area.getWidth() - 46)),
+                juce::Justification::centredLeft, true);
+
+    g.setColour (ui::theme::textDim);
+    g.drawText (juce::String (entry.seconds, 2) + " s",
+                juce::Rectangle<int> (0, 0, w, h).reduced (4, 0),
+                juce::Justification::centredRight, false);
+}
+
+void ConvolverView::IrListModel::listBoxItemDoubleClicked (int row, const juce::MouseEvent&)
+{
+    owner.applyImpulseEntry (row);
+}
+
+void ConvolverView::applyImpulseEntry (int row)
+{
+    const auto& entries = impulseLibrary.entries();
+
+    if (row < 0 || row >= (int) entries.size())
+        return;
+
+    const auto& entry = entries[(size_t) row];
+
+    if (auto* convolver = moduleAs<ConvolverModule>())
+    {
+        convolver->setImpulsePath (entry.file.getFullPathName());
+
+        // Wie beim Datei-Dialog: erst ins Modul, dann in den Ketten-Zustand.
+        proc.writeBackModuleStates();
+    }
+
+    refresh();
 }
 
 juce::Rectangle<int> ConvolverView::irRow (juce::Rectangle<int> contentArea) const
@@ -38,9 +116,19 @@ juce::Rectangle<int> ConvolverView::irRow (juce::Rectangle<int> contentArea) con
     return contentArea.withTrimmedTop (kTitleHeight).removeFromTop (kIrRowHeight);
 }
 
+juce::Rectangle<int> ConvolverView::irListArea (juce::Rectangle<int> contentArea) const
+{
+    const auto row = irRow (contentArea);
+
+    return row.withY (row.getBottom() + kIrListGap).withHeight (kIrListHeight);
+}
+
 juce::Rectangle<int> ConvolverView::eqArea (juce::Rectangle<int> contentArea) const
 {
-    auto area = contentArea.withTrimmedTop (kTitleHeight + kIrRowHeight)
+    // Die Beschriftung wird kCaptionHeight ueber der Flaeche gezeichnet, daher
+    // muss der IR-Block inklusive Beschriftungszeile Platz lassen.
+    auto area = contentArea.withTrimmedTop (kTitleHeight + kIrRowHeight + kIrListBlock
+                                            + kCaptionHeight)
                            .withTrimmedBottom (4).withTrimmedLeft (8).withTrimmedRight (8);
 
     return area.removeFromTop (area.getHeight() / 2).withTrimmedTop (kCaptionHeight);
@@ -48,7 +136,8 @@ juce::Rectangle<int> ConvolverView::eqArea (juce::Rectangle<int> contentArea) co
 
 juce::Rectangle<int> ConvolverView::decayArea (juce::Rectangle<int> contentArea) const
 {
-    auto area = contentArea.withTrimmedTop (kTitleHeight + kIrRowHeight)
+    auto area = contentArea.withTrimmedTop (kTitleHeight + kIrRowHeight + kIrListBlock
+                                            + kCaptionHeight)
                            .withTrimmedBottom (4).withTrimmedLeft (8).withTrimmedRight (8);
 
     area.removeFromTop (area.getHeight() / 2);
@@ -62,6 +151,8 @@ void ConvolverView::resized()
     auto row = irRow (content);
 
     irButton.setBounds (row.removeFromLeft (110).withSizeKeepingCentre (104, 20));
+
+    irList.setBounds (irListArea (content));
 }
 
 void ConvolverView::chooseImpulseResponse()
@@ -123,7 +214,9 @@ void ConvolverView::readCurvesFromModule()
 
     if (! convolver->hasImpulseResponse())
     {
-        irInfo = "keine IR gewaehlt - das Modul ist neutral";
+        irInfo = impulseLibrary.entries().empty()
+                     ? "Keine IRs gefunden"
+                     : "keine IR gewaehlt - das Modul ist neutral";
         return;
     }
 
@@ -153,6 +246,17 @@ void ConvolverView::writeCurvesToModule()
 void ConvolverView::refresh()
 {
     readCurvesFromModule();
+
+    // `refresh()` laeuft mit dem 15-Hz-Timer der Seite; die Liste wird nur bei
+    // geaenderter Zeilenzahl neu aufgebaut, sonst flackert sie.
+    const auto rows = (int) impulseLibrary.entries().size();
+
+    if (rows != irListRowCount)
+    {
+        irListRowCount = rows;
+        irList.updateContent();
+    }
+
     repaint();
 }
 

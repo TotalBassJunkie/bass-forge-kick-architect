@@ -73,6 +73,8 @@ public:
 
     int latencySamples() const noexcept override { return reportedLatency; }
 
+    double tailSeconds() const noexcept override;
+
     juce::String displayName() const override { return "Convolver"; }
 
     juce::ValueTree getState() const override;

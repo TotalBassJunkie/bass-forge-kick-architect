@@ -583,7 +583,7 @@ cmd /c "C:\bfka-build\Debug\tests\BFKA_Tests_artefacts\Debug\BFKA_Tests.exe > C:
 
 ### Wellen
 
-- [ ] W1 Kleinkram & Korrektheit (B-150, B-151, B-95, B-152)
+- [x] W1 Kleinkram & Korrektheit (B-150, B-151, B-95, B-152)
 - [ ] W2 Pitch & Stretch (B-42, B-43, B-44, B-45, B-47, B-46)
 - [ ] W3 Zustand/Undo/Tempo (B-15, B-16, B-83b)
 - [ ] W4 Style-Sidebar & Randomizer (B-82, B-75, B-76)
@@ -597,7 +597,7 @@ cmd /c "C:\bfka-build\Debug\tests\BFKA_Tests_artefacts\Debug\BFKA_Tests.exe > C:
 
 ### Tickets en détail
 
-- [ ] B-150 Tail-Länge · - [ ] B-151 Karten-Layout · - [ ] B-95 Samples im Preset · - [ ] B-152 IR-Browser
+- [x] B-150 Tail-Länge · - [x] B-151 Karten-Layout · - [x] B-95 Samples im Preset · - [x] B-152 IR-Browser
 - [ ] B-42 REPITCH · - [ ] B-43 BPM-SYNC · - [ ] B-44 Pitch längenneutral · - [ ] B-45 Vorab-Renderer · - [ ] B-46 Qualität · - [ ] B-47 Grenzfälle
 - [ ] B-15 Undo/Redo · - [ ] B-16 Migration · - [ ] B-83b FOLLOW DAW
 - [ ] B-82 Sidebar · - [ ] B-75 CHAOS · - [ ] B-76 FREE BUILD/eigene Styles

@@ -177,6 +177,13 @@ public:
      */
     virtual int latencySamples() const noexcept { return 0; }
 
+    /**
+     * Nachhall-/Ausklangzeit des Moduls in Sekunden (B-150).
+     * Wird von PluginProcessor::getTailLengthSeconds() aufsummiert.
+     * Latenzfreie Module liefern 0.
+     */
+    virtual double tailSeconds() const noexcept { return 0.0; }
+
     /** Anzeigename dieses Moduls (Kartenkopf). */
     virtual juce::String displayName() const = 0;
 

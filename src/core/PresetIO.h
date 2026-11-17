@@ -42,6 +42,17 @@ struct PresetData
 };
 
 /**
+ * Optionen fuer das Schreiben eines Kick-Presets (B-95).
+ * Mit `embedSamples` landen die Slot-Samples als Base64-WAV im Preset,
+ * damit es ohne die Originaldateien geladen werden kann.
+ */
+struct PresetWriteOptions
+{
+    bool        embedSamples     = false;
+    juce::int64 maxEmbeddedBytes = 32 * 1024 * 1024;
+};
+
+/**
  * Lesen und Schreiben von `.bfkapreset`-Dateien (Tickets B-93/B-94).
  *
  * Bewusst frei von `PluginProcessor`- und GUI-Abhaengigkeiten: damit ist das
@@ -82,6 +93,16 @@ public:
                                 const KickState& state,
                                 const PresetInfo& info,
                                 juce::String& error);
+
+    /** Wie oben, zusaetzlich mit Einbett-Optionen (B-95). */
+    static bool saveKickPreset (const juce::File& file,
+                                const KickState& state,
+                                const PresetInfo& info,
+                                const PresetWriteOptions& options,
+                                juce::String& error);
+
+    /** Ordner, in den eingebettete Samples beim Laden entpackt werden. */
+    static juce::File sampleCacheDirectory();
 
     /**
      * Schreibt ein Modul-Preset (ein Kettenplatz als eigenstaendige Datei).

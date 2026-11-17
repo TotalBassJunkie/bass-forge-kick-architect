@@ -42,6 +42,10 @@ target_sources(BFKA_Tests PRIVATE
     PresetIOTests.cpp
     StructureViewTests.cpp
     KickPageTests.cpp
+    TailLengthTests.cpp
+    ModuleCardLayoutTests.cpp
+    ImpulseLibraryTests.cpp
+    PresetEmbedTests.cpp
     TestMain.cpp
     ../src/core/Version.cpp
     ../src/core/Log.cpp
@@ -76,6 +80,7 @@ target_sources(BFKA_Tests PRIVATE
     ../src/library/SampleLibrary.cpp
     ../src/library/StyleModel.cpp
     ../src/library/RandomizerEngine.cpp
+    ../src/library/ImpulseLibrary.cpp
     ../src/engine/SampleVoice.cpp
     ../src/engine/KickRenderer.cpp
     ../src/engine/KickAssembler.cpp

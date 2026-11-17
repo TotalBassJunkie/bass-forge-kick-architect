@@ -5,6 +5,43 @@ Laufendes Protokoll. Neueste Einträge oben. Format:
 
 ---
 
+## 2026-11-17 — Nacht-Lauf, Welle 1 (B-150, B-151, B-95, B-152)
+
+**Erledigt**
+
+* **B-150 — Tail-Länge aus Kick + Kette.** `FxModule::tailSeconds()` (neu,
+  Standard 0), `ConvolverModule` liefert `currentIrLength() / currentIrSampleRate()`,
+  `FxChainProcessor::tailSeconds()` summiert die Kette (seriell).
+  `PluginProcessor::getTailLengthSeconds()` ist jetzt echt implementiert
+  (`renderer.kickLengthSeconds() + fxChain.tailSeconds()`, geklemmt auf
+  `[0.05, 60]` s) statt der festen `8.0`.
+* **B-151 — Karten-Seiten.** `ModuleCard` zeigt höchstens
+  `paramsPerPage = 12` Regler je Seite, `pageCount()` / `setPage()` /
+  `currentPage()`, `PREV`/`NEXT` plus `SEITE n/m` in der Karte. `preferredHeight()`
+  zählt nur die Regler der aktuellen Seite. Hinweis: die 420-px-Obergrenze gilt
+  nur für Karten **ohne** Struktur-Editor — ein `dynEq` bringt allein 216 px
+  Struktur-Editor mit, mit zwei Reglerreihen sind es bauartbedingt 588 px.
+  Der Test prüft deshalb `<= 420` für ein Modul ohne Struktur-Editor.
+* **B-95 — Samples im Preset.** `PresetWriteOptions { embedSamples,
+  maxEmbeddedBytes }` und die überladene `PresetIO::saveKickPreset()` schreiben
+  die Slot-Samples als 16-bit-WAV, Base64-kodiert, unter `<Samples>`.
+  Überschreitet die Summe `maxEmbeddedBytes` (32 MB), bricht das Schreiben mit
+  Fehlertext ab und es entsteht **keine** Teildatei. `loadKickPreset()`
+  entpackt fehlende Samples nach
+  `Dokumente/BassForge/KickArchitect/SampleCache/` und setzt die Referenz.
+* **B-152 — IR-Browser.** Neu `src/library/ImpulseLibrary.{h,cpp}`
+  (`ImpulseInfo`, `scan()`, `readLengthSeconds()`, User- + Factory-Ordner,
+  `wav/aif/aiff/flac`). `ConvolverView` hat unter der IR-Zeile eine scrollbare
+  Liste; Doppelklick setzt `ir` und lädt. Fehlender Ordner: Hinweis
+  „Keine IRs gefunden", kein Absturz. `preferredHeight()` 244 → 320 px.
+
+**Gates:** Debug- und Release-Build grün (MSVC `/W4`, nur Bestand `D9025`),
+volle Suite grün: **317 → 333 Testfälle**, 540.115 → **540.185 Assertions**.
+
+**Blocker:** keine.
+
+---
+
 ## 2026-11-17 — Welle 9: Die KICK-Seite
 
 **Erledigt (P8, B-83, B-84, B-86, B-154, B-155, B-156, B-157)**

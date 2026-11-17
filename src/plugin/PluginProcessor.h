@@ -43,7 +43,11 @@ public:
     bool acceptsMidi()  const override { return true; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 8.0; }
+    /**
+     * Nachhallzeit fuer den Host (B-150): Kick-Laenge plus FX-Ketten-Tail,
+     * geklemmt auf [0.05, 60] Sekunden.
+     */
+    double getTailLengthSeconds() const override;
 
     int getNumPrograms() override { return 1; }
     int getCurrentProgram() override { return 0; }

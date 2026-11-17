@@ -70,6 +70,14 @@ double ConvolverModule::smoothingCoefficient (int numSamples, double timeMs) con
     return 1.0 - std::exp (-blockSeconds / (std::max (0.001, timeMs) * 0.001));
 }
 
+double ConvolverModule::tailSeconds() const noexcept
+{
+    if (! hasImpulseResponse() || currentIrSampleRate() <= 0.0)
+        return 0.0;
+
+    return (double) currentIrLength() / currentIrSampleRate();
+}
+
 void ConvolverModule::prepare (double newSampleRate, int newMaxBlockSize)
 {
     sampleRate   = (newSampleRate > 0.0) ? newSampleRate : 48000.0;

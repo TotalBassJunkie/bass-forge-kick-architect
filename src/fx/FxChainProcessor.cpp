@@ -505,6 +505,20 @@ int FxChainProcessor::sidechainLatencyFor (int moduleIndex) const noexcept
 }
 
 // ---------------------------------------------------------------------------
+// Nachhallzeit
+// ---------------------------------------------------------------------------
+double FxChainProcessor::tailSeconds() const
+{
+    double total = 0.0;
+
+    for (const auto& module : moduleList)
+        if (module != nullptr)
+            total += module->tailSeconds();
+
+    return total;
+}
+
+// ---------------------------------------------------------------------------
 // Display
 // ---------------------------------------------------------------------------
 const ModuleDisplay& FxChainProcessor::displayFor (int moduleIndex) const
