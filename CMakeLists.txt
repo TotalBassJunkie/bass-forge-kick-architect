@@ -82,6 +82,13 @@ set(BFKA_LIBRARY_SOURCES
     )
 
 set(BFKA_UI_SOURCES
+    src/ui/FxChainModel.cpp
+    src/ui/ModuleStructureView.cpp
+    src/ui/ModuleCard.cpp
+    src/ui/FxPage.cpp
+    src/ui/editors/MultibandView.cpp
+    src/ui/editors/ConvolverView.cpp
+    src/ui/editors/DynamicEqView.cpp
     )
 
 set(BFKA_PLUGIN_SOURCES
@@ -117,6 +124,14 @@ set(BFKA_HEADERS
     src/library/RandomizerEngine.h
     src/plugin/PluginProcessor.h
     src/plugin/PluginEditor.h
+    src/ui/UiTheme.h
+    src/ui/FxChainModel.h
+    src/ui/ModuleStructureView.h
+    src/ui/ModuleCard.h
+    src/ui/FxPage.h
+    src/ui/editors/MultibandView.h
+    src/ui/editors/ConvolverView.h
+    src/ui/editors/DynamicEqView.h
     )
 
 # ---------------------------------------------------------------------------

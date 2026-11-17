@@ -29,12 +29,21 @@ target_sources(BFKA_Tests PRIVATE
     FxChainIOTests.cpp
     PluginProcessorStateTests.cpp
     ModuleStateRoundtripTests.cpp
+    FxChainModelTests.cpp
+    FxPageTests.cpp
     TestMain.cpp
     ../src/core/Version.cpp
     ../src/core/Log.cpp
     ../src/core/ParameterRegistry.cpp
     ../src/core/KickState.cpp
     ../src/core/FxChainIO.cpp
+    ../src/ui/FxChainModel.cpp
+    ../src/ui/ModuleStructureView.cpp
+    ../src/ui/ModuleCard.cpp
+    ../src/ui/FxPage.cpp
+    ../src/ui/editors/MultibandView.cpp
+    ../src/ui/editors/ConvolverView.cpp
+    ../src/ui/editors/DynamicEqView.cpp
     ../src/fx/FxFactory.cpp
     ../src/fx/FxChainProcessor.cpp
     ../src/fx/modules/ConvolverModule.cpp
