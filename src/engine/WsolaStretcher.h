@@ -48,7 +48,7 @@ public:
     WsolaStretcher() = default;
 
     /** Legt Rate, Kanalzahl und Parameter fest und baut das Hann-Fenster. */
-    void prepare (double sampleRate, int numChannels, const WsolaSettings& = {});
+    void prepare (double sampleRateToUse, int numChannelsToUse, const WsolaSettings& = {});
 
     /** Setzt Diagnosewerte und den Resampler-Filterzustand zurueck. */
     void reset();

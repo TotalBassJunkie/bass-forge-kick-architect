@@ -665,8 +665,12 @@ TEST_CASE ("Impuls bleibt bei Faktor 2.0 einmalig (kein Doppel-Transient)", "[ws
     double secondPeak = 0.0;
 
     for (int i = 0; i < output.getNumSamples(); ++i)
-        if (std::abs (i - 512) > 4)
+    {
+        const int distance = (i > 512) ? (i - 512) : (512 - i);
+
+        if (distance > 4)
             secondPeak = juce::jmax (secondPeak, std::abs ((double) output.getSample (0, i)));
+    }
 
     REQUIRE (secondPeak < 0.05);
 }

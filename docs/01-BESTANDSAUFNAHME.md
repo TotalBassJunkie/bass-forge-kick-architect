@@ -235,7 +235,8 @@ RANDOMIZE · CHAOS (4 Toggles: Pitch ±3 HT, Stretch, FX Chains, FX Modules) ·
 FREE BUILD · BOTH LIBRARIES (nur mit OPS-Expansion) · TKNVLT/OPS-Umschalter ·
 Style-Liste · `+ ADD STYLE`.
 
-**Die 10 Factory-Styles** (aus `genres.json` belegt):
+**Die 9 Factory-Styles der Datendatei** (aus `genres.json` belegt; in der Seitenleiste
+kommt `FREE BUILD` als zehnter, regelfreier Eintrag hinzu):
 
 | id | Anzeige | Akzent | Tempo | Init-Preset |
 |---|---|---|---|---|
@@ -416,7 +417,7 @@ Default-Kette `Default INIT.xml` = eq, mseq, dist, shaper, trans, reverb, final,
 
 ### 6.3 `genres.json` — Style-/Pool-/Regel-Definition, `schemaVersion 3`
 Struktur: `roleRegistry` (8 Rollen) · `kitPattern` · `categoriesRequired` ·
-`rules` (globale Ausschlussregel „melodic × atonal") · `pools[]` (25 Pools: `id`,
+`rules` (globale Ausschlussregel „melodic × atonal") · `pools[]` (29 Pools: `id`,
 `folder`, `role`, `tonality`, `defaultGain`, `duplicateGain`, `fileWeights`, `uiOrder`) ·
 `styles[]` (`pools` mit Gewichten, `layerRules` min/max je Rolle, `rules` mit
 `code`/`pools`/`db`/`dbPair`/`shares`, `addable`, `defaultPreset`).

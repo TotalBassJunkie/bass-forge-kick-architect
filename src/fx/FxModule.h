@@ -2,6 +2,7 @@
 
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_core/juce_core.h>
+#include <juce_data_structures/juce_data_structures.h>
 
 #include <optional>
 #include <vector>
@@ -173,6 +174,24 @@ public:
 
     /** Anzeigename dieses Moduls (Kartenkopf). */
     virtual juce::String displayName() const = 0;
+
+    // -----------------------------------------------------------------------
+    // Struktur-Zustand (Bänder, Kurven, Hüllkurven, IR-Pfad)
+    // -----------------------------------------------------------------------
+    // Die 14 Host-Proxy-Parameter `fx<N>_p<M>` tragen nur Skalare. Alles, was
+    // eine Liste ist — EQ-Bänder, Waveshaper-Knoten, Kick-Shaper-Hüllkurven,
+    // Reverb-Hüllkurven, der IR-Pfad und die Band-Splits des Multiband —
+    // steckt im `<FxChain>`-Snapshot des Referenzformats und wird hier
+    // durchgereicht.
+    //
+    // Beide Methoden laufen auf dem Message-Thread, nicht im Audio-Thread.
+    // Module, die keine Struktur brauchen, lassen die Defaults stehen.
+
+    /** Baut den Struktur-Zustand in `FxModuleState::data`-Form auf (<Module>-ValueTree). */
+    virtual juce::ValueTree getState() const { return juce::ValueTree ("Module"); }
+
+    /** Liest den Struktur-Zustand; unbekannte Kinder werden ignoriert. */
+    virtual void setState (const juce::ValueTree& /*state*/) {}
 };
 
 } // namespace bfka

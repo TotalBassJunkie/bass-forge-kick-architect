@@ -187,11 +187,12 @@ namespace
 // Vorbereitung
 // ---------------------------------------------------------------------------
 
-void WsolaStretcher::prepare (double sampleRate, int numChannels, const WsolaSettings& settings)
+void WsolaStretcher::prepare (double sampleRateToUse, int numChannelsToUse,
+                              const WsolaSettings& settingsToUse)
 {
-    sampleRate_  = (sampleRate > 0.0 ? sampleRate : 48000.0);
-    numChannels_ = juce::jmax (1, numChannels);
-    settings_    = settings;
+    sampleRate_  = (sampleRateToUse > 0.0 ? sampleRateToUse : 48000.0);
+    numChannels_ = juce::jmax (1, numChannelsToUse);
+    settings_    = settingsToUse;
 
     sanitiseSettings (settings_);
 

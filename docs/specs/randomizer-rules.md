@@ -134,6 +134,11 @@ Daraus folgt:
 3. `optional` im Ergebnis bedeutet: „dieser Part wird von keinem
    Rollen-Minimum gefordert“. Markiert werden die ersten `min` Parts je Rolle
    in der Reihenfolge aufsteigender Tier-Nummer.
+   **Achtung:** Ein Part aus einer `code "1"`-Regel in einer Rolle **ohne**
+   `layerRules`-Eintrag (z. B. `TOP-NEW` in NEWSTYLE) wird dadurch als
+   `optional` gemeldet, obwohl der Roll ihn immer erzeugt. Das Flag sagt also
+   nichts über die Roll-Wahrscheinlichkeit aus, sondern nur über die
+   Pflicht-Abdeckung der Rolle (offene Frage 13).
 
 ### 3.2 `pools` (Style-Gewichte)
 
@@ -559,6 +564,42 @@ Die Engine kennt **keine** Dateisystem-Layouts: Pfade kommen aus
 `PoolResolver`, No-Repeat-Eintscheidungen aus `NoRepeatTracker` (beide
 Schnittstellen sind injiziert und in den Tests durch Attrappen ersetzt).
 
+### 6.1 Empirische Prüfung (2026-11-17)
+
+Der komplette Datenbestand wurde mit dem echten `genres.json` vermessen:
+**1.000 Rolls je Style** (9.000 Rolls) plus 300 Rolls mit `maxSlots = 6`,
+500 FREE-BUILD-Rolls und die Catch2-Unit-Tests (23 Testfälle, 1.829
+Assertions). Ergebnis: **0 Verstöße**.
+
+| Style | Parts min…max | davon Pflicht | beobachtete Pool-Häufigkeiten (je 1.000 Rolls) |
+|---|---|---|---|
+| rumble_kicks | 5…8 | 5 | RMB-TEC 1000, ENR-TEC 1000, ENT-TOP 1000, CLK-STD 1691, PRC-GAB 715, PTP-TEC 695, PUN-EDM 483 / PUN-TEC 517 |
+| reverse_bass | 3…7 | 3 | CRN-REV 1000, CLK-STD 1711, PRC-GAB 704, PTP-TEC 689, PRV-* 409 |
+| industrial | 2…4 | 2 | PUN-IND 483 / PUN-IXT 517, RMB-CIH 465 / RMB-RAW 535, PRV-* 582 |
+| psy | 3…7 | 3 | CRN-PSY 1000, CLK-STD 1711, PRC-GAB 704, PTP-TEC 689, PRV-* 409, PUN-* 1000 |
+| schranz | 6…12 | 6 | ENS-SCZ **2000**, RMB-SCZ 1717, RMB-TEC 713, ENR-TEC 684, ENT-TOP 1000, CLK-STD 1693, PRC-GAB 703, PTP-TEC 722 |
+| rumble_kicks_clean | 3…4 | 3 | RMB-BIG 1000, CLK-STD 1711 |
+| midintro_newstyle | 4…8 | 3 | CRN-NEW 1000, TOP-NEW 1000, CLK-STD 1711, PRC-GAB 704, PTP-TEC 689, PRV-* 409, **PUN-NEW 593** vs. PUN-EDM 194 + PUN-TEC 213 |
+| rawstyle | 4…5 | 2 | PUN-RAW 1000, CLK-ZAG 1000, **CRN-RAW 417**, RMB-* 368, **CRN-ZAG 215**, PRV-* 1411 |
+| zaag | 3…3 | 3 | PUN-ZAG/CRN-ZAG/CLK-ZAG je 1000 |
+
+Damit sind die Kernannahmen dieser Spec **messtechnisch bestätigt**:
+
+* `layerRules`-Minima und -Maxima in 9.000 Rolls zu 100 % eingehalten
+  (auch die Paar-Regel `"1-1"`: ENS-SCZ kommt exakt 2.000-mal vor).
+* Ausschlussregel „melodic × atonal“ nie verletzt; RAWSTYLE wählt wie erwartet
+  per `"3"`-Gruppe genau eine Seite (45/35/20 % → 417/368/215).
+* `shares` wirken (NEWSTYLE 59 % / 41 % statt 60/40 — Rundung der
+  Einzel-Pool-Aufteilung), Tier 2 trifft mit ≈ 70 % (PRC-GAB 71,5 %,
+  PTP-TEC 69,5 %), Tier 4 mit ≈ 40 % (PRV-* 41 %, industrial 0,4 + 0,4·0,4).
+* Determinismus: gleicher Seed liefert bit-identische Ergebnisse.
+* `maxSlots = 6` wird von allen Styles eingehalten; FREE BUILD liefert immer
+  einen Punch; unbekannte Style-id fällt auf FREE BUILD zurück und warnt.
+* Pegel-Spannen entsprechen den Bereichen: CLK-STD 0/−5 dB, TOP-NEW −3 dB,
+  PRC-GAB −32…−23 dB, PTP-TEC −23…−12 dB, PRV* −35…−5 dB,
+  RMB-SCZ 0…−17,5 dB (`dbPair` plus `duplicateGain`).
+
+
 ---
 
 ## 7. Offene Fragen und Klärungsvorschlag
@@ -577,3 +618,4 @@ Schnittstellen sind injiziert und in den Tests durch Attrappen ersetzt).
 | 10 | Anzahl-Diskrepanz 25/29 Pools und 10/9 Styles im Auftrag | Auftragstext stammt aus einer älteren Revision als R33 | Als erledigt betrachten: die Datei ist maßgeblich (29/9 + FREE BUILD); Spec und Modell folgen der Datei |
 | 11 | `kitPattern` / `categoriesRequired` | Für den Randomizer nicht gebraucht, aber vorhanden | Ignorieren; falls später „Kit-Erkennung“ kommt (B-21), dort auswerten |
 | 12 | Dürfen eigene Styles (B-76) `code`-Tiers frei setzen? | Unsere Engine unterstützt 1…4 und `a-b` | Ja; bei ungültigem `code` fällt die Engine auf „Pflicht“ zurück und warnt |
+| 13 | Ist `optional` die richtige Sichtbarkeitsregel für das `X` an der Slot-Karte (B-74)? | `optional` = „nicht durch ein Minimum gefordert“; dadurch gilt `TOP-NEW` in NEWSTYLE als optional, obwohl jede Roll ihn erzeugt | B-74: `optional` nur für die Pflicht-Kennzeichnung nutzen; entfernbar bleibt jede Karte. Alternativ später ein zusätzliches Feld `rolledAsMandatory` (Tier 1/3) ergänzen |
