@@ -142,6 +142,66 @@ TEST_CASE ("Editor: Overlay faengt Escape ab", "[ui][integration]")
     REQUIRE_FALSE (editor.overlayHost()->isOpen());
 }
 
+TEST_CASE ("Editor: jedes Overlay hat einen Schliessen-Knopf", "[ui][integration]")
+{
+    JuceGuiScope gui;
+
+    PluginProcessor proc;
+    PluginEditor editor (proc);
+
+    // Der Knopf gehoert dem Host, damit ihn kein Overlay vergessen kann.
+    REQUIRE (editor.overlayHost()->closeButton() != nullptr);
+    REQUIRE_FALSE (editor.overlayHost()->closeButton()->isVisible());
+
+    // `Button::triggerClick()` stellt die Nachricht asynchron ein; im Test muss
+    // die Message-Queue von Hand laufen.
+    const auto clickClose = [&editor]
+    {
+        editor.overlayHost()->closeButton()->triggerClick();
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (100);
+    };
+
+    editor.openLibrary();
+    REQUIRE (editor.overlayHost()->closeButton()->isVisible());
+    REQUIRE (editor.overlayHost()->closeButton()->getWidth() >= 24);
+
+    // Klick schliesst das Overlay (nicht das ganze Plugin).
+    clickClose();
+    REQUIRE_FALSE (editor.overlayHost()->isOpen());
+    REQUIRE_FALSE (editor.overlayHost()->closeButton()->isVisible());
+
+    // Auch fuer die anderen Overlays.
+    editor.openSettings();
+    REQUIRE (editor.overlayHost()->closeButton()->isVisible());
+    clickClose();
+    REQUIRE_FALSE (editor.overlayHost()->isOpen());
+
+    editor.openPresetManager();
+    REQUIRE (editor.overlayHost()->closeButton()->isVisible());
+    clickClose();
+    REQUIRE_FALSE (editor.overlayHost()->isOpen());
+}
+
+TEST_CASE ("Editor: Schliessen-Knopf sitzt in der Kopfleiste", "[ui][integration]")
+{
+    JuceGuiScope gui;
+
+    PluginProcessor proc;
+    PluginEditor editor (proc);
+
+    renderOnce (editor, 1180, 720);
+    editor.openLibrary();
+
+    auto* button = editor.overlayHost()->closeButton();
+    REQUIRE (button != nullptr);
+    REQUIRE (button->getWidth() == 28);
+    REQUIRE (button->getHeight() == 28);
+
+    // Oben rechts, oberhalb der Overlay-Flaeche (24 px Rand + 28 px Leiste).
+    REQUIRE (button->getRight() <= 1180 - 24);
+    REQUIRE (button->getBottom() <= 24 + 36);
+}
+
 TEST_CASE ("Undo: Zustandsaenderung laesst sich zuruecknehmen", "[ui][integration]")
 {
     JuceGuiScope gui;

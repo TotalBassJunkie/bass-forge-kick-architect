@@ -43,10 +43,19 @@ public:
     /** Wird gerufen, wenn der Stapel leer wird. */
     std::function<void()> onAllClosed;
 
+    /**
+     * Schliessen-Knopf des Hosts (B-105). Er liegt in der oberen rechten Ecke
+     * ueber dem obersten Overlay, damit JEDES Overlay ohne eigene Chrome
+     * schliessbar ist. Der Knopf traegt die Component-ID `overlay-close`.
+     */
+    juce::Button* closeButton() noexcept { return &closeButton_; }
+
 private:
     void updateVisibility();
     std::vector<std::unique_ptr<juce::Component>> stack;
+    juce::TextButton closeButton_ { "X" };
     static constexpr int kOverlayInset = 24;
+    static constexpr int kCloseButtonSize = 28;
 };
 
 } // namespace bfka

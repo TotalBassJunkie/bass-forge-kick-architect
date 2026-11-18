@@ -48,4 +48,9 @@ Neueste Zeile unten. Format: `HH:MM <Welleneintrag>`.
 05:15 Portables Release-Paket gebaut:
       release/BassForgeKickArchitect-0.1.0-portable-win64.zip (4,41 MB)
       plus SHA256SUMS.txt. `release/` ist jetzt in .gitignore.
+09:55 Befund Julian: Overlays (LIBRARY/GEAR/PRESETS) hatten keinen
+      Schliessen-Knopf, nur Escape bzw. Plugin schliessen. Fix zentral im
+      OverlayHost: eigener "X"-Knopf in einer Kopfleiste ueber dem Overlay,
+      damit ihn kein Overlay vergessen kann. VST3 im Systemordner ersetzt,
+      ZIP neu gebaut. Debug+Release gruen, 532 Testfaelle.
 ```

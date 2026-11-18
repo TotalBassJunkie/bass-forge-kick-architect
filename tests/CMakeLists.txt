@@ -158,6 +158,9 @@ target_compile_definitions(BFKA_Tests PRIVATE
     JUCE_USE_CURL=0
     JUCE_WEB_BROWSER=0
     BFKA_VERSION_STRING="${PROJECT_VERSION}"
+    # Wie das Plugin-Target: Tests duerfen eine kurze Message-Queue pumpen
+    # (z. B. fuer Button::triggerClick()).
+    JUCE_MODAL_LOOPS_PERMITTED=1
     )
 
 target_link_libraries(BFKA_Tests PRIVATE
