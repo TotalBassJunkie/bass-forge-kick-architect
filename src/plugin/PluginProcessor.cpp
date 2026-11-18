@@ -1,3 +1,4 @@
+// B-83b: FOLLOW DAW - Host-BPM aus dem Playhead, gedrosselt auf 4/Sekunde.
 #include "plugin/PluginProcessor.h"
 #include "plugin/PluginEditor.h"
 
@@ -58,6 +59,9 @@ void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     currentSampleRate = sampleRate;
     currentBlockSize  = samplesPerBlock;
+
+    // Bezugsrate der Tempo-Drosselung (B-83b): hoechstens 4 Uebernahmen/Sekunde.
+    preparedSampleRateForTempo = (sampleRate > 0.0) ? sampleRate : 48000.0;
 
     renderer.prepare (sampleRate, samplesPerBlock);
     fxChain.prepare (sampleRate, samplesPerBlock);
@@ -208,6 +212,38 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
         masterGain.store (masterParam->load (std::memory_order_relaxed),
                           std::memory_order_relaxed);
 
+    // --- FOLLOW DAW (B-83b) ------------------------------------------------
+    // Tempo aus dem Host-Playhead. Nur wenn der Zustand FOLLOW DAW verlangt;
+    // Uebernahmen sind auf vier pro Sekunde gedrosselt (kein Allokieren).
+    if (hostFollowEnabled.load (std::memory_order_relaxed))
+    {
+        if (auto* ph = getPlayHead())
+        {
+            if (auto pos = ph->getPosition())
+            {
+                if (auto bpmOpt = pos->getBpm())
+                {
+                    const double bpm = *bpmOpt;
+
+                    if (bpm > 0.0)
+                    {
+                        lastHostBpm.store (bpm, std::memory_order_relaxed);
+
+                        const juce::int64 blockStart = totalSamplesProcessed.load (std::memory_order_relaxed);
+
+                        if (blockStart - lastHostBpmSampleTime
+                                >= (juce::int64) (preparedSampleRateForTempo / 4.0))
+                        {
+                            lastHostBpmSampleTime = blockStart;
+                            applyEffectiveBpm (bpm);
+                            hostBpmApplyCounter.fetch_add (1, std::memory_order_relaxed);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // 1) Kick rendern (additiv).
     renderer.renderNextBlock (outBuffer, 0, numSamples);
 
@@ -236,6 +272,10 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
             lastNote.store (-1);
         }
     }
+
+    // Sample-Zaehler fuer die Tempo-Drosselung (B-83b), audio-thread-lokal.
+    totalSamplesProcessed.fetch_add ((juce::int64) buffer.getNumSamples(),
+                                     std::memory_order_relaxed);
 }
 
 void PluginProcessor::triggerKick()
@@ -387,9 +427,49 @@ double PluginProcessor::getBpm() const
     juce::String error;
 
     if (auto stored = KickState::fromValueTree (extraState, error))
+    {
+        // FOLLOW DAW mit bekanntem Host-Tempo: das Host-BPM ist wirksam (B-83b).
+        if (stored->bpmMode() == BpmMode::syncBpm)
+        {
+            const auto host = lastHostBpm.load (std::memory_order_relaxed);
+
+            if (host > 0.0)
+                return host;
+        }
+
         return stored->getBpm();
+    }
 
     return 150.0;
+}
+
+double PluginProcessor::hostBpm() const noexcept
+{
+    return lastHostBpm.load (std::memory_order_relaxed);
+}
+
+bool PluginProcessor::isFollowingHost() const noexcept
+{
+    return hostFollowEnabled.load (std::memory_order_relaxed);
+}
+
+int PluginProcessor::hostBpmApplyCount() const noexcept
+{
+    return hostBpmApplyCounter.load (std::memory_order_relaxed);
+}
+
+void PluginProcessor::applyEffectiveBpm (double bpm)
+{
+    // Klemmen wie `setBpm()`, aber ohne den Zustand anzufassen: das wirksame
+    // Tempo ist eine Laufzeitgroesse, kein Presetwert (B-83b).
+    const auto tempo = juce::jlimit (KickRenderer::kMinBpm, KickRenderer::kMaxBpm, bpm);
+
+    auto settings = renderer.renderSettings();
+    settings.bpm = tempo;
+    renderer.setRenderSettings (settings);
+
+    // Die Kick-Laenge haengt am Tempo (B-147). Iteriert nur ueber die Module.
+    updateModuleRenderLength();
 }
 
 void PluginProcessor::setBpm (double bpm)
@@ -636,6 +716,11 @@ void PluginProcessor::applyState (const KickState& state)
 
     // Der komplette Zustand inklusive `<FxChain>`; danach die Engine bauen.
     extraState = state.toValueTree();
+
+    // Spiegel fuer den Audio-Thread (B-83b): `processBlock()` darf den Zustand
+    // nicht lesen, weil `fromValueTree()` allokiert.
+    hostFollowEnabled.store (state.bpmMode() == BpmMode::syncBpm,
+                             std::memory_order_relaxed);
 
     // Samples des Zustands in den Renderer (B-154). Ohne diesen Schritt blieben
     // die Slots eines geladenen Presets stumm, obwohl die Karten sie zeigen.

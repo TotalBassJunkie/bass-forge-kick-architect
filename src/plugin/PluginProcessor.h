@@ -1,4 +1,5 @@
 #pragma once
+// B-83b: FOLLOW DAW - Host-BPM aus dem Playhead, wirksam fuer den Renderer.
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_audio_utils/juce_audio_utils.h>
@@ -183,7 +184,10 @@ public:
     /** Anzahl belegter Slots (Anzeige/Statuszeile). */
     int getNumFilledSlots() const;
 
-    /** Tempo aus dem Zustand (FOLLOW DAW oder MANUAL, noch ohne Host-Sync). */
+    /**
+     * Wirksames Tempo: bei FOLLOW DAW das Host-BPM, sonst der Zustandswert
+     * (B-83b).
+     */
     double getBpm() const;
 
     /**
@@ -192,6 +196,19 @@ public:
      * Nur vom Message-Thread aufrufen.
      */
     void setBpm (double bpm);
+
+    // --- FOLLOW DAW (B-83b) ------------------------------------------------
+    /** Host-BPM des letzten Playhead-Lesens (0 = unbekannt). */
+    double hostBpm() const noexcept;
+
+    /** true, wenn der Zustand FOLLOW DAW verlangt (`bpmMode == syncBpm`). */
+    bool isFollowingHost() const noexcept;
+
+    /** Setzt das wirksame Tempo (Host oder manuell) und verteilt es an die Engine. */
+    void applyEffectiveBpm (double bpm);
+
+    /** Zaehlt die tatsaechlichen Uebernahmen aus dem Host (Diagnose/Test). */
+    int hostBpmApplyCount() const noexcept;
 
     // --- Externer Sidechain (B-146) ---------------------------------------
     /**
@@ -331,6 +348,31 @@ private:
     std::atomic<int> lastNote { -1 };
     std::atomic<float> masterGain { 0.8333333f };
     std::atomic<bool> sidechainActive { false };
+
+    // --- FOLLOW DAW (B-83b) ------------------------------------------------
+    /** Letztes gueltiges Host-BPM (0 = noch nie gesehen). */
+    std::atomic<double> lastHostBpm { 0.0 };
+
+    /** Anzahl der Uebernahmen aus dem Host (Diagnose/Test). */
+    std::atomic<int> hostBpmApplyCounter { 0 };
+
+    /** Sample-Position der letzten Uebernahme; nur im Audio-Thread benutzt. */
+    juce::int64 lastHostBpmSampleTime = -1000000;
+
+    /** Ab dieser Sample-Rate rechnet die Drosselung (4 Uebernahmen/Sekunde). */
+    double preparedSampleRateForTempo = 48000.0;
+
+    /** Gesamtzahl der bisher verarbeiteten Samples (Audio-Thread-Zaehler). */
+    std::atomic<juce::int64> totalSamplesProcessed { 0 };
+
+    /**
+     * Spiegel von `bpmMode` fuer den Audio-Thread (B-83b).
+     *
+     * `isFollowingHost()` laeuft in `processBlock()` und darf dort nicht den
+     * Zustand lesen: `KickState::fromValueTree()` allokiert. Der Wert wird
+     * deshalb in `applyState()` mitgefuehrt (FOLLOW DAW ist der Werkszustand).
+     */
+    std::atomic<bool> hostFollowEnabled { true };
 
     /** Kopie des Detektor-Signals (in `prepareToPlay()` angelegt, B-146). */
     juce::AudioBuffer<float> sidechainInput;

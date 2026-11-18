@@ -1,4 +1,5 @@
 #pragma once
+// B-83b: FOLLOW DAW - das wirksame Tempo kommt aus dem Host-Playhead.
 
 #include <juce_audio_basics/juce_audio_basics.h>
 
@@ -55,6 +56,9 @@ struct RenderSettings
  *  - `renderNextBlock()` laeuft auf dem Audio-Thread und allokiert nicht, loggt
  *    nicht und nimmt keine Sperre (der Scratch-Puffer wird in `prepare()`
  *    angelegt).
+ *  - Ausnahme (B-83b): `setRenderSettings()` wird bei FOLLOW DAW aus
+ *    `processBlock()` aufgerufen. Es allokiert nicht, veraendert aber `settings`
+ *    ohne Sperre; die UI darf das Tempo deshalb nicht gleichzeitig setzen.
  */
 class KickRenderer
 {
@@ -125,6 +129,9 @@ public:
     // --- Einstellungen -----------------------------------------------------
     void setRenderSettings (const RenderSettings& newSettings);
     const RenderSettings& renderSettings() const noexcept { return settings; }
+
+    /** Aktuell wirksames Tempo in BPM. */
+    double bpm() const noexcept { return settings.bpm; }
 
     // --- Wiedergabe --------------------------------------------------------
     /** Startet alle klingenden Voices bei 0 (Trigger des Kicks). */

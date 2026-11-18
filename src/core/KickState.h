@@ -1,3 +1,4 @@
+// B-16 -- Zustands-Migration: Schema-Version am Kick-Zustand.
 #pragma once
 
 #include <juce_data_structures/juce_data_structures.h>
@@ -129,6 +130,23 @@ public:
     // --- Serialisierung ----------------------------------------------------
     juce::ValueTree toValueTree() const;
     static std::optional<KickState> fromValueTree (const juce::ValueTree& tree, juce::String& error);
+
+    // --- Schema-Version und Migration (B-16) -------------------------------
+    /** Hoechste bekannte Schema-Version des Kick-Zustands (B-16). */
+    static constexpr int currentSchemaVersion = 2;
+
+    /** Die Schema-Version eines Zustandsbaums (0, wenn keine gesetzt ist). */
+    static int schemaVersionOf (const juce::ValueTree& tree) noexcept;
+
+    /**
+     * Migriert `tree` auf `targetVersion` (B-16).
+     * Unbekannte Properties und Kinder bleiben unangetastet; jede Stufe
+     * ergaenzt nur, was ihr fehlt. Nie eine Exception.
+     */
+    static juce::ValueTree migrateTo (juce::ValueTree tree, int targetVersion);
+
+    /** Setzt die Schema-Version im Baum. */
+    static void setSchemaVersion (juce::ValueTree& tree, int version);
 
 private:
     std::array<std::optional<SampleRef>, (size_t) kNumSlots> samples;

@@ -1,3 +1,4 @@
+// B-16 -- Zustands-Migration ueber Schema-Versionen (v1 -> v2).
 #include "core/KickState.h"
 #include "core/FxChainIO.h"
 #include "core/ParameterRegistry.h"
@@ -12,6 +13,35 @@ namespace
     const juce::Identifier kSlotType  { "Slot" };
     const juce::Identifier kParamsType{ "Params" };
     const juce::Identifier kPType     { "P" };
+
+    // B-16: Property-Namen der Migration, an einer Stelle.
+    const juce::Identifier kSchemaVersion { "schemaVersion" };
+    const juce::Identifier kBpmMode       { "bpmMode" };
+    const juce::Identifier kStretchMode   { "stretchMode" };
+    const juce::Identifier kAlignPhase    { "alignPhase" };
+    const juce::Identifier kAlignStretch  { "alignStretchCrunch" };
+
+    /** Setzt eine Property nur, wenn sie noch fehlt (B-16: nie ueberschreiben). */
+    void ensureProperty (juce::ValueTree& tree, const juce::Identifier& id, const juce::var& value)
+    {
+        if (! tree.hasProperty (id))
+            tree.setProperty (id, value, nullptr);
+    }
+
+    /**
+     * Stufe 1 -> 2 (B-16): Tempo-/Stretch-Modus und die beiden
+     * Align-Schalter ergaenzen, soweit sie fehlen.
+     *
+     * Vorhandene Werte bleiben stehen: ein v1-Baum, den ein neuerer Stand
+     * bereits mit `bpmMode` geschrieben hat, verliert seine Wahl nicht.
+     */
+    void migrateV1ToV2 (juce::ValueTree& tree)
+    {
+        ensureProperty (tree, kBpmMode,     (int) BpmMode::syncBpm);
+        ensureProperty (tree, kStretchMode, (int) StretchMode::keepPitch);
+        ensureProperty (tree, kAlignPhase,  true);
+        ensureProperty (tree, kAlignStretch, true);
+    }
 }
 }
 
@@ -160,6 +190,51 @@ void KickState::setParam (const juce::String& id, float normalisedValue) noexcep
 }
 
 // ---------------------------------------------------------------------------
+// Schema-Version und Migration (B-16)
+// ---------------------------------------------------------------------------
+
+int KickState::schemaVersionOf (const juce::ValueTree& tree) noexcept
+{
+    return (int) tree.getProperty (kSchemaVersion, 0);
+}
+
+void KickState::setSchemaVersion (juce::ValueTree& tree, int version)
+{
+    if (! tree.isValid())
+        return;
+
+    tree.setProperty (kSchemaVersion, version, nullptr);
+}
+
+juce::ValueTree KickState::migrateTo (juce::ValueTree tree, int targetVersion)
+{
+    // Nichts zu tun: ungueltiger Baum, keine Zielversion, oder der Baum ist
+    // bereits auf oder ueber der Zielversion (dann bleibt seine Version).
+    if (! tree.isValid() || targetVersion <= 0)
+        return tree;
+
+    // Eigene Kopie: `ValueTree` teilt seine Daten, ein direkter `setProperty`
+    // wuerde den Baum des Aufrufers mitveraendern.
+    juce::ValueTree copy = tree.createCopy();
+
+    // Fehlende Version heisst v1 (B-16). Jede Stufe ergaenzt nur Fehlendes,
+    // unbekannte Properties und Kinder bleiben unangetastet.
+    const int fromVersion = juce::jmax (1, schemaVersionOf (copy));
+
+    for (int version = fromVersion; version < targetVersion; ++version)
+    {
+        switch (version)
+        {
+            case 1:  migrateV1ToV2 (copy); break;
+            default: break;   // kuenftige Stufen kommen hier hinein
+        }
+    }
+
+    setSchemaVersion (copy, targetVersion);
+    return copy;
+}
+
+// ---------------------------------------------------------------------------
 
 juce::ValueTree KickState::toValueTree() const
 {
@@ -167,12 +242,12 @@ juce::ValueTree KickState::toValueTree() const
     const auto& all = registry.all();
 
     juce::ValueTree root (kStateType);
-    root.setProperty ("schemaVersion", 1, nullptr);
+    root.setProperty (kSchemaVersion, currentSchemaVersion, nullptr);
     root.setProperty ("styleId", styleId, nullptr);
     root.setProperty ("presetName", presetName, nullptr);
     root.setProperty ("bpm", bpmValue, nullptr);
-    root.setProperty ("stretchMode", (int) stretch, nullptr);
-    root.setProperty ("bpmMode", (int) bpm, nullptr);
+    root.setProperty (kStretchMode, (int) stretch, nullptr);
+    root.setProperty (kBpmMode, (int) bpm, nullptr);
 
     juce::ValueTree slots (kSlotsType);
     for (int slot = 0; slot < kNumSlots; ++slot)
@@ -219,14 +294,18 @@ std::optional<KickState> KickState::fromValueTree (const juce::ValueTree& tree, 
         return std::nullopt;
     }
 
-    KickState state;
-    state.styleId    = tree.getProperty ("styleId", "free_build").toString();
-    state.presetName = tree.getProperty ("presetName", "").toString();
-    state.bpmValue   = (double) tree.getProperty ("bpm", 150.0);
-    state.stretch    = (StretchMode) (int) tree.getProperty ("stretchMode", 0);
-    state.bpm        = (BpmMode)     (int) tree.getProperty ("bpmMode", 0);
+    // B-16: alten Stand zuerst auf das aktuelle Schema heben. Fehlt die
+    // Version, gilt der Baum als v1; unbekannte Felder bleiben erhalten.
+    const auto migrated = migrateTo (tree, currentSchemaVersion);
 
-    const auto slots = tree.getChildWithName (kSlotsType);
+    KickState state;
+    state.styleId    = migrated.getProperty ("styleId", "free_build").toString();
+    state.presetName = migrated.getProperty ("presetName", "").toString();
+    state.bpmValue   = (double) migrated.getProperty ("bpm", 150.0);
+    state.stretch    = (StretchMode) (int) migrated.getProperty (kStretchMode, 0);
+    state.bpm        = (BpmMode)     (int) migrated.getProperty (kBpmMode, 0);
+
+    const auto slots = migrated.getChildWithName (kSlotsType);
     for (int i = 0; i < slots.getNumChildren(); ++i)
     {
         const auto s = slots.getChild (i);
@@ -253,7 +332,7 @@ std::optional<KickState> KickState::fromValueTree (const juce::ValueTree& tree, 
         }
     }
 
-    const auto params = tree.getChildWithName (kParamsType);
+    const auto params = migrated.getChildWithName (kParamsType);
     for (int i = 0; i < params.getNumChildren(); ++i)
     {
         const auto p = params.getChild (i);
@@ -264,7 +343,7 @@ std::optional<KickState> KickState::fromValueTree (const juce::ValueTree& tree, 
         state.setParam (id, (float) (double) p.getProperty ("v", 0.0));
     }
 
-    if (auto parsed = fxChainFromValueTree (tree))
+    if (auto parsed = fxChainFromValueTree (migrated))
         state.chain = std::move (*parsed);
 
     state.dirty = false;

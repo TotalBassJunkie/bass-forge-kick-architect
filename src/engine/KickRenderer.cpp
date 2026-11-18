@@ -150,6 +150,10 @@ void KickRenderer::updateSoloState() noexcept
 // ---------------------------------------------------------------------------
 // Einstellungen und Zeitachse
 // ---------------------------------------------------------------------------
+// B-83b: `setRenderSettings()` laeuft auch aus `processBlock()` (FOLLOW DAW)
+// und muss deshalb allokationsfrei bleiben. `updateTimeline()` rechnet nur,
+// `startAutoGainRamp()` setzt Zaehler; keine der beiden Funktionen fordert
+// Speicher an.
 void KickRenderer::setRenderSettings (const RenderSettings& newSettings)
 {
     settings = newSettings;

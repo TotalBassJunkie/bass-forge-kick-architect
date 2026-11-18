@@ -1,3 +1,4 @@
+// B-16 -- Preset-Baum nutzt die Zustands-Migration aus core/KickState.
 #include "core/PresetIO.h"
 
 #include "core/Version.h"
@@ -400,7 +401,7 @@ juce::File PresetIO::sampleCacheDirectory()
 }
 
 // ---------------------------------------------------------------------------
-// Bäume
+// Baeume
 // ---------------------------------------------------------------------------
 juce::ValueTree PresetIO::kickPresetToValueTree (const KickState& state, const PresetInfo& info)
 {
@@ -427,6 +428,9 @@ std::optional<PresetData> PresetIO::fromValueTree (const juce::ValueTree& tree, 
     }
 
     // Host-Zustand: nackte BFKAKick-Wurzel ohne Kopf.
+    // B-16: `KickState::fromValueTree` hebt den Baum selbst auf
+    // `KickState::currentSchemaVersion`; hier wird keine eigene Version
+    // geprueft, damit alte Presets weiterhin laden.
     if (tree.hasType (kKickType))
     {
         auto state = KickState::fromValueTree (tree, error);

@@ -1,4 +1,6 @@
 // B-50/B-51: ALIGN - Gap-Analyse (Ende Anker <-> Beginn Tails) und MOVE CRUNCH.
+// B-52/B-53: STRETCH PUNCH / STRETCH CRUNCH - Tails werden gestaucht, die
+// Fades schrumpfen mit. B-54: pinned gilt in beiden Pfaden.
 
 #include "engine/AlignEngine.h"
 
@@ -111,6 +113,7 @@ AlignResult AlignEngine::runMoveCrunch (const KickState& state,
 
     result.offsetsSeconds.assign (parts.size(), 0.0);
     result.stretchFactors.assign (parts.size(), 1.0);
+    result.fadeScaleFactors.assign (parts.size(), 1.0);
     result.gapsBeforeSeconds.assign (parts.size(), 0.0);
     result.gapsAfterSeconds.assign (parts.size(), 0.0);
 
@@ -193,6 +196,117 @@ AlignResult AlignEngine::runMoveCrunch (const KickState& state,
         }
 
     return result;
+}
+
+AlignResult AlignEngine::runStretchCrunch (const KickState& state,
+                                           const std::vector<PartTiming>& parts)
+{
+    AlignResult result;
+
+    result.offsetsSeconds.assign (parts.size(), 0.0);
+    result.stretchFactors.assign (parts.size(), 1.0);
+    result.fadeScaleFactors.assign (parts.size(), 1.0);
+    result.gapsBeforeSeconds.assign (parts.size(), 0.0);
+    result.gapsAfterSeconds.assign (parts.size(), 0.0);
+
+    const auto& settings = state.align();
+
+    // Aus oder kein Anker: nichts anfassen, nur die Luegen auf 0 setzen.
+    if (! settings.enabled || parts.empty())
+    {
+        result.report.add ("ALIGN aus");
+        result.changed = false;
+        return result;
+    }
+
+    const int anchor = findAnchor (parts);
+
+    if (anchor < 0)
+    {
+        result.report.add ("ALIGN aus");
+        result.changed = false;
+        return result;
+    }
+
+    const double tolerance = toleranceFor (settings.tightness);
+    const double anchorEnd = parts[(size_t) anchor].endSeconds;
+
+    result.report.add ("ALIGN " + modeToString (settings.tightness)
+                       + " / STRETCH CRUNCH");
+
+    double gapMaxBefore = 0.0;
+    double gapMaxAfter  = 0.0;
+
+    for (size_t i = 0; i < parts.size(); ++i)
+    {
+        const int index = (int) i;
+
+        // Der Anker selbst bleibt stehen und traegt keine Luecke.
+        if (index == anchor)
+            continue;
+
+        const double gap = parts[i].startSeconds - anchorEnd;
+
+        result.gapsBeforeSeconds[i] = std::max (0.0, gap);
+
+        if (parts[i].pinned)
+        {
+            // Gepinnte Parts bleiben, wo sie sind; ihre Luecke bleibt bestehen.
+            result.gapsAfterSeconds[i] = std::max (0.0, gap);
+            result.report.add ("PINNED " + juce::String (index));
+
+            gapMaxBefore = std::max (gapMaxBefore, result.gapsBeforeSeconds[i]);
+            gapMaxAfter  = std::max (gapMaxAfter,  result.gapsAfterSeconds[i]);
+            continue;
+        }
+
+        // Schon dicht genug: innerhalb der Toleranz wird nicht gestaucht.
+        if (gap > tolerance)
+        {
+            const double dur    = std::max (1e-6, parts[i].endSeconds - parts[i].startSeconds);
+            const double needed = gap - tolerance;                        // so viel muss weg
+            const double ratio  = std::min (1.0, std::max (0.25, (dur - needed) / dur));
+
+            result.stretchFactors[i]   = ratio;
+            result.fadeScaleFactors[i] = ratio;                          // Fades schrumpfen mit (B-53)
+            result.gapsAfterSeconds[i] = std::max (0.0, gap - (dur - dur * ratio));
+
+            if (ratio != 1.0)
+                result.report.add ("STRETCH " + juce::String (index) + ": x "
+                                   + juce::String (ratio, 2));
+        }
+        else
+        {
+            result.gapsAfterSeconds[i] = std::max (0.0, gap);
+        }
+
+        gapMaxBefore = std::max (gapMaxBefore, result.gapsBeforeSeconds[i]);
+        gapMaxAfter  = std::max (gapMaxAfter,  result.gapsAfterSeconds[i]);
+    }
+
+    result.report.add ("GAP max " + juce::String (gapMaxBefore * 1000.0, 1)
+                       + " ms -> " + juce::String (gapMaxAfter * 1000.0, 1) + " ms");
+
+    for (const double factor : result.stretchFactors)
+        if (factor != 1.0)
+        {
+            result.changed = true;
+            break;
+        }
+
+    return result;
+}
+
+bool AlignEngine::usesStretch (const KickState& state) noexcept
+{
+    return state.align().method == AlignMethod::stretchPunch;
+}
+
+AlignResult AlignEngine::run (const KickState& state,
+                              const std::vector<PartTiming>& parts)
+{
+    return usesStretch (state) ? runStretchCrunch (state, parts)
+                               : runMoveCrunch (state, parts);
 }
 
 } // namespace bfka

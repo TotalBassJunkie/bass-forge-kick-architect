@@ -75,6 +75,9 @@ target_sources(BFKA_Tests PRIVATE
     MidiModeTests.cpp
     UiScalerTests.cpp
     ParityTests.cpp
+    StateMigrationTests.cpp
+    FollowDawTests.cpp
+    AlignStretchTests.cpp
     TestMain.cpp
     ../src/core/Version.cpp
     ../src/core/Log.cpp
