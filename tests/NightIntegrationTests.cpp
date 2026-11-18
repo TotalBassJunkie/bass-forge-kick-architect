@@ -202,6 +202,32 @@ TEST_CASE ("Editor: Schliessen-Knopf sitzt in der Kopfleiste", "[ui][integration
     REQUIRE (button->getBottom() <= 24 + 36);
 }
 
+TEST_CASE ("Editor: Overlay-Rendering fuer die Sichtpruefung", "[ui][integration][render]")
+{
+    JuceGuiScope gui;
+
+    PluginProcessor proc;
+    PluginEditor editor (proc);
+
+    renderOnce (editor, 1180, 720);
+    editor.openLibrary();
+
+    juce::Image image (juce::Image::RGB, 1180, 720, true);
+    juce::Graphics g (image);
+    editor.paintEntireComponent (g, true);
+
+    // Ausserhalb des Repos: reine Sichtpruefung, kein Testartefakt im Projekt.
+    const auto target = juce::File ("C:/bfka-re/ui-overlay-library.png");
+
+    if (auto stream = target.createOutputStream())
+    {
+        juce::PNGImageFormat png;
+        png.writeImageToStream (image, *stream);
+    }
+
+    REQUIRE (target.existsAsFile());
+}
+
 TEST_CASE ("Undo: Zustandsaenderung laesst sich zuruecknehmen", "[ui][integration]")
 {
     JuceGuiScope gui;
