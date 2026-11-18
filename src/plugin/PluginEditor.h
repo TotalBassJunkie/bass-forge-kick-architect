@@ -36,6 +36,9 @@ public:
     void paint (juce::Graphics& g) override;
     void resized() override;
 
+    /** Strg+Z / Strg+Shift+Z (B-15). */
+    bool keyPressed (const juce::KeyPress& key) override;
+
     /** Die KICK-Seite (Diagnose/Test); immer vorhanden. */
     KickPage* kickPage() const noexcept { return kickPageComponent.get(); }
 

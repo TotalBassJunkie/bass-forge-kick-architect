@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include <juce_events/juce_events.h>
 #include <juce_graphics/juce_graphics.h>
@@ -10,6 +11,7 @@
 #include "ui/overlays/DialogHost.h"
 
 using namespace bfka;
+using Catch::Matchers::WithinAbs;
 
 // Integration der Nacht-Wellen: die neuen Bedienelemente haengen wirklich in
 // der KICK-Seite und im Editor (B-82, B-110, B-122, B-100/B-101/B-102, B-105).
@@ -138,4 +140,51 @@ TEST_CASE ("Editor: Overlay faengt Escape ab", "[ui][integration]")
     editor.openSettings();
     REQUIRE (editor.overlayHost()->keyPressed (juce::KeyPress (juce::KeyPress::escapeKey)));
     REQUIRE_FALSE (editor.overlayHost()->isOpen());
+}
+
+TEST_CASE ("Undo: Zustandsaenderung laesst sich zuruecknehmen", "[ui][integration]")
+{
+    JuceGuiScope gui;
+
+    PluginProcessor proc;
+    proc.prepareToPlay (48000.0, 128);
+
+    const double before = proc.getBpm();
+
+    proc.beginStateEdit ("Test");
+    auto state = proc.captureState();
+    state.setBpm (before + 20.0);
+    proc.applyState (state);
+    proc.endStateEdit();
+
+    REQUIRE (proc.canUndo());
+    REQUIRE (proc.undoName() == "Test");
+
+    REQUIRE (proc.undo());
+    REQUIRE_THAT (proc.getBpm(), WithinAbs (before, 0.5));
+
+    REQUIRE (proc.canRedo());
+    REQUIRE (proc.redo());
+    REQUIRE_THAT (proc.getBpm(), WithinAbs (before + 20.0, 0.5));
+}
+
+TEST_CASE ("Editor: Strg+Z nimmt die letzte Aenderung zurueck", "[ui][integration]")
+{
+    JuceGuiScope gui;
+
+    PluginProcessor proc;
+    proc.prepareToPlay (48000.0, 128);
+
+    PluginEditor editor (proc);
+
+    const double before = proc.getBpm();
+
+    proc.beginStateEdit ("Test");
+    auto state = proc.captureState();
+    state.setBpm (before + 10.0);
+    proc.applyState (state);
+    proc.endStateEdit();
+
+    REQUIRE (editor.keyPressed (juce::KeyPress ('Z', juce::ModifierKeys::commandModifier, 0)));
+    REQUIRE_THAT (proc.getBpm(), WithinAbs (before, 0.5));
 }

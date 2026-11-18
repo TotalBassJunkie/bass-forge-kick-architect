@@ -23,7 +23,7 @@ Laufendes Protokoll. Neueste Einträge oben. Format:
   KEY-Chip hängen wirklich in der Seite, Export schreibt eine Datei, Overlays
   öffnen/schließen und fangen Escape ab.
 
-**Gates:** Debug grün (**528 Testfälle**, 540.904 Assertions).
+**Gates:** Debug grün (**530 Testfälle**, 540.913 Assertions).
 
 **Offen:** Undo/CHAOS/PreRender/Analyse/MIDI/ALIGN sind gebaut und getestet,
 aber noch nicht im laufenden Pfad verdrahtet; B-111, B-113, B-131 fehlen.

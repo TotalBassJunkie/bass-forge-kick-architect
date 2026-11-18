@@ -420,7 +420,9 @@ KickPage::KickPage (PluginProcessor& processor)
     demoButton.setTooltip ("Punch, Rumble und Click aus der Library laden");
     demoButton.onClick = [this]
     {
+        proc.beginStateEdit ("Demo-Kick laden");
         const auto ok = proc.startDemoKick();
+        proc.endStateEdit();
         syncFromProcessor();
         setStatus (proc.getLastLoadReport(), ! ok);
     };

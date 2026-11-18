@@ -13,6 +13,7 @@
 #include "engine/KickAssembler.h"
 #include "engine/KickRenderer.h"
 #include "fx/FxChainProcessor.h"
+#include "core/UndoHistory.h"
 
 namespace bfka
 {
@@ -67,6 +68,27 @@ public:
 
     /** Uebernimmt einen Zustand (Parameter + Slots + FX). */
     void applyState (const KickState& state);
+
+    // --- Undo/Redo (B-15) --------------------------------------------------
+    /**
+     * Klammerung einer Zustandsaenderung fuer Undo/Redo.
+     *
+     * `beginStateEdit()` merkt sich den Zustand VOR der Aenderung,
+     * `endStateEdit()` legt ihn auf den Undo-Stapel. Regler-Zwischenstaende
+     * sollen NICHT geklammert werden — nur abgeschlossene Aktionen, damit die
+     * Historie nicht zumuellt. Nur Message-Thread.
+     */
+    void beginStateEdit (const juce::String& name);
+    void endStateEdit();
+
+    bool canUndo() const;
+    bool canRedo() const;
+    juce::String undoName() const;
+    juce::String redoName() const;
+
+    /** Nimmt den letzten Schritt zurueck (false, wenn keiner da ist). */
+    bool undo();
+    bool redo();
 
     // --- FX-Kette (B-143) -------------------------------------------------
     /**
@@ -342,6 +364,9 @@ private:
     KickRenderer     renderer;
     FxChainProcessor fxChain;
     KickAssembler    assembler;
+
+    /** Undo-Stapel ueber ganze Zustaende (B-15). */
+    UndoHistory undoHistory;
     juce::File       contentRoot;
     juce::String     lastLoadReport;
 

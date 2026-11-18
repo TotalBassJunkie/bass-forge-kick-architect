@@ -7,8 +7,8 @@ was **nicht** verdrahtet ist, und was ein Mensch prüfen muss.
 
 | Größe | Vor dem Lauf | Nach dem Lauf |
 |---|---|---|
-| Testfälle | 317 | **528** |
-| Assertions | 540.115 | **540.904** |
+| Testfälle | 317 | **530** |
+| Assertions | 540.115 | **540.913** |
 | Quelldateien (`src/`) | 91 | **145** |
 | Testdateien (`tests/`) | 34 | **69** |
 
@@ -22,7 +22,7 @@ Abschnitt 6 (wird am Ende des Laufs eingetragen).
 |---|---|---|
 | **W1** Kleinkram | **fertig** | Tail-Länge, Karten-Seiten, Preset-Einbettung, IR-Browser — alle im laufenden Code. |
 | **W2** Pitch/Stretch | **fertig (Bausteine)** | `SampleVoice` wendet Pitch/Stretch an; KEEP PITCH nutzt einen vorgerenderten Puffer, sonst REPITCH-Fallback. `PreRenderCache` gebaut und getestet, aber **noch nicht** in `KickAssembler` vorgerendert — im Live-Pfad greift der Fallback. |
-| **W3** Zustand/Undo/Tempo | **fertig (teils)** | Migration v1→v2 aktiv, FOLLOW DAW aktiv. `UndoHistory` gebaut/getestet, **nicht** an den Prozessor gehängt (kein Strg+Z im Editor). |
+| **W3** Zustand/Undo/Tempo | **fertig** | Migration v1→v2 aktiv, FOLLOW DAW aktiv. `UndoHistory` **verdrahtet**: Demo-Kick und Preset-Laden sind rücknehmbar, Strg+Z / Strg+Shift+Z im Editor. Regler-Zwischenstände bewusst nicht. |
 | **W4** Style-Sidebar/CHAOS | **fertig (teils)** | Sidebar hängt links in der KICK-Seite, `+ ADD STYLE`-Overlay existiert. ROLL löst nur den Kick aus und meldet, dass die Roll-Regeln nicht an die Library gebunden sind. `ChaosEngine` gebaut/getestet, nicht an die Sidebar gehängt. |
 | **W5** Overlays | **fertig (teils)** | LIBRARY / GEAR / PRESETS im Editor-Kopf öffnen die Overlays über `OverlayHost` (Escape schließt). PRESETS liest den Nutzer-Ordner und lädt ein Preset. SOUNDS / FX CHAINS / MY SOUNDS sind leer, solange kein Content-Index angebunden ist. `AddPartOverlay` gebaut, **nicht** aufgerufen. |
 | **W6** Library-Analyse | **fertig (Bausteine)** | Onset, Key-Detection, Cache und Hintergrund-Job gebaut und getestet. **Nicht** in `SampleLibrary`/`SampleInfo` verdrahtet. |

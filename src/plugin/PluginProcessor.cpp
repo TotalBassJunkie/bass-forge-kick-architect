@@ -149,6 +149,45 @@ bool PluginProcessor::exportKickToFile (const juce::File& file, juce::String& er
     return WavWriter::write (file, rendered.buffer, rate, 24, error);
 }
 
+void PluginProcessor::beginStateEdit (const juce::String& name)
+{
+    undoHistory.beginEdit (name, captureState());
+}
+
+void PluginProcessor::endStateEdit()
+{
+    undoHistory.endEdit();
+}
+
+bool PluginProcessor::canUndo() const { return undoHistory.canUndo(); }
+bool PluginProcessor::canRedo() const { return undoHistory.canRedo(); }
+
+juce::String PluginProcessor::undoName() const { return undoHistory.undoName(); }
+juce::String PluginProcessor::redoName() const { return undoHistory.redoName(); }
+
+bool PluginProcessor::undo()
+{
+    // `undo()` braucht den AKTUELLEN Zustand, um ihn fuer Redo zu sichern.
+    KickState current = captureState();
+
+    if (! undoHistory.undo (current))
+        return false;
+
+    applyState (current);
+    return true;
+}
+
+bool PluginProcessor::redo()
+{
+    KickState current = captureState();
+
+    if (! undoHistory.redo (current))
+        return false;
+
+    applyState (current);
+    return true;
+}
+
 double PluginProcessor::getTailLengthSeconds() const
 {
     // B-150: Kick-Laenge plus der Nachhall der FX-Kette. Der Host nutzt den

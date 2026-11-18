@@ -163,7 +163,9 @@ void PluginEditor::openPresetManager()
 
         if (const auto data = PresetIO::loadKickPreset (file, error))
         {
+            proc.beginStateEdit ("Preset laden");
             proc.applyState (data->state);
+            proc.endStateEdit();
 
             if (kickPageComponent != nullptr)
                 kickPageComponent->syncFromProcessor();
@@ -223,6 +225,30 @@ void PluginEditor::timerCallback()
 void PluginEditor::paint (juce::Graphics& g)
 {
     g.fillAll (theme::background);
+}
+
+bool PluginEditor::keyPressed (const juce::KeyPress& key)
+{
+    const bool controlDown = key.getModifiers().isCommandDown();
+
+    if (controlDown && key.getKeyCode() == 'Z')
+    {
+        const bool shiftDown = key.getModifiers().isShiftDown();
+        const bool changed = shiftDown ? proc.redo() : proc.undo();
+
+        if (changed)
+        {
+            if (kickPageComponent != nullptr)
+                kickPageComponent->syncFromProcessor();
+
+            if (fxPageComponent != nullptr)
+                fxPageComponent->syncFromProcessor();
+        }
+
+        return true;
+    }
+
+    return false;
 }
 
 void PluginEditor::resizedTabButtons()
