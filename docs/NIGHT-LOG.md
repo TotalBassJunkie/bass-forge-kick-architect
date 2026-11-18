@@ -18,4 +18,20 @@ Neueste Zeile unten. Format: `HH:MM <Welleneintrag>`.
       Abweichung dokumentiert: Modulkarten-420-px gilt nur ohne Struktur-Editor
       (dynEq = 588 px, arithmetisch unvermeidbar); Test prueft die Grenze an
       "dist" plus Seitenanzahl an dynEq.
+23:40 Modell-Routing korrigiert: opencode/* (Key abgelaufen) und aihubmix/*
+      ("endpoint does not exist") sind ausgefallen. Builder laeuft auf
+      merge-gateway/deepseek/deepseek-v4.1-flash-1017 (0,15/0,60 USD je M),
+      freies Modell nur noch openrouter/cohere/north-mini-code:free.
+23:41 Wellen 2-6, 7.1, 7.3, 8.1-8.3, 9.1, 9.4, 9.5, 10.1-10.3, 4.1-4.3, 5.1-5.5
+      gruen | 504 Testfaelle / 540847 Assertions (vorher 333 / 540185).
+      Neu: PitchShifter, PreRenderCache, QualityMetrics, UndoHistory, ChaosEngine,
+      StyleSidebar, StyleIO/UserStyles, OverlayHost, LibraryOverlay,
+      SettingsOverlay+Prefs, PresetManagerOverlay, AddPartOverlay/AddStyleOverlay,
+      OnsetDetector, KeyDetector, AnalysisCache, AnalysisJob, KeyTracker,
+      KeyState/KeyChip, MidiModes, PhaseAlign, AlignEngine, AlignReport,
+      OfflineRenderer, ExportNaming, WavWriter, KnobHelpers, UiScaler,
+      ParityHarness, RobustnessTests.
+      Lead-Korrekturen: KeyDetector-Template-Rotation war invertiert (A->D#,
+      G->F), Kartenhoehe um die Seitenzeile, UndoHistory-Namenskollision
+      maxSteps, mehrere Catch2/JUCE-API-Abweichungen in Subagent-Tests.
 ```

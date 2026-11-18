@@ -55,6 +55,26 @@ target_sources(BFKA_Tests PRIVATE
     DialogHostTests.cpp
     OnsetDetectorTests.cpp
     AnalysisCacheTests.cpp
+    ExportIOTests.cpp
+    OfflineRenderTests.cpp
+    KnobHelpersTests.cpp
+    KeyDetectorTests.cpp
+    AnalysisJobTests.cpp
+    KeyChipTests.cpp
+    PhaseAlignTests.cpp
+    KeyTrackTests.cpp
+    StyleIOTests.cpp
+    RobustnessTests.cpp
+    StyleSidebarTests.cpp
+    LibraryOverlayTests.cpp
+    AlignEngineTests.cpp
+    PrefsTests.cpp
+    PresetManagerTests.cpp
+    AddPartTests.cpp
+    AlignReportTests.cpp
+    MidiModeTests.cpp
+    UiScalerTests.cpp
+    ParityTests.cpp
     TestMain.cpp
     ../src/core/Version.cpp
     ../src/core/Log.cpp
@@ -69,6 +89,29 @@ target_sources(BFKA_Tests PRIVATE
     ../src/library/analysis/OnsetDetector.cpp
     ../src/library/analysis/AnalysisCache.cpp
     ../src/ui/overlays/DialogHost.cpp
+    ../src/core/ExportNaming.cpp
+    ../src/core/WavWriter.cpp
+    ../src/core/StyleIO.cpp
+    ../src/engine/OfflineRenderer.cpp
+    ../src/engine/PhaseAlign.cpp
+    ../src/engine/KeyState.cpp
+    ../src/engine/KeyTracker.cpp
+    ../src/library/UserStyles.cpp
+    ../src/library/analysis/KeyDetector.cpp
+    ../src/library/analysis/AnalysisJob.cpp
+    ../src/ui/KnobHelpers.cpp
+    ../src/ui/KeyChip.cpp
+    ../src/core/Prefs.cpp
+    ../src/engine/AlignEngine.cpp
+    ../src/ui/StyleSidebar.cpp
+    ../src/ui/overlays/LibraryOverlay.cpp
+    ../src/ui/overlays/SettingsOverlay.cpp
+    ../src/ui/overlays/PresetManagerOverlay.cpp
+    ../src/ui/overlays/AddPartOverlay.cpp
+    ../src/engine/AlignReport.cpp
+    ../src/engine/MidiModes.cpp
+    ../src/engine/ParityHarness.cpp
+    ../src/ui/UiScaler.cpp
     ../src/ui/FxChainModel.cpp
     ../src/ui/ModuleStructureView.cpp
     ../src/ui/ModuleCard.cpp

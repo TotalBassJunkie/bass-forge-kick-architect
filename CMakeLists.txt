@@ -56,6 +56,10 @@ set(BFKA_CORE_SOURCES
     src/core/FxChainIO.cpp
     src/core/PresetIO.cpp
     src/core/UndoHistory.cpp
+    src/core/ExportNaming.cpp
+    src/core/WavWriter.cpp
+    src/core/StyleIO.cpp
+    src/core/Prefs.cpp
     )
 
 set(BFKA_ENGINE_SOURCES
@@ -65,6 +69,14 @@ set(BFKA_ENGINE_SOURCES
     src/engine/WsolaStretcher.cpp
     src/engine/PitchShifter.cpp
     src/engine/PreRenderCache.cpp
+    src/engine/OfflineRenderer.cpp
+    src/engine/PhaseAlign.cpp
+    src/engine/KeyState.cpp
+    src/engine/KeyTracker.cpp
+    src/engine/AlignEngine.cpp
+    src/engine/AlignReport.cpp
+    src/engine/MidiModes.cpp
+    src/engine/ParityHarness.cpp
     )
 
 set(BFKA_FX_SOURCES
@@ -90,6 +102,9 @@ set(BFKA_LIBRARY_SOURCES
     src/library/ChaosEngine.cpp
     src/library/analysis/OnsetDetector.cpp
     src/library/analysis/AnalysisCache.cpp
+    src/library/analysis/KeyDetector.cpp
+    src/library/analysis/AnalysisJob.cpp
+    src/library/UserStyles.cpp
     )
 
 set(BFKA_UI_SOURCES
@@ -100,6 +115,14 @@ set(BFKA_UI_SOURCES
     src/ui/SlotCard.cpp
     src/ui/KickPage.cpp
     src/ui/overlays/DialogHost.cpp
+    src/ui/KnobHelpers.cpp
+    src/ui/KeyChip.cpp
+    src/ui/UiScaler.cpp
+    src/ui/StyleSidebar.cpp
+    src/ui/overlays/LibraryOverlay.cpp
+    src/ui/overlays/SettingsOverlay.cpp
+    src/ui/overlays/PresetManagerOverlay.cpp
+    src/ui/overlays/AddPartOverlay.cpp
     src/ui/editors/MultibandView.cpp
     src/ui/editors/ConvolverView.cpp
     src/ui/editors/DynamicEqView.cpp
@@ -166,6 +189,29 @@ set(BFKA_HEADERS
     src/ui/editors/MidSideEqView.h
     src/ui/editors/KickShaperView.h
     src/ui/editors/FinalizerView.h
+    src/core/ExportNaming.h
+    src/core/WavWriter.h
+    src/core/StyleIO.h
+    src/engine/OfflineRenderer.h
+    src/engine/PhaseAlign.h
+    src/engine/KeyState.h
+    src/engine/KeyTracker.h
+    src/library/UserStyles.h
+    src/library/analysis/KeyDetector.h
+    src/library/analysis/AnalysisJob.h
+    src/ui/KnobHelpers.h
+    src/ui/KeyChip.h
+    src/core/Prefs.h
+    src/engine/AlignEngine.h
+    src/ui/StyleSidebar.h
+    src/ui/overlays/LibraryOverlay.h
+    src/ui/overlays/SettingsOverlay.h
+    src/ui/overlays/PresetManagerOverlay.h
+    src/ui/overlays/AddPartOverlay.h
+    src/engine/AlignReport.h
+    src/engine/MidiModes.h
+    src/engine/ParityHarness.h
+    src/ui/UiScaler.h
     )
 
 # ---------------------------------------------------------------------------

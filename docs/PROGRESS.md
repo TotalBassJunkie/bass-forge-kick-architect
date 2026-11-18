@@ -5,6 +5,35 @@ Laufendes Protokoll. Neueste Einträge oben. Format:
 
 ---
 
+## 2026-11-18 — Nacht-Lauf, Wellen 2–10 (Teil 1)
+
+**Erledigt (Auszug)**
+
+* **Engine:** `SampleVoice` wendet Pitch/Stretch an (REPITCH = Resampling,
+  KEEP PITCH = vorgerenderter Puffer mit `isPitchAccurate()` als Fallback-Melder);
+  `PitchShifter` (längenneutral), `PreRenderCache` (LRU, Grenzfälle),
+  `OfflineRenderer`, `PhaseAlign`, `AlignEngine` (MOVE CRUNCH, Toleranzen),
+  `AlignReport`, `KeyTracker`, `KeyState`/`KeyChip`, `MidiModes`, `ParityHarness`.
+* **Core:** `UndoHistory` (Schnappschüsse, 50 Schritte), `Prefs` (8 Sektionen),
+  `StyleIO`/`UserStyles` (`.bfkastyle`), `ExportNaming`, `WavWriter`,
+  `PresetIO` mit eingebetteten Samples (`<Samples>`, Base64-WAV).
+* **Library:** `ChaosEngine` (deterministisch), `ImpulseLibrary`,
+  `OnsetDetector`, `KeyDetector` (Chroma + Krumhansl-Template),
+  `AnalysisCache` (binär, versioniert), `AnalysisJob` (Thread, Abbruch).
+* **UI:** `OverlayHost` (kein Modal-Loop), `LibraryOverlay`, `SettingsOverlay`,
+  `PresetManagerOverlay`, `AddPartOverlay`/`AddStyleOverlay`, `StyleSidebar`,
+  `KnobHelpers`, `UiScaler`, IR-Liste im Convolver, Karten-Seiten.
+* **Tests:** `RobustnessTests` (0-Byte-Presets, Müll-XML, kaputte WAVs,
+  fehlender Content-Ordner, Renderer/FX ohne `prepare`).
+
+**Gates:** Debug grün (504 Testfälle), Release grün bei 439 (danach nur
+Testdateien ergänzt). MSVC `/W4`, nur Bestandswarnung `D9025`.
+
+**Blocker:** keine. **Bekannte Abweichungen:** Modulkarten-420-px gilt nur ohne
+Struktur-Editor (dynEq = 588 px, arithmetisch unvermeidbar).
+
+---
+
 ## 2026-11-17 — Nacht-Lauf, Welle 1 (B-150, B-151, B-95, B-152)
 
 **Erledigt**
