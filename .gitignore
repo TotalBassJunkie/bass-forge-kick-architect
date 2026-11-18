@@ -64,3 +64,6 @@ desktop.ini
 # Handbuchtext des Referenzprodukts (urheberrechtlich) - nie veroeffentlichen
 docs/manual.txt
 manual*.txt
+
+# Release-Pakete (binaer, entstehen aus tools/package-release.ps1)
+/release/

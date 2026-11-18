@@ -40,4 +40,12 @@ Neueste Zeile unten. Format: `HH:MM <Welleneintrag>`.
       530 Testfaelle / 540904 Assertions, Debug gruen.
 04:43 REPORT.md, README.md, QUICKSTART, RELEASE-NOTES, Inno-Skript,
       package-release.ps1 und Handoff geschrieben.
+05:00 Undo/Redo verdrahtet (Demo-Kick, Preset-Laden, Strg+Z / Strg+Shift+Z).
+      Dabei einen echten Bug gefunden: undo()/redo() sicherten einen
+      Default-Zustand statt des aktuellen.
+05:10 Debug und Release gruen, 530 Testfaelle / 540913 Assertions.
+      CI-Lauf 44233329972 gruen, Artefakt BassForgeKickArchitect-windows-x64.
+05:15 Portables Release-Paket gebaut:
+      release/BassForgeKickArchitect-0.1.0-portable-win64.zip (4,41 MB)
+      plus SHA256SUMS.txt. `release/` ist jetzt in .gitignore.
 ```
