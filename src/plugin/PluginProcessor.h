@@ -178,6 +178,15 @@ public:
     /** Laenge des aktuellen Kicks in Sekunden (Anzeige im Visualiser). */
     double getKickLengthSeconds() const noexcept { return renderer.kickLengthSeconds(); }
 
+    /**
+     * Rendert den aktuellen Kick offline und schreibt ihn als WAV (B-110).
+     *
+     * Nutzt `OfflineRenderer` und die aktuelle FX-Kette. Waehrend des Renderns
+     * ist die Verarbeitung ausgesetzt; danach sind Renderer und Kette wieder
+     * einsatzbereit. Nur vom Message-Thread aufrufen.
+     */
+    bool exportKickToFile (const juce::File& file, juce::String& error);
+
     /** Beat-Laenge in Sekunden (60/BPM) fuer das Raster im Visualiser. */
     double getBeatLengthSeconds() const noexcept { return renderer.beatLengthSeconds(); }
 

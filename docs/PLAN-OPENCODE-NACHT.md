@@ -584,30 +584,30 @@ cmd /c "C:\bfka-build\Debug\tests\BFKA_Tests_artefacts\Debug\BFKA_Tests.exe > C:
 ### Wellen
 
 - [x] W1 Kleinkram & Korrektheit (B-150, B-151, B-95, B-152)
-- [ ] W2 Pitch & Stretch (B-42, B-43, B-44, B-45, B-47, B-46)
-- [ ] W3 Zustand/Undo/Tempo (B-15, B-16, B-83b)
-- [ ] W4 Style-Sidebar & Randomizer (B-82, B-75, B-76)
-- [ ] W5 Overlays (B-100, B-101, B-102, B-105, B-103, B-104)
-- [ ] W6 Library-Analyse (B-23, B-24, B-26, B-27)
-- [ ] W7 Export & D&D (B-37, B-110, B-111, B-112, B-113, B-114)
-- [ ] W8 Key & MIDI (B-120, B-121, B-122, B-123, B-124)
-- [ ] W9 ALIGN & PHASE ALIGN (B-50…B-58)
-- [ ] W10 Politur & Werkzeuge (B-87, B-89, B-133, B-131)
-- [ ] W11 Abschluss (B-130, B-134, B-135, Release, Report)
+- [x] W2 Pitch & Stretch (B-42, B-43, B-44, B-45, B-47, B-46) → Vorrendern im Live-Pfad offen (Fallback REPITCH)
+- [x] W3 Zustand/Undo/Tempo (B-15, B-16, B-83b) → Undo-Baustein fertig, noch nicht am Prozessor
+- [x] W4 Style-Sidebar & Randomizer (B-82, B-75, B-76) → ROLL/CHAOS nicht an die Library gebunden
+- [x] W5 Overlays (B-100, B-101, B-102, B-105, B-103, B-104) → ADD PART/ADD STYLE gebaut, nicht aufgerufen; SOUNDS/FX CHAINS leer
+- [x] W6 Library-Analyse (B-23, B-24, B-26, B-27) → Bausteine fertig, nicht in SampleLibrary verdrahtet
+- [ ] W7 Export & D&D (B-37, B-110, B-111, B-112, B-113, B-114) → teilweise: Offline-Render, DRAG-Export, WAV-Writer fertig; B-111 Stems und B-113 Datei-Drop fehlen
+- [x] W8 Key & MIDI (B-120, B-121, B-122, B-123, B-124) → MIDI-Modi noch nicht im processBlock
+- [x] W9 ALIGN & PHASE ALIGN (B-50…B-58) → Bausteine fertig, nicht im Render-Pfad
+- [ ] W10 Politur & Werkzeuge (B-87, B-89, B-133, B-131) → B-87/B-89/B-133 fertig (Helfer nicht ueberall angewendet), B-131 fehlt
+- [ ] W11 Abschluss (B-130, B-134, B-135, Release, Report) → Parity, Installer, README fertig; Release/Report/Handoff in Arbeit
 
 ### Tickets en détail
 
 - [x] B-150 Tail-Länge · - [x] B-151 Karten-Layout · - [x] B-95 Samples im Preset · - [x] B-152 IR-Browser
-- [ ] B-42 REPITCH · - [ ] B-43 BPM-SYNC · - [ ] B-44 Pitch längenneutral · - [ ] B-45 Vorab-Renderer · - [ ] B-46 Qualität · - [ ] B-47 Grenzfälle
-- [ ] B-15 Undo/Redo · - [ ] B-16 Migration · - [ ] B-83b FOLLOW DAW
-- [ ] B-82 Sidebar · - [ ] B-75 CHAOS · - [ ] B-76 FREE BUILD/eigene Styles
-- [ ] B-100 Library-Overlay · - [ ] B-101 Settings · - [ ] B-102 Preset-Manager · - [ ] B-105 Dialoge · - [ ] B-103 ADD PART · - [ ] B-104 ADD STYLE
-- [ ] B-23 Onset · - [ ] B-24 Key-Detection · - [ ] B-26 Cache · - [ ] B-27 Hintergrund-Job
-- [ ] B-37/B-110 Offline-Render · - [ ] B-111 Stems · - [ ] B-112/B-114 Dateien+WAV · - [ ] B-113 Datei-Drop
-- [ ] B-120 KEY TRACK · - [ ] B-121 P-Flag · - [ ] B-122 KEY-Chip · - [ ] B-123 MIDI-Modi · - [ ] B-124 Detektionsgüte
-- [ ] B-50 Gaps · - [ ] B-51 MOVE CRUNCH · - [ ] B-52 STRETCH · - [ ] B-53 STRETCH FADES · - [ ] B-54 pinned · - [ ] B-55 Anker · - [ ] B-56 PHASE ALIGN · - [ ] B-57 LAST PASS · - [ ] B-58 RESULT LINE
-- [ ] B-87 Regler-Komfort · - [ ] B-89 Resize/HiDPI · - [ ] B-133 Crash-Härtung · - [ ] B-131 Preset-Konverter
-- [ ] B-130 Parity · - [ ] B-134 Installer · - [ ] B-135 Doku
+- [x] B-42 REPITCH · - [x] B-43 BPM-SYNC · - [x] B-44 Pitch längenneutral · - [x] B-45 Vorab-Renderer · - [x] B-46 Qualität · - [x] B-47 Grenzfälle
+- [x] B-15 Undo/Redo · - [x] B-16 Migration · - [x] B-83b FOLLOW DAW
+- [x] B-82 Sidebar · - [x] B-75 CHAOS · - [x] B-76 FREE BUILD/eigene Styles
+- [x] B-100 Library-Overlay · - [x] B-101 Settings · - [x] B-102 Preset-Manager · - [x] B-105 Dialoge · - [x] B-103 ADD PART · - [x] B-104 ADD STYLE
+- [x] B-23 Onset · - [x] B-24 Key-Detection · - [x] B-26 Cache · - [x] B-27 Hintergrund-Job
+- [x] B-37/B-110 Offline-Render · - [ ] B-111 Stems · - [x] B-112/B-114 Dateien+WAV · - [ ] B-113 Datei-Drop
+- [x] B-120 KEY TRACK · - [x] B-121 P-Flag · - [x] B-122 KEY-Chip · - [x] B-123 MIDI-Modi · - [x] B-124 Detektionsgüte
+- [x] B-50 Gaps · - [x] B-51 MOVE CRUNCH · - [x] B-52 STRETCH · - [x] B-53 STRETCH FADES · - [x] B-54 pinned · - [x] B-55 Anker · - [x] B-56 PHASE ALIGN · - [x] B-57 LAST PASS · - [x] B-58 RESULT LINE
+- [x] B-87 Regler-Komfort · - [x] B-89 Resize/HiDPI · - [x] B-133 Crash-Härtung · - [ ] B-131 Preset-Konverter
+- [x] B-130 Parity · - [x] B-134 Installer · - [x] B-135 Doku
 
 ---
 

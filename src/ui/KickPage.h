@@ -7,7 +7,10 @@
 #include <vector>
 
 #include "core/KickState.h"
+#include "engine/KeyState.h"
+#include "ui/KeyChip.h"
 #include "ui/SlotCard.h"
+#include "ui/StyleSidebar.h"
 
 namespace bfka
 {
@@ -118,6 +121,18 @@ public:
     /** Visualiser der Seite (Diagnose/Test). */
     KickVisualizer& visualizer() noexcept { return *vis; }
 
+    /** Style-Sidebar der Seite (Diagnose/Test); nullptr vor dem Aufbau. */
+    StyleSidebar* styleSidebar() const noexcept { return sidebar.get(); }
+
+    /** KEY-Chip im Transport (Diagnose/Test); nullptr vor dem Aufbau. */
+    KeyChip* keyChipView() const noexcept { return keyChip.get(); }
+
+    /** KEY-Zustand der Seite (Modus, erkannter und fester Grundton). */
+    KeyStateHolder& keyState() noexcept { return *keyHolder; }
+
+    /** Schreibt den aktuellen Kick als WAV in den Exports-Ordner (B-110). */
+    bool exportKick (juce::String& writtenPath, juce::String& error);
+
     /** Loopt die Wiedergabe (Demo-Kick alle 1,5 s). */
     void setLoopEnabled (bool shouldLoop);
     bool isLoopEnabled() const noexcept { return loopEnabled; }
@@ -154,7 +169,18 @@ private:
     juce::TextButton playButton { "PLAY" };
     juce::TextButton loopButton { "LOOP" };
     juce::TextButton demoButton { "DEMO-KICK" };
+    juce::TextButton dragButton { "DRAG" };
     juce::TextButton viewButton { "VIEW: PARTS" };
+
+    /** Linke Style-Sidebar (B-82) und KEY-Chip im Transport (B-122). */
+    std::unique_ptr<StyleSidebar>   sidebar;
+    std::unique_ptr<KeyStateHolder> keyHolder;
+    std::unique_ptr<KeyChip>        keyChip;
+
+    /** Zaehler der ROLL-Aufrufe (Anzeige in der Sidebar). */
+    int rollCounter = 0;
+
+    juce::Rectangle<int> sidebarArea;
 
     ValueBar bpmSlider;
     ValueBar masterSlider;    juce::Label  bpmLabel;

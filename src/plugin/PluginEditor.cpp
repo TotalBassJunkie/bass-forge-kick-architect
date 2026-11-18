@@ -1,10 +1,16 @@
 #include "plugin/PluginEditor.h"
 #include "plugin/PluginProcessor.h"
 
+#include "core/PresetIO.h"
+#include "core/Prefs.h"
 #include "core/Version.h"
 #include "ui/FxPage.h"
 #include "ui/KickPage.h"
 #include "ui/UiTheme.h"
+#include "ui/overlays/DialogHost.h"
+#include "ui/overlays/LibraryOverlay.h"
+#include "ui/overlays/PresetManagerOverlay.h"
+#include "ui/overlays/SettingsOverlay.h"
 
 namespace bfka
 {
@@ -41,6 +47,19 @@ PluginEditor::PluginEditor (PluginProcessor& processor)
     kickTabButton.onClick = [this] { showPage (false); };
     fxTabButton.onClick   = [this] { showPage (true); };
 
+    // --- Kopf-Knoepfe fuer die Overlays (B-100/B-101/B-102) --------------
+    for (auto* button : { &libraryButton, &gearButton, &presetsButton })
+    {
+        button->setColour (juce::TextButton::buttonColourId, theme::panelAlt);
+        button->setColour (juce::TextButton::textColourOffId, theme::textDim);
+        button->setColour (juce::TextButton::textColourOnId, theme::text);
+        addAndMakeVisible (*button);
+    }
+
+    libraryButton.onClick = [this] { openLibrary(); };
+    gearButton.onClick    = [this] { openSettings(); };
+    presetsButton.onClick = [this] { openPresetManager(); };
+
     noteLabel.setText ("MIDI: -", juce::dontSendNotification);
     noteLabel.setFont (juce::Font (juce::FontOptions (13.0f)));
     noteLabel.setColour (juce::Label::textColourId, theme::textDim);
@@ -53,11 +72,115 @@ PluginEditor::PluginEditor (PluginProcessor& processor)
     fxPageComponent = std::make_unique<FxPage> (proc);
     addChildComponent (*fxPageComponent);
 
+    // --- Overlay-Schicht (B-105) ------------------------------------------
+    // Liegt ueber den Seiten und wird erst beim Oeffnen sichtbar.
+    prefs = std::make_unique<Prefs> (Prefs::defaultFile());
+    prefs->load();
+
+    presetManager = std::make_unique<PresetManager> (PresetIO::ensureUserPresetDirectory());
+    presetManager->scan();
+
+    overlayHostComponent = std::make_unique<OverlayHost>();
+    addChildComponent (*overlayHostComponent);
+
     showPage (false);
     startTimerHz (8);
 }
 
 PluginEditor::~PluginEditor() = default;
+
+void PluginEditor::openLibrary()
+{
+    if (overlayHostComponent == nullptr)
+        return;
+
+    auto overlay = std::make_unique<LibraryOverlay>();
+
+    // PRESETS-Tab aus dem Nutzer-Ordner fuellen (B-100). Die uebrigen Tabs
+    // bleiben leer, solange der Content-Index nicht angebunden ist.
+    std::vector<LibraryItem> items;
+
+    if (presetManager != nullptr)
+    {
+        presetManager->scan();
+
+        for (const auto& entry : presetManager->entries())
+            items.push_back ({ entry.name,
+                               entry.file.getParentDirectory().getFileName(),
+                               entry.file.getFullPathName(),
+                               false });
+    }
+
+    overlay->setItems (LibraryOverlay::Tab::presets, std::move (items));
+    overlay->onCloseRequested = [this]
+    {
+        if (overlayHostComponent != nullptr)
+            overlayHostComponent->pop();
+    };
+
+    overlayHostComponent->push (std::move (overlay));
+}
+
+void PluginEditor::openSettings()
+{
+    if (overlayHostComponent == nullptr || prefs == nullptr)
+        return;
+
+    auto overlay = std::make_unique<SettingsOverlay> (*prefs);
+
+    // Eine Zeile je Sektion aus prefs.json (B-101).
+    std::vector<SettingsRow> rows;
+
+    for (const auto& section : Prefs::sections())
+        rows.push_back ({ section,
+                          section.toLowerCase() + ".enabled",
+                          section + " aktiv",
+                          "bool" });
+
+    overlay->setRows (std::move (rows));
+    overlay->onCloseRequested = [this]
+    {
+        if (overlayHostComponent != nullptr)
+            overlayHostComponent->pop();
+    };
+
+    overlayHostComponent->push (std::move (overlay));
+}
+
+void PluginEditor::openPresetManager()
+{
+    if (overlayHostComponent == nullptr || presetManager == nullptr)
+        return;
+
+    presetManager->scan();
+
+    auto overlay = std::make_unique<PresetManagerOverlay> (*presetManager);
+    auto* raw = overlay.get();
+
+    raw->onPresetActivated = [this] (const juce::File& file)
+    {
+        juce::String error;
+
+        if (const auto data = PresetIO::loadKickPreset (file, error))
+        {
+            proc.applyState (data->state);
+
+            if (kickPageComponent != nullptr)
+                kickPageComponent->syncFromProcessor();
+        }
+
+        if (overlayHostComponent != nullptr)
+            overlayHostComponent->pop();
+    };
+
+    raw->onCloseRequested = [this]
+    {
+        if (overlayHostComponent != nullptr)
+            overlayHostComponent->pop();
+    };
+
+    overlayHostComponent->push (std::move (overlay));
+}
 
 void PluginEditor::showPage (bool showFxPage)
 {
@@ -109,6 +232,12 @@ void PluginEditor::resizedTabButtons()
 
     kickTabButton.setBounds (tabs.removeFromLeft (70));
     fxTabButton.setBounds (tabs);
+
+    // Overlay-Knoepfe links neben den Seiten-Tabs (B-100/B-101/B-102).
+    auto buttons = header.removeFromRight (232).withSizeKeepingCentre (232, 22);
+    presetsButton.setBounds (buttons.removeFromRight (78).reduced (1, 0));
+    gearButton.setBounds (buttons.removeFromRight (56).reduced (1, 0));
+    libraryButton.setBounds (buttons.removeFromRight (84).reduced (1, 0));
 }
 
 void PluginEditor::resized()
@@ -133,6 +262,10 @@ void PluginEditor::resized()
 
     if (kickPageComponent != nullptr)
         kickPageComponent->setBounds (body);
+
+    // Die Overlay-Schicht deckt den ganzen Editor ab (B-105).
+    if (overlayHostComponent != nullptr)
+        overlayHostComponent->setBoundsToParent (getLocalBounds());
 }
 
 } // namespace bfka

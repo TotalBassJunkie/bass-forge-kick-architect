@@ -34,4 +34,10 @@ Neueste Zeile unten. Format: `HH:MM <Welleneintrag>`.
       Lead-Korrekturen: KeyDetector-Template-Rotation war invertiert (A->D#,
       G->F), Kartenhoehe um die Seitenzeile, UndoHistory-Namenskollision
       maxSteps, mehrere Catch2/JUCE-API-Abweichungen in Subagent-Tests.
+04:40 UI-Integration: Sidebar links in der KICK-Seite, KEY-Chip im Transport,
+      DRAG-Export als WAV, OverlayHost mit LIBRARY/GEAR/PRESETS im Editor-Kopf.
+      Integrationstests (6) fuer Seiten, Export und Overlays.
+      528 Testfaelle / 540904 Assertions, Debug gruen.
+04:43 REPORT.md, README.md, QUICKSTART, RELEASE-NOTES, Inno-Skript,
+      package-release.ps1 und Handoff geschrieben.
 ```

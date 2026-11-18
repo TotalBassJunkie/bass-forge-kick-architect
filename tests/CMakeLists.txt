@@ -78,6 +78,7 @@ target_sources(BFKA_Tests PRIVATE
     StateMigrationTests.cpp
     FollowDawTests.cpp
     AlignStretchTests.cpp
+    NightIntegrationTests.cpp
     TestMain.cpp
     ../src/core/Version.cpp
     ../src/core/Log.cpp

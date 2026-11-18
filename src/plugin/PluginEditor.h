@@ -10,6 +10,9 @@ namespace bfka
 class PluginProcessor;
 class FxPage;
 class KickPage;
+class OverlayHost;
+class Prefs;
+class PresetManager;
 
 /**
  * Editor des Plugins.
@@ -39,6 +42,16 @@ public:
     /** Die FX-Seite (Diagnose/Test); immer vorhanden. */
     FxPage* fxPage() const noexcept { return fxPageComponent.get(); }
 
+    /** Overlay-Host ueber den Seiten (Diagnose/Test); immer vorhanden. */
+    OverlayHost* overlayHost() const noexcept { return overlayHostComponent.get(); }
+
+    /** Oeffnet das Library-Overlay (B-100). */
+    void openLibrary();
+    /** Oeffnet das Settings-Overlay (B-101). */
+    void openSettings();
+    /** Oeffnet den Preset-Manager (B-102). */
+    void openPresetManager();
+
 private:
     void timerCallback() override;
 
@@ -54,8 +67,18 @@ private:
     juce::TextButton kickTabButton { "KICK" };
     juce::TextButton fxTabButton   { "FX" };
 
+    /** Kopf-Knoepfe fuer die Overlays (B-100/B-101/B-102). */
+    juce::TextButton libraryButton { "LIBRARY" };
+    juce::TextButton gearButton    { "GEAR" };
+    juce::TextButton presetsButton { "PRESETS" };
+
     std::unique_ptr<KickPage> kickPageComponent;
     std::unique_ptr<FxPage>   fxPageComponent;
+
+    /** Overlay-Stapel ueber den Seiten und seine Datenquellen. */
+    std::unique_ptr<OverlayHost>   overlayHostComponent;
+    std::unique_ptr<Prefs>         prefs;
+    std::unique_ptr<PresetManager> presetManager;
 
     bool fxPageVisible = false;
 

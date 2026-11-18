@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "core/ExportNaming.h"
 #include "core/ParameterRegistry.h"
 #include "library/SampleLibrary.h"
 #include "plugin/PluginProcessor.h"
@@ -425,6 +426,45 @@ KickPage::KickPage (PluginProcessor& processor)
     };
     addAndMakeVisible (demoButton);
 
+    // --- DRAG: Kick offline rendern und als WAV ablegen (B-110) -----------
+    styleToolbarButton (dragButton, ui::theme::panelAlt, ui::theme::text);
+    dragButton.setTooltip ("Kick offline rendern und als WAV in Exports ablegen");
+    dragButton.onClick = [this]
+    {
+        juce::String path, error;
+
+        if (exportKick (path, error))
+            setStatus ("Export: " + path);
+        else
+            setStatus ("Export fehlgeschlagen: " + error, true);
+    };
+    addAndMakeVisible (dragButton);
+
+    // --- KEY-Chip (B-122) -------------------------------------------------
+    keyHolder = std::make_unique<KeyStateHolder>();
+    keyChip   = std::make_unique<KeyChip> (*keyHolder);
+    keyChip->onChange = [this] { repaint (transportArea); };
+    addAndMakeVisible (*keyChip);
+
+    // --- Style-Sidebar (B-82) ---------------------------------------------
+    sidebar = std::make_unique<StyleSidebar>();
+    sidebar->onStyleSelected = [this] (const juce::String& styleId)
+    {
+        setStatus (styleId.isEmpty() ? juce::String ("FREE BUILD")
+                                     : ("Style: " + styleId));
+    };
+    sidebar->onRandomizeRequested = [this]
+    {
+        // Der UI-Teil von B-82 ist gebaut, die Roll-Regeln sind aber noch nicht
+        // an die Library gebunden (siehe REPORT.md, offene Punkte). Der Knopf
+        // loest deshalb nur den Kick aus und zaehlt mit.
+        ++rollCounter;
+        sidebar->setRollCount (rollCounter);
+        proc.triggerKick();
+        setStatus ("ROLL: Style-Regeln noch nicht an die Library gebunden");
+    };
+    addAndMakeVisible (*sidebar);
+
     styleBar (bpmSlider, 20.0, 960.0);
     bpmSlider.textFromValueFunction = [] (double v) { return juce::String (v, 0) + " BPM"; };
     bpmSlider.setValue (proc.getBpm(), juce::dontSendNotification);
@@ -495,6 +535,24 @@ KickPage::KickPage (PluginProcessor& processor)
 }
 
 KickPage::~KickPage() = default;
+
+bool KickPage::exportKick (juce::String& writtenPath, juce::String& error)
+{
+    const auto directory = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
+                               .getChildFile ("BassForge")
+                               .getChildFile ("KickArchitect")
+                               .getChildFile ("Exports");
+
+    const auto state = proc.captureState();
+    const auto base  = ExportNaming::defaultBaseName (state.getPresetName(), "kick");
+    const auto file  = ExportNaming::uniqueFile (directory, base, "wav");
+
+    if (! proc.exportKickToFile (file, error))
+        return false;
+
+    writtenPath = file.getFullPathName();
+    return true;
+}
 
 void KickPage::buildCards()
 {
@@ -689,9 +747,17 @@ void KickPage::resized()
     loopButton.setBounds (transport.removeFromLeft (58).reduced (1, 2));
     transport.removeFromLeft (4);
     demoButton.setBounds (transport.removeFromLeft (104).reduced (1, 2));
+    transport.removeFromLeft (4);
+    dragButton.setBounds (transport.removeFromLeft (58).reduced (1, 2));
 
     viewButton.setBounds (transport.removeFromRight (104).reduced (1, 2));
     transport.removeFromRight (8);
+
+    if (keyChip != nullptr)
+    {
+        keyChip->setBounds (transport.removeFromRight (96).reduced (1, 3));
+        transport.removeFromRight (8);
+    }
 
     auto masterCell = transport.removeFromRight (150);
     masterLabel.setBounds (masterCell.removeFromTop (11));
@@ -705,6 +771,25 @@ void KickPage::resized()
 
     if (vis != nullptr)
         vis->setBounds (visualizerArea);
+
+    // Style-Sidebar links neben dem Kartenbereich (B-82). Der Kartenbereich
+    // behaelt mindestens 480 px, damit zwei Karten nebeneinander passen.
+    if (sidebar != nullptr)
+    {
+        const int sidebarWidth = juce::jlimit (0, 210, juce::jmax (0, area.getWidth() - 480));
+        sidebarArea = area.removeFromLeft (sidebarWidth);
+
+        if (sidebarWidth > 0)
+        {
+            area.removeFromLeft (kPageGap);
+            sidebar->setBounds (sidebarArea);
+            sidebar->setVisible (true);
+        }
+        else
+        {
+            sidebar->setVisible (false);
+        }
+    }
 
     viewport.setBounds (area);
 

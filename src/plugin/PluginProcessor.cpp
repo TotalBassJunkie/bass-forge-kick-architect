@@ -6,6 +6,8 @@
 #include "core/ParameterRegistry.h"
 #include "core/Version.h"
 #include "core/Log.h"
+#include "core/WavWriter.h"
+#include "engine/OfflineRenderer.h"
 #include "fx/modules/KickShaperModule.h"
 #include "library/SampleLibrary.h"
 
@@ -126,6 +128,25 @@ int PluginProcessor::getSidechainChannels() const noexcept
         return bus->getNumberOfChannels();
 
     return 0;
+}
+
+bool PluginProcessor::exportKickToFile (const juce::File& file, juce::String& error)
+{
+    const double rate = juce::jmax (8000.0, getSampleRate() > 0.0 ? getSampleRate() : 48000.0);
+
+    suspendProcessing (true);
+    const auto rendered = OfflineRenderer::render (renderer, fxChain, rate, 512, 0.0);
+    suspendProcessing (false);
+
+    if (! rendered.ok)
+    {
+        error = rendered.error.isNotEmpty() ? rendered.error
+                                            : juce::String ("Render fehlgeschlagen.");
+        return false;
+    }
+
+    updateModuleRenderLength();
+    return WavWriter::write (file, rendered.buffer, rate, 24, error);
 }
 
 double PluginProcessor::getTailLengthSeconds() const

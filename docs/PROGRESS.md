@@ -5,6 +5,32 @@ Laufendes Protokoll. Neueste Einträge oben. Format:
 
 ---
 
+## 2026-11-18 — Nacht-Lauf, UI-Integration und Abschluss
+
+**Erledigt**
+
+* **KICK-Seite**: Style-Sidebar links (210 px, Style-Liste mit FREE BUILD,
+  ROLL-Zähler, CHAOS-Schalter), KEY-Chip im Transport, `DRAG` exportiert den
+  Kick offline als WAV (`PluginProcessor::exportKickToFile` → `OfflineRenderer`
+  → `WavWriter`, 24 bit). Der Kartenbereich behält mindestens 480 px.
+* **Editor**: `OverlayHost` über beiden Seiten; LIBRARY / GEAR / PRESETS im
+  Kopf. PRESETS liest den Nutzer-Ordner und lädt ein Preset, GEAR zeigt die
+  acht Sektionen aus `prefs.json`, LIBRARY den Preset-Bestand.
+* **Doku/Abschluss**: `README.md`, `docs/QUICKSTART.md`,
+  `docs/RELEASE-NOTES.md`, `installer/BassForgeKickArchitect.iss`,
+  `tools/package-release.ps1`, `REPORT.md`, neuer Handoff.
+* **Integrationstests** (`tests/NightIntegrationTests.cpp`): Sidebar und
+  KEY-Chip hängen wirklich in der Seite, Export schreibt eine Datei, Overlays
+  öffnen/schließen und fangen Escape ab.
+
+**Gates:** Debug grün (**528 Testfälle**, 540.904 Assertions).
+
+**Offen:** Undo/CHAOS/PreRender/Analyse/MIDI/ALIGN sind gebaut und getestet,
+aber noch nicht im laufenden Pfad verdrahtet; B-111, B-113, B-131 fehlen.
+Details in `REPORT.md`.
+
+---
+
 ## 2026-11-18 — Nacht-Lauf, Wellen 2–10 (Teil 1)
 
 **Erledigt (Auszug)**
